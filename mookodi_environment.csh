@@ -1,8 +1,8 @@
 #!/bin/csh
 # Source this file to set various environment variables used to build mookodi
-setenv SRC_HOME = "/home/dev/src/"
+setenv SRC_HOME         "/home/dev/src/"
 setenv MOOKODI_LIB_HOME "${SRC_HOME}/Mookodi/bin/lib/x86_64-linux/"
-setenv CCSHAREDFLAG "-shared"
+setenv CCSHAREDFLAG     "-shared"
 if ( ${?LD_LIBRARY_PATH} ) then
     setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${MOOKODI_LIB_HOME}:${SRC_HOME}/andor/andor-2.104.30000/lib/
 else
