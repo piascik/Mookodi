@@ -27,3 +27,5 @@ Other software packages that were installed on the mookodi machine to facilitate
 * **python-setuptools** *sudo apt-get install python3-setuptools* / *sudo apt-get install python-setuptools* Used whilst installing the python client packages.
 * **pip** *sudo apt install python3-pip* Used for requests installation
 * **requests** *sudo pip3 install requests* Used by the thrift python libraries.
+* **boost** Used by the camera C++ server.
+* **log4cxx** Used for logging by the camera C++ server.
