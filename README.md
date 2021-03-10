@@ -29,3 +29,4 @@ Other software packages that were installed on the mookodi machine to facilitate
 * **requests** *sudo pip3 install requests* Used by the thrift python libraries.
 * **boost** Used by the camera C++ server.
 * **log4cxx** Used for logging by the camera C++ server.
+* **doxygen** *sudo apt-get install doxygen* *sudo apt-get install graphviz* Used for C library and camera server documentation. You need graphviz for dot, which doxygen attempts to use.

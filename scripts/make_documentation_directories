@@ -1,0 +1,10 @@
+#!/bin/csh
+if ( ! $?SRC_HOME ) then
+   echo "Define SRC_HOME to be the parent of your Mookodi checkout before running this script."
+   exit 1
+endif
+setenv MOOKODI_SRC_HOME	${SRC_HOME}/Mookodi
+mkdir ${MOOKODI_SRC_HOME}/public_html
+mkdir -p ${MOOKODI_SRC_HOME}/public_html/mookodi/camera/server
+mkdir -p ${MOOKODI_SRC_HOME}/public_html/mookodi/ccd/c/
+mkdir -p ${MOOKODI_SRC_HOME}/public_html/mookodi/ccd/test/
