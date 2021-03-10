@@ -1,0 +1,17 @@
+MOOKODI_HOME		= 	mookodi
+MOOKODI_SRC_HOME	=	$(LT_SRC_HOME)/$(MOOKODI_HOME)
+MOOKODI_BIN_HOME       	=       $(MOOKODI_SRC_HOME)/bin/$(MOOKODI_HOME)
+MOOKODI_LIB_HOME	=	$(MOOKODI_SRC_HOME)/bin/lib/$(HOSTTYPE)
+MOOKODI_DOC_HOME	=	$(MOOKODI_SRC_HOME)/public_html/$(MOOKODI_HOME)
+
+#MOOKODI_BIN_HOME       =       $(LT_BIN_HOME)/$(MOOKODI_HOME)
+#MOOKODI_DOC_HOME	=	$(LT_DOC_HOME)/$(MOOKODI_HOME)
+
+# Shared C library flags
+SHARED_LIB_CFLAGS      = -fPIC
+
+# things to delete when tidying latex directories ...
+LATEX_TIDY_OPTIONS	= *.log *.aux *.lof *.log *.lot *.toc
+# tidy options - thing to delete when tidying
+TIDY_OPTIONS		=  core *.bak *.BAK *~ \\#*\\# .\\#* .*~
+
