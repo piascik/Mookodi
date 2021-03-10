@@ -6,8 +6,8 @@ MOOKODI_CCD_DOC_HOME			= 	$(MOOKODI_DOC_HOME)/$(MOOKODI_CCD_HOME)
 MOOKODI_CCD_LIBNAME			= 	$(MOOKODI_HOME)_$(MOOKODI_CCD_HOME)
 
 # Andor library
-ANDOR_CFLAGS    = -I$(LT_SRC_HOME)/andor/andor-2.104.30000/include/
-ANDOR_LDFLAGS	= -L$(LT_SRC_HOME)/andor/andor-2.104.30000/lib/ -landor
+ANDOR_CFLAGS    = -I$(SRC_HOME)/andor/andor-2.104.30000/include/
+ANDOR_LDFLAGS	= -L$(SRC_HOME)/andor/andor-2.104.30000/lib/ -landor
 ANDOR_LIBS	= -landor
 
 # CFITSIO

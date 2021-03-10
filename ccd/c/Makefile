@@ -9,7 +9,7 @@ LOGGING_CFLAGS	= -DLOGGING=10
 MUTEX_CFLAGS	= -DMUTEXED
 CFLAGS 		= -g -I$(INCDIR) $(ANDOR_CFLAGS) -I$(CFITSIOINCDIR) \
 		$(MUTEX_CFLAGS) $(LOGGING_CFLAGS) $(SHARED_LIB_CFLAGS) 
-LDFLAGS		= -L$(LT_LIB_HOME) $(ANDOR_LDFLAGS) $(CFITSIO_LIBS)
+LDFLAGS		= -L$(CFITSIOLIBDIR) $(ANDOR_LDFLAGS) $(CFITSIO_LIBS)
 
 SRCS 		= ccd_exposure.c ccd_general.c ccd_setup.c ccd_temperature.c ccd_fits_header.c ccd_fits_filename.c
 HEADERS		= $(SRCS:%.c=%.h)

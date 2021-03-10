@@ -8,7 +8,7 @@ INTERFACE_BINDIR= $(MOOKODI_CAMERA_BIN_HOME)/server/interface/$(HOSTTYPE)
 CC=g++
 INCLUDE=-I ./interface/ -I /usr/local/include/ -I $(MOOKODI_CCD_SRC_HOME)/include $(CFITSIO_CFLAGS)
 CFLAGS=-Wall -std=c++17 -g -O3
-LDFLAGS=-L/usr/local/lib -L$(MOOKODI_LIB_HOME) -L$(LT_LIB_HOME) $(ANDOR_LDFLAGS)
+LDFLAGS=-L/usr/local/lib -L$(MOOKODI_LIB_HOME) -L$(CFITSIOLIBDIR) $(ANDOR_LDFLAGS)
 
 LIBS=-lthriftnb -lthrift -levent -lboost_program_options -lboost_filesystem -lboost_system -lboost_iostreams -llog4cxx -lpthread -lm -lmookodi_ccd $(ANDOR_LIBS) $(CFITSIO_LIBS)
 #-lIDSAC -largtable2 -lopts -lCCfits 

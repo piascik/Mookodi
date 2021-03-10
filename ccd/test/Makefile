@@ -6,7 +6,7 @@ TESTDIR 	= test
 BINDIR 		= $(MOOKODI_CCD_BIN_HOME)/$(TESTDIR)/$(HOSTTYPE)
 
 CFLAGS 		= -g -I$(INCDIR) $(ANDOR_CFLAGS) -I$(CFITSIOINCDIR)
-LDFLAGS		= -L$(MOOKODI_LIB_HOME) -L$(LT_LIB_HOME) -l$(LIBNAME) -lcfitsio $(ANDOR_LDFLAGS) $(TIMELIB) $(SOCKETLIB) -lm -lc 
+LDFLAGS		= -L$(MOOKODI_LIB_HOME) -L$(CFITSIOLIBDIR) -l$(LIBNAME) -lcfitsio $(ANDOR_LDFLAGS) $(TIMELIB) $(SOCKETLIB) -lm -lc 
 
 SRCS 		= test_temperature.c test_exposure.c test_andor_exposure.c 
 #  test_andor_multrun.c
