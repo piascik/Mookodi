@@ -51,12 +51,25 @@ namespace po = boost::program_options;
 #define DEFAULT_FULL_FRAME_Y_PIXEL_COUNT (1024)
 /**
  * The default FITS instrument code, used when generating FITS filenames to specify 'mookodi'.
+ * This is used for the filename (not the directory) and is by convention in capitals.
  */
-#define DEFAULT_FITS_INSTRUMENT_CODE     ('m')
+#define DEFAULT_FITS_INSTRUMENT_CODE     ("MKD")
 /**
- * The default FITS image data directory, to put generated FITS images.
+ * The default FITS image data directory root,
+ * used to construct the directory structure where generated FITS images are stored.
  */
-#define DEFAULT_FITS_DATA_DIR            ("/icc/tmp")
+#define DEFAULT_FITS_DATA_DIR_ROOT       ("/data")
+/**
+ * The default FITS image data directory telescope component, 
+ * used to construct the directory structure where generated FITS images are stored.
+ */
+#define DEFAULT_FITS_DATA_DIR_TELESCOPE  ("lesedi")
+/**
+ * The default FITS image data directory instrument component, 
+ * used to construct the directory structure where generated FITS images are stored.
+ * This is used for the directory (not the filename) and is by convention in lower case.
+ */
+#define DEFAULT_FITS_DATA_DIR_INSTRUMENT ("mkd")
 /**
  * Convertion from degrees Centigrade to degrees Kelvin.
  */
@@ -117,7 +130,9 @@ void Camera::set_config_filename(const std::string & config_filename)
  * @see #DEFAULT_FULL_FRAME_X_PIXEL_COUNT
  * @see #DEFAULT_FULL_FRAME_Y_PIXEL_COUNT
  * @see #DEFAULT_FITS_INSTRUMENT_CODE
- * @see #DEFAULT_FITS_DATA_DIR
+ * @see #DEFAULT_FITS_DATA_DIR_ROOT
+ * @see #DEFAULT_FITS_DATA_DIR_TELESCOPE
+ * @see #DEFAULT_FITS_DATA_DIR_INSTRUMENT
  */
 void Camera::load_config()
 {
@@ -135,10 +150,14 @@ void Camera::load_config()
              "Temperature to try and cool CCD down to, in degrees centigrade.")
             ("andor.config_dir",po::value<string>()->default_value(DEFAULT_ANDOR_CONFIG_DIR),
              "The directory containing the Andor library configuration files.")
-            ("fits.instrument_code",po::value<char>()->default_value(DEFAULT_FITS_INSTRUMENT_CODE),
+            ("fits.instrument_code",po::value<string>()->default_value(DEFAULT_FITS_INSTRUMENT_CODE),
              "The FITS instrument code used when generating FITS filenames.")
-            ("fits.data_dir",po::value<string>()->default_value(DEFAULT_FITS_DATA_DIR),
-             "The directory to put generated FITS images into.")
+            ("fits.data_dir.root",po::value<string>()->default_value(DEFAULT_FITS_DATA_DIR_ROOT),
+             "This is the root of the directory structure to put generated FITS images into.")
+            ("fits.data_dir.telescope",po::value<string>()->default_value(DEFAULT_FITS_DATA_DIR_TELESCOPE),
+             "This string is the telescope part of the directory structure to put generated FITS images into.")
+            ("fits.data_dir.instrument",po::value<string>()->default_value(DEFAULT_FITS_DATA_DIR_INSTRUMENT),
+             "This string is the instrument part of the directory structure to put generated FITS images into.")
             ;
 	// load the configuration variable map from the config filename.	
 	std::ifstream ifs(mConfigFilename);
@@ -154,7 +173,10 @@ void Camera::load_config()
  * <li>We retrieve the "andor.config_dir" configuration value and use it to set the Andor config directory in the
  *     CCD library using CCD_Setup_Config_Directory_Set.
  * <li>We connect to and initialise the camera using CCD_Setup_Startup.
- * <li>We retrieve the fits filename instrument code "fits.instrument_code" and data directory "fits.data_dir"
+ * <li>We retrieve the fits filename instrument code "fits.instrument_code", 
+ *     the data directory root "fits.data_dir.root", 
+ *     the telescope component of the data directory "fits.data_dir.telescope",
+ *     and the instument component of the data directory "fits.data_dir.instrument",
  *     from the config file values in mConfigFileVM, and use them to initialise FITS filename generation using 
  *     CCD_Fits_Filename_Initialise.
  * <li>We initialise the FITS headers (stored in mFitsHeader) using CCD_Fits_Header_Initialise.
@@ -192,8 +214,10 @@ void Camera::initialize()
 	CameraException ce;
 	char *config_dir;
 	char *fits_data_dir;
+	char *fits_data_dir_telescope;
+	char *fits_data_dir_instrument;
+	char *instrument_code;
 	int retval;
-	char instrument_code;
 	
 	cout << "Initialising Camera." << endl;
 	LOG4CXX_INFO(logger,"Initialising Camera.");
@@ -217,9 +241,12 @@ void Camera::initialize()
 		throw ce;
 	}
 	/* initialise FITS filename generation code */
-	instrument_code = mConfigFileVM["fits.instrument_code"].as<char>();
-	fits_data_dir = (char *)(mConfigFileVM["fits.data_dir"].as<std::string>().c_str());
-	retval = CCD_Fits_Filename_Initialise(instrument_code,fits_data_dir);
+	instrument_code = mConfigFileVM["fits.instrument_code"].as<std::string>().c_str();
+	fits_data_dir_root = (char *)(mConfigFileVM["fits.data_dir.root"].as<std::string>().c_str());
+	fits_data_dir_telescope = (char *)(mConfigFileVM["fits.data_dir.telescope"].as<std::string>().c_str());
+	fits_data_dir_instrument = (char *)(mConfigFileVM["fits.data_dir.instrument"].as<std::string>().c_str());
+	retval = CCD_Fits_Filename_Initialise(instrument_code,fits_data_dir_root,fits_data_dir_telescope,
+					      fits_data_dir_instrument);
 	if(retval == FALSE)
 	{
 		ce = create_ccd_library_exception();

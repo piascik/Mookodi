@@ -39,6 +39,14 @@
 #include "ccd_general.h"
 
 /* hash defines */
+/**
+ * Maximum length of the data directory string.
+ */
+#define DATA_DIR_STRING_LENGTH    (256)
+/**
+ * Length of string to reserve  for each component of the directory structure string.
+ */
+#define COMPONENT_STRING_LENGTH   (64)
 
 /* structure declarations */
 /**
@@ -46,22 +54,25 @@
  * This consists of the following:
  * <dl>
  * <dt>Data_Dir</dt> <dd>Directory containing FITS images.</dd>
- * <dt>Instrument_Code</dt> <dd>Character at start of FITS filenames representing instrument.</dd>
+ * <dt>Instrument_Code</dt> <dd>String at the start of FITS filenames representing instrument.</dd>
+ * <dt>Data_Dir_Root</dt> <dd>String containing the start of the data path used to construct the Data_Dir.</dd>
+ * <dt>Data_Dir_Telescope</dt> <dd>String containing the name of the telescope, used to construct the Data_Dir.</dd>
+ * <dt>Data_Dir_Instrument</dt> <dd>String containing the name of the instrument, used to construct the Data_Dir.</dd>
  * <dt>Current_Date_Number</dt> <dd>Current date number of the last file produced, of the form yyyymmdd.</dd>
- * <dt>Current_Multrun_Number</dt> <dd>Current MULTRUN number.</dd>
  * <dt>Current_Run_Number</dt> <dd>Current Run number.</dd>
- * <dt>Current_Window_Number</dt> <dd>Current Window number.</dd>
  * </dl>
- * @see #CCD_GENERAL_ERROR_STRING_LENGTH
+ * @see #DATA_DIR_STRING_LENGTH
+ * @see #COMPONENT_STRING_LENGTH
  */
 struct Fits_Filename_Struct
 {
-	char Data_Dir[CCD_GENERAL_ERROR_STRING_LENGTH];
-	char Instrument_Code;
+	char Data_Dir[DATA_DIR_STRING_LENGTH];
+	char Instrument_Code[COMPONENT_STRING_LENGTH];
+	char Data_Dir_Root[COMPONENT_STRING_LENGTH];;
+	char Data_Dir_Telescope[COMPONENT_STRING_LENGTH];;
+	char Data_Dir_Instrument[COMPONENT_STRING_LENGTH];;
 	int Current_Date_Number;
-	int Current_Multrun_Number;
 	int Current_Run_Number;
-	int Current_Window_Number;
 };
 
 /* internal data */
@@ -84,7 +95,8 @@ static char Fits_Filename_Error_String[CCD_GENERAL_ERROR_STRING_LENGTH] = "";
  */
 static struct Fits_Filename_Struct Fits_Filename_Data = 
 {
-	"",CCD_FITS_FILENAME_DEFAULT_INSTRUMENT_CODE,0,0,0,0
+	"",CCD_FITS_FILENAME_DEFAULT_INSTRUMENT_CODE,CCD_FITS_FILENAME_DEFAULT_DATA_DIR_ROOT,
+	CCD_FITS_FILENAME_DEFAULT_DATA_DIR_TELESCOPE,CCD_FITS_FILENAME_DEFAULT_DATA_DIR_INSTRUMENT,0,0
 };
 
 /* internal functions */
@@ -100,14 +112,14 @@ static int fexist(char *filename);
  * Initialise FITS filename data, using the given data directory and the current (astronomical) day of year.
  * Retrieves current FITS images in directory, find the one with the highest multrun number, and sets
  * the current multrun number to it.
- * @param instrument_code A character describing which instrument code to associate with this camera, which appears in
+ * @param instrument_code A string describing which instrument code to associate with this camera, which appears in
  *        the resulting FITS filenames.
- * @param data_dir A string containing the directory name containing FITS images.
+ * @param data_dir_root A string containing the first part of the directory name containing FITS images.
  * @return Returns TRUE if the routine succeeds and returns FALSE if an error occurs.
  * @see #Fits_Filename_Data
  * @see #Fits_Filename_File_Select
  */
-int CCD_Fits_Filename_Initialise(char instrument_code,char *data_dir)
+int CCD_Fits_Filename_Initialise(char instrument_code,char *data_dir_root,char *data_dir_telescope,char *data_dir_instrument)
 {
 	struct dirent **name_list = NULL;
 	int name_list_count,i,retval,date_number,multrun_number,fully_parsed;
