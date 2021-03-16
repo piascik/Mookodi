@@ -68,9 +68,9 @@ struct Fits_Filename_Struct
 {
 	char Data_Dir[DATA_DIR_STRING_LENGTH];
 	char Instrument_Code[COMPONENT_STRING_LENGTH];
-	char Data_Dir_Root[COMPONENT_STRING_LENGTH];;
-	char Data_Dir_Telescope[COMPONENT_STRING_LENGTH];;
-	char Data_Dir_Instrument[COMPONENT_STRING_LENGTH];;
+	char Data_Dir_Root[COMPONENT_STRING_LENGTH];
+	char Data_Dir_Telescope[COMPONENT_STRING_LENGTH];
+	char Data_Dir_Instrument[COMPONENT_STRING_LENGTH];
 	int Current_Date_Number;
 	int Current_Run_Number;
 };
@@ -100,6 +100,10 @@ static struct Fits_Filename_Struct Fits_Filename_Data =
 };
 
 /* internal functions */
+static int Fits_Filename_Setup_Data_Directory(void);
+static int Fits_Filename_Create_Directory(char *dir,int *directory_created);
+static int Fits_Filename_Get_Year_Number(int *year_number);
+static int Fits_Filename_Get_Month_Day_String(char *month_day_string);
 static int Fits_Filename_Get_Date_Number(int *date_number);
 static int Fits_Filename_File_Select(const struct dirent *entry);
 static int Fits_Filename_Lock_Filename_Get(char *filename,char *lock_filename);
@@ -115,44 +119,93 @@ static int fexist(char *filename);
  * @param instrument_code A string describing which instrument code to associate with this camera, which appears in
  *        the resulting FITS filenames.
  * @param data_dir_root A string containing the first part of the directory name containing FITS images.
+ * @param data_dir_telescope A string containing the telescope name, used to construct part of the directory path.
+ * @param data_dir_instrument A string containing the instrument name/code (lower case), 
+ *        used to construct part of the directory path.
  * @return Returns TRUE if the routine succeeds and returns FALSE if an error occurs.
  * @see #Fits_Filename_Data
+ * @see #Fits_Filename_Setup_Data_Directory
  * @see #Fits_Filename_File_Select
+ * @see #COMPONENT_STRING_LENGTH
  */
-int CCD_Fits_Filename_Initialise(char instrument_code,char *data_dir_root,char *data_dir_telescope,char *data_dir_instrument)
+int CCD_Fits_Filename_Initialise(char *instrument_code,char *data_dir_root,char *data_dir_telescope,
+				 char *data_dir_instrument)
 {
 	struct dirent **name_list = NULL;
-	int name_list_count,i,retval,date_number,multrun_number,fully_parsed;
+	int name_list_count,i,retval,date_number,run_number,fully_parsed;
 	char *chptr = NULL;
 	char inst_code[5] = "";
-	char exposure_type[5] = "";
 	char date_string[17] = "";
-	char multrun_string[9] = "";
 	char run_string[9] = "";
-	char window_string[5] = "";
-	char pipeline_string[5] = "";
 
 #if LOGGING > 1
 	CCD_General_Log("ccd","ccd_fits_filename.c","CCD_Fits_Filename_Initialise",
 			       LOG_VERBOSITY_INTERMEDIATE,"FITS","Started.");
 #endif
-	if(data_dir == NULL)
+	/* instrument code */
+	if(instrument_code == NULL)
+	{
+		Fits_Filename_Error_Number = 6;
+		sprintf(Fits_Filename_Error_String,"CCD_Fits_Filename_Initialise:instrument_code was NULL.");
+		return FALSE;
+	}
+	if(strlen(instrument_code) > (COMPONENT_STRING_LENGTH-1))
+	{
+		Fits_Filename_Error_Number = 7;
+		sprintf(Fits_Filename_Error_String,"CCD_Fits_Filename_Initialise:instrument_code was too long(%ld).",
+			strlen(data_dir_root));
+		return FALSE;
+	}
+	strcpy(Fits_Filename_Data.Instrument_Code,instrument_code);
+	/* data_dir_root */
+	if(data_dir_root == NULL)
 	{
 		Fits_Filename_Error_Number = 1;
-		sprintf(Fits_Filename_Error_String,"CCD_Fits_Filename_Initialise:data_dir was NULL.");
+		sprintf(Fits_Filename_Error_String,"CCD_Fits_Filename_Initialise:data_dir_root was NULL.");
 		return FALSE;
 	}
-	if(strlen(data_dir) > (CCD_GENERAL_ERROR_STRING_LENGTH-1))
+	if(strlen(data_dir_root) > (COMPONENT_STRING_LENGTH-1))
 	{
 		Fits_Filename_Error_Number = 2;
-		sprintf(Fits_Filename_Error_String,"CCD_Fits_Filename_Initialise:data_dir was too long(%ld).",
-			strlen(data_dir));
+		sprintf(Fits_Filename_Error_String,"CCD_Fits_Filename_Initialise:data_dir_root was too long(%ld).",
+			strlen(data_dir_root));
 		return FALSE;
 	}
-	/* instrument code */
-	Fits_Filename_Data.Instrument_Code = instrument_code;
+	strcpy(Fits_Filename_Data.Data_Dir_Root,data_dir_root);
+	/* data_dir_telescope */
+	if(data_dir_telescope == NULL)
+	{
+		Fits_Filename_Error_Number = 9;
+		sprintf(Fits_Filename_Error_String,"CCD_Fits_Filename_Initialise:data_dir_telescope was NULL.");
+		return FALSE;
+	}
+	if(strlen(data_dir_telescope) > (COMPONENT_STRING_LENGTH-1))
+	{
+		Fits_Filename_Error_Number = 10;
+		sprintf(Fits_Filename_Error_String,"CCD_Fits_Filename_Initialise:data_dir_telescope was too long(%ld).",
+			strlen(data_dir_telescope));
+		return FALSE;
+	}
+	strcpy(Fits_Filename_Data.Data_Dir_Telescope,data_dir_telescope);
+	/* data_dir_instrument */
+	if(data_dir_instrument == NULL)
+	{
+		Fits_Filename_Error_Number = 11;
+		sprintf(Fits_Filename_Error_String,"CCD_Fits_Filename_Initialise:data_dir_instrument was NULL.");
+		return FALSE;
+	}
+	if(strlen(data_dir_instrument) > (COMPONENT_STRING_LENGTH-1))
+	{
+		Fits_Filename_Error_Number = 12;
+		sprintf(Fits_Filename_Error_String,
+			"CCD_Fits_Filename_Initialise:data_dir_instrument was too long(%ld).",
+			strlen(data_dir_instrument));
+		return FALSE;
+	}
+	strcpy(Fits_Filename_Data.Data_Dir_Telescope,data_dir_instrument);
 	/* setup data_dir */
-	strcpy(Fits_Filename_Data.Data_Dir,data_dir);
+	if(!Fits_Filename_Setup_Data_Directory())
+		return FALSE;
 #if LOGGING > 5
 	CCD_General_Log_Format("ccd","ccd_fits_filename.c","CCD_Fits_Filename_Initialise",
 			      LOG_VERBOSITY_VERY_VERBOSE,"FITS","Data Dir set to %s.",
@@ -165,7 +218,6 @@ int CCD_Fits_Filename_Initialise(char instrument_code,char *data_dir_root,char *
 			      LOG_VERBOSITY_VERY_VERBOSE,"FITS","Current Date Number is %d.",
 			      Fits_Filename_Data.Current_Date_Number);
 #endif
-	Fits_Filename_Data.Current_Multrun_Number = 0;
 	Fits_Filename_Data.Current_Run_Number = 0;
 	name_list_count = scandir(Fits_Filename_Data.Data_Dir,&name_list,
 				  Fits_Filename_File_Select,alphasort);
@@ -181,41 +233,17 @@ int CCD_Fits_Filename_Initialise(char instrument_code,char *data_dir_root,char *
 		{
 			strncpy(inst_code,chptr,4);
 			inst_code[4] = '\0';
-			chptr = strtok(NULL,"_");
+			chptr = strtok(NULL,".");
 			if(chptr != NULL)
 			{
-				strncpy(exposure_type,chptr,4);
-				exposure_type[4] = '\0';
-				chptr = strtok(NULL,"_");
+				strncpy(date_string,chptr,8);
+				date_string[8] = '\0';
+				chptr = strtok(NULL,".");
 				if(chptr != NULL)
 				{
-					strncpy(date_string,chptr,16);
-					date_string[16] = '\0';
-					chptr = strtok(NULL,"_");
-					if(chptr != NULL)
-					{
-						strncpy(multrun_string,chptr,8);
-						multrun_string[8] = '\0';
-						chptr = strtok(NULL,"_");
-						if(chptr != NULL)
-						{
-							strncpy(run_string,chptr,8);
-							run_string[8] = '\0';
-							chptr = strtok(NULL,"_");
-							if(chptr != NULL)
-							{
-								strncpy(window_string,chptr,4);
-								window_string[4] = '\0';
-								chptr = strtok(NULL,".");
-								if(chptr != NULL)
-								{
-									strncpy(pipeline_string,chptr,4);
-									pipeline_string[4] = '\0';
-									fully_parsed = TRUE;
-								}
-							}
-						}
-					}
+					strncpy(run_string,chptr,16);
+					run_string[16] = '\0';
+					fully_parsed = TRUE;
 				}
 			}
 		}
@@ -227,7 +255,7 @@ int CCD_Fits_Filename_Initialise(char instrument_code,char *data_dir_root,char *
 					      name_list[i]->d_name);
 #endif
 			/* check filename is for the right instrument (camera_index) */
-			if(inst_code[0] == Fits_Filename_Data.Instrument_Code)
+			if(strcmp(inst_code,Fits_Filename_Data.Instrument_Code) == 0)
 			{
 				retval = sscanf(date_string,"%d",&date_number);
 #if LOGGING > 9
@@ -240,27 +268,26 @@ int CCD_Fits_Filename_Initialise(char instrument_code,char *data_dir_root,char *
 				if((retval == 1)&&
 				   (date_number == Fits_Filename_Data.Current_Date_Number))
 				{
-					retval = sscanf(multrun_string,"%d",&multrun_number);
+					retval = sscanf(run_string,"%d",&run_number);
 #if LOGGING > 9
 					CCD_General_Log_Format("ccd","ccd_fits_filename.c",
 							      "CCD_Fits_Filename_Initialise",
 							      LOG_VERBOSITY_VERY_VERBOSE,"FITS",
-							      "Filename %s has multrun number %d.",
-							      name_list[i]->d_name,multrun_number);
+							      "Filename %s has run number %d.",
+							      name_list[i]->d_name,run_number);
 #endif
 					/* check if multrun number is highest yet found */
-					if((retval == 1)&&
-				       (multrun_number > Fits_Filename_Data.Current_Multrun_Number))
+					if((retval == 1)&&(run_number > Fits_Filename_Data.Current_Run_Number))
 					{
-						Fits_Filename_Data.Current_Multrun_Number = multrun_number;
+						Fits_Filename_Data.Current_Run_Number = run_number;
 #if LOGGING > 9
 						CCD_General_Log_Format("ccd","ccd_fits_filename.c",
 								      "CCD_Fits_Filename_Initialise",
 								      LOG_VERBOSITY_VERY_VERBOSE,"FITS",
-								      "Current multrun number now %d.",
-								      Fits_Filename_Data.Current_Multrun_Number);
+								      "Current run number now %d.",
+								      Fits_Filename_Data.Current_Run_Number);
 #endif
-					}/* end if multrun_number > Current_Multrun_Number */
+					}/* end if run_number > Current_Run_Number */
 				}/* end if filename has right date number */
 			}/* end if instrument has right instrument code */
 		}/* end if fully_parsed */
@@ -269,92 +296,45 @@ int CCD_Fits_Filename_Initialise(char instrument_code,char *data_dir_root,char *
 #if LOGGING > 9
 			CCD_General_Log_Format("ccd","ccd_fits_filename.c","CCD_Fits_Filename_Initialise",
 					      LOG_VERBOSITY_VERY_VERBOSE,"FITS","Failed to parse filename %s: "
-					      "inst_code = %s,exposure_type = %s,date_string = %s,"
-					      "multrun_string = %s, run_string = %s, window_string = %s,"
-					      "pipeline_string = %s.",name_list[i]->d_name,inst_code,
-					      exposure_type,date_string,multrun_string,run_string,window_string,
-					      pipeline_string);
+					      "inst_code = %s,date_string = %s,run_string = %s.",
+					       name_list[i]->d_name,inst_code,date_string,run_string);
 #endif
-
 		}
 		free(name_list[i]);
-	}
+	}/* end for on name_list_count */
 	free(name_list);
-	Fits_Filename_Data.Current_Run_Number = 1;
-	Fits_Filename_Data.Current_Window_Number = 1;
 #if LOGGING > 1
 	CCD_General_Log("ccd","ccd_fits_filename.c","CCD_Fits_Filename_Initialise",
-			       LOG_VERBOSITY_INTERMEDIATE,"FITS","Finished.");
+			LOG_VERBOSITY_INTERMEDIATE,"FITS","Finished.");
 #endif
 	return TRUE;
 }
 
 /**
- * Start a new Multrun. Increments Current Multrun number, unless date has changed since last multrun,
- * when the date is changed and multrun number set to 1. Current run and Window number reset to 1.
- * @return Returns TRUE if the routine succeeds and returns FALSE if an error occurs.
- * @see #Fits_Filename_Get_Date_Number
- * @see #Fits_Filename_Data
- */
-int CCD_Fits_Filename_Next_Multrun(void)
-{
-	int date_number;
-
-	if(!Fits_Filename_Get_Date_Number(&date_number))
-		return FALSE;
-	if(date_number != Fits_Filename_Data.Current_Date_Number)
-	{
-		if(!Fits_Filename_Get_Date_Number(&Fits_Filename_Data.Current_Date_Number))
-			return FALSE;
-		Fits_Filename_Data.Current_Multrun_Number = 0;/* incremented to 1 at end of routine */		
-	}
-	Fits_Filename_Data.Current_Multrun_Number++;
-	/* this should get incremented to 1 before the filename is generated */
-	Fits_Filename_Data.Current_Run_Number = 0; 
-	Fits_Filename_Data.Current_Window_Number = 0;
-	return TRUE;
-}
-
-/**
- * Increments Run within a Multrun. Increments current run number and resets window number.
+ * Increments the Run number. Fits_Filename_Setup_Data_Directory is called first, to make sure the data directory
+ * exists, and has not changed since the last run (in which case it is created and the run number reset to 0).
  * @return Returns TRUE if the routine succeeds and returns FALSE if an error occurs.
  * @see #Fits_Filename_Data
+ * @see #Fits_Filename_Setup_Data_Directory
  */
 int CCD_Fits_Filename_Next_Run(void)
 {
+	if(!Fits_Filename_Setup_Data_Directory())
+		return FALSE;
 	Fits_Filename_Data.Current_Run_Number++;
-	Fits_Filename_Data.Current_Window_Number = 0;
-	return TRUE;
-}
-
-/**
- * Increments Window within a Run. Increments window number.
- * @return Returns TRUE if the routine succeeds and returns FALSE if an error occurs.
- * @see #Fits_Filename_Data
- */
-int CCD_Fits_Filename_Next_Window(void)
-{
-	Fits_Filename_Data.Current_Window_Number++;
 	return TRUE;
 }
 
 /**
  * Returns a filename based on the current filename data.
- * @param exposure_type What sort of exposure the filename will contain (exposure/bias/dark etc).
- * @param pipeline_flag Pipeline processing level.
  * @param filename Pointer to an array of characters filename_length long to store the filename.
  * @param filename_length The length of the filename array.
  * @return Returns TRUE if the routine succeeds and returns FALSE if an error occurs.
  * @see #Fits_Filename_Data
- * @see #CCD_FITS_FILENAME_IS_EXPOSURE_TYPE
- * @see #CCD_FITS_FILENAME_EXPOSURE_TYPE
  */
-int CCD_Fits_Filename_Get_Filename(enum CCD_FITS_FILENAME_EXPOSURE_TYPE exposure_type,
-				   enum CCD_FITS_FILENAME_PIPELINE_FLAG pipeline_flag,
-				   char *filename,int filename_length)
+int CCD_Fits_Filename_Get_Filename(char *filename,int filename_length)
 {
-	char tmp_buff[256];
-	char exposure_type_string[8] = {'q','a','b','d','e','f','s','w'};
+	char tmp_buff[512];
 
 	if(filename == NULL)
 	{
@@ -362,34 +342,18 @@ int CCD_Fits_Filename_Get_Filename(enum CCD_FITS_FILENAME_EXPOSURE_TYPE exposure
 		sprintf(Fits_Filename_Error_String,"CCD_Fits_Filename_Get_Filename:filename was NULL.");
 		return FALSE;
 	}
-	if(!CCD_FITS_FILENAME_IS_EXPOSURE_TYPE(exposure_type))
-	{
-		Fits_Filename_Error_Number = 6;
-		sprintf(Fits_Filename_Error_String,"CCD_Fits_Filename_Get_Filename:Illegal exposure type '%d'.",
-			exposure_type);
-		return FALSE;
-	}
-	if(!CCD_FITS_FILENAME_IS_PIPELINE_FLAG(pipeline_flag))
-	{
-		Fits_Filename_Error_Number = 7;
-		sprintf(Fits_Filename_Error_String,"CCD_Fits_Filename_Get_Filename:Illegal pipeline flag '%d'.",
-			pipeline_flag);
-		return FALSE;
-	}
-	/* check data dir is not too long : 256 is length of tmp_buff, 37 is approx length of filename itself */
-	if(strlen(Fits_Filename_Data.Data_Dir) > (256-37))
+	/* check data dir is not too long : 256 is length of tmp_buff, 26 is approx length of filename itself 
+	** (with a very long run number) */
+	if(strlen(Fits_Filename_Data.Data_Dir) > (256-26))
 	{
 		Fits_Filename_Error_Number = 8;
 		sprintf(Fits_Filename_Error_String,"CCD_Fits_Filename_Get_Filename:Data Dir too long (%ld).",
 			strlen(Fits_Filename_Data.Data_Dir));
 		return FALSE;
 	}
-	sprintf(tmp_buff,"%s/%c_%c_%d_%d_%d_%d_%d.fits",Fits_Filename_Data.Data_Dir,
-		Fits_Filename_Data.Instrument_Code,exposure_type_string[exposure_type],
-		Fits_Filename_Data.Current_Date_Number,
-		Fits_Filename_Data.Current_Multrun_Number,
-		Fits_Filename_Data.Current_Run_Number,
-		Fits_Filename_Data.Current_Window_Number,pipeline_flag);
+	sprintf(tmp_buff,"%s/%s_%d.%04d.fits",Fits_Filename_Data.Data_Dir,
+		Fits_Filename_Data.Instrument_Code,Fits_Filename_Data.Current_Date_Number,
+		Fits_Filename_Data.Current_Run_Number);
 	if(strlen(tmp_buff) > (filename_length-1))
 	{
 		Fits_Filename_Error_Number = 4;
@@ -402,16 +366,6 @@ int CCD_Fits_Filename_Get_Filename(enum CCD_FITS_FILENAME_EXPOSURE_TYPE exposure
 }
 
 /**
- * Get the current multrun number.
- * @return The current multrun number. 
- * @see #Fits_Filename_Data
- */
-int CCD_Fits_Filename_Multrun_Get(void)
-{
-	return Fits_Filename_Data.Current_Multrun_Number;
-}
-
-/**
  * Get the current run number.
  * @return The current run number. 
  * @see #Fits_Filename_Data
@@ -419,16 +373,6 @@ int CCD_Fits_Filename_Multrun_Get(void)
 int CCD_Fits_Filename_Run_Get(void)
 {
 	return Fits_Filename_Data.Current_Run_Number;
-}
-
-/**
- * Get the current window number.
- * @return The current window number.
- * @see #Fits_Filename_Data
- */
-int CCD_Fits_Filename_Window_Get(void)
-{
-	return Fits_Filename_Data.Current_Window_Number;
 }
 
 /**
@@ -602,8 +546,208 @@ void CCD_Fits_Filename_Error_String(char *error_string)
 ** 		internal functions 
 ** ---------------------------------------------------------------------------- */
 /**
+ * Construct a suitable directory name to store FITS images in, and if the directory does not exist create it.
+ * The SAAO FITS directory structure is as follows: /data/lesedi/mkd/2021/0311, and the name is constructed 
+ * from the Data_Dir_Root,Data_Dir_Telescope,and Data_Dir_Instrument part of the Fits_Filename_Data data, and
+ * placed in the Data_Dir part of Fits_Filename_Data.
+ * The year and month/day directories should be checked to see if they exist, and if they do not they should be
+ * created. 
+ * @see #Fits_Filename_Data
+ * @see #Fits_Filename_Get_Year_Number
+ * @see #Fits_Filename_Get_Month_Day_String
+ * @see #Fits_Filename_Create_Directory
+ */
+static int Fits_Filename_Setup_Data_Directory(void)
+{
+	char year_string[5];
+	char month_day_string[5];
+	int year,new_directory;
+	
+	new_directory = FALSE;
+	/* create base of directory structure. We assume this bit already exists on disk */
+	sprintf(Fits_Filename_Data.Data_Dir,"/%s/%s/%s/",Fits_Filename_Data.Data_Dir_Root,
+		Fits_Filename_Data.Data_Dir_Telescope,Fits_Filename_Data.Data_Dir_Instrument);
+#if LOGGING > 7
+	CCD_General_Log_Format("ccd","ccd_fits_filename.c","Fits_Filename_Setup_Data_Directory",
+			      LOG_VERBOSITY_VERY_VERBOSE,"FITS","Base Data Dir set to %s.",
+			      Fits_Filename_Data.Data_Dir);
+#endif
+	/* find year number and append to the Data_Dir */
+	if(!Fits_Filename_Get_Year_Number(&year))
+		return FALSE;
+	sprintf(Fits_Filename_Data.Data_Dir+strlen(Fits_Filename_Data.Data_Dir),"%d",year);
+	/* If the year directory does not exist, create it */
+#if LOGGING > 7
+	CCD_General_Log_Format("ccd","ccd_fits_filename.c","Fits_Filename_Setup_Data_Directory",
+			      LOG_VERBOSITY_VERY_VERBOSE,"FITS","Check year Data Dir '%s' exists.",
+			      Fits_Filename_Data.Data_Dir);
+#endif
+	if(!Fits_Filename_Create_Directory(Fits_Filename_Data.Data_Dir,&new_directory))
+		return FALSE;
+	/* Add the month/day string to the directory name */
+	strcat(Fits_Filename_Data.Data_Dir,"/");
+	if(!Fits_Filename_Get_Month_Day_String(month_day_string))
+		return FALSE;
+	strcat(Fits_Filename_Data.Data_Dir,month_day_string);
+	/* If the month/day string does not exist, create it */ 
+#if LOGGING > 7
+	CCD_General_Log_Format("ccd","ccd_fits_filename.c","Fits_Filename_Setup_Data_Directory",
+			      LOG_VERBOSITY_VERY_VERBOSE,"FITS","Check month/day Data Dir '%s' exists.",
+			      Fits_Filename_Data.Data_Dir);
+#endif
+	if(!Fits_Filename_Create_Directory(Fits_Filename_Data.Data_Dir,&new_directory))
+		return FALSE;
+	/* if we had to create a new directory, reset run number to 0 */
+	if(new_directory)
+		Fits_Filename_Data.Current_Run_Number = 0;
+	/* Add terminating seperator */
+	strcat(Fits_Filename_Data.Data_Dir,"/");
+#if LOGGING > 7
+	CCD_General_Log_Format("ccd","ccd_fits_filename.c","Fits_Filename_Setup_Data_Directory",
+			      LOG_VERBOSITY_VERY_VERBOSE,"FITS","Data Dir set to '%s'.",
+			      Fits_Filename_Data.Data_Dir);
+#endif
+	return TRUE;
+}
+
+/**
+ * Check whether the specified directory exists. If it does not, create it.
+ * @param dir A string representing the directory to create, if it does already exist.
+ * @param directory_created The address of an integer. If this function creates the specified directory, the 
+ *        variable is set to TRUE. If the function does NOT create the specified directory, 
+ *        this variable is NOT modified.
+ * @return Returns TRUE if the routine succeeds and returns FALSE if an error occurs.
+ */
+static int Fits_Filename_Create_Directory(char *dir,int *directory_created)
+{
+	struct stat s;
+	int retval,mkdir_errno;
+
+	retval = stat(dir,&s);
+	if(retval == 0) /* dir exists */
+	{
+		if(!S_ISDIR(s.st_mode)) /* dir is NOT a directory */
+		{
+			Fits_Filename_Error_Number = 13;
+			sprintf(Fits_Filename_Error_String,
+				"Fits_Filename_Create_Directory:File '%s' is NOT a directory.",dir);
+			return FALSE;
+		}
+		/* We do NOT set (*directory_created) = FALSE; here.
+		** This is so we can call Fits_Filename_Create_Directory multiple times with the same directory_created
+		** variable, and tell if any one invocation caused a directory to be created. */
+	}
+	else /* dir does not exist, create it */
+	{
+#if LOGGING > 7
+		CCD_General_Log_Format("ccd","ccd_fits_filename.c","Fits_Filename_Create_Directory",
+				       LOG_VERBOSITY_VERY_VERBOSE,"FITS","Creating directory '%s'.",dir);
+#endif
+		retval = mkdir(dir,0777);
+		if(retval != 0)
+		{
+			mkdir_errno = errno;
+			Fits_Filename_Error_Number = 15;
+			sprintf(Fits_Filename_Error_String,
+				"Fits_Filename_Create_Directory:Failed to create directory '%s' (%d).",dir,mkdir_errno);
+			return FALSE;
+		}
+		(*directory_created) = TRUE;
+	}
+	return TRUE;
+}
+			       
+/**
+ * Get a year number. This is an integer (year) of the form yyyy, used as the year directory
+ * in a SAAO FITS directory. The year is for the start of night, 
+ * i.e. between mignight and 12 noon on 1st January the year before is used.
+ * @param year_number The date number, a pointer to an integer. On successful return, an integer of the form yyyy.
+ * @return Returns TRUE if the routine succeeds and returns FALSE if an error occurs.
+ */
+static int Fits_Filename_Get_Year_Number(int *year_number)
+{
+	struct timespec current_time;
+#ifndef _POSIX_TIMERS
+	struct timeval gtod_current_time;
+#endif
+	time_t seconds_since_epoch;
+	const struct tm *broken_down_time = NULL;
+
+	if(year_number == NULL)
+	{
+		Fits_Filename_Error_Number = 16;
+		sprintf(Fits_Filename_Error_String,"Fits_Filename_Get_Year_Number:year_number was NULL.");
+		return FALSE;
+	}
+#ifdef _POSIX_TIMERS
+	clock_gettime(CLOCK_REALTIME,&current_time);
+#else
+	gettimeofday(&gtod_current_time,NULL);
+	current_time.tv_sec = gtod_current_time.tv_sec;
+	current_time.tv_nsec = gtod_current_time.tv_usec*CCD_GENERAL_ONE_MICROSECOND_NS;
+#endif
+	seconds_since_epoch = (time_t)(current_time.tv_sec);
+	broken_down_time = gmtime(&(seconds_since_epoch));
+	/* should we be looking at yesterdays date? If hour of day 0..12, yes */
+	if(broken_down_time->tm_hour < 12)
+	{
+		seconds_since_epoch -= (12*60*60); /* subtract 12 hours from seconds since epoch */
+		broken_down_time = gmtime(&(seconds_since_epoch));
+	}
+	/* compute year number */
+	(*year_number) = (broken_down_time->tm_year+1900);
+	return TRUE;
+}
+
+/**
+ * Get a string representing the month/day in the form mmdd. This is used as the month/day directory as part
+ * of the directory structure used for storing SAAO FITS images.
+ * @param month_day_string A string to store the computed month/day string. This should be at least 5 characters long.
+ * @return Returns TRUE if the routine succeeds and returns FALSE if an error occurs.
+ */
+static int Fits_Filename_Get_Month_Day_String(char *month_day_string)
+{
+	struct timespec current_time;
+#ifndef _POSIX_TIMERS
+	struct timeval gtod_current_time;
+#endif
+	time_t seconds_since_epoch;
+	const struct tm *broken_down_time = NULL;
+	int month,day;
+	
+	if(month_day_string == NULL)
+	{
+		Fits_Filename_Error_Number = 25;
+		sprintf(Fits_Filename_Error_String,"Fits_Filename_Get_Date_Number:month_day_string was NULL.");
+		return FALSE;
+	}
+#ifdef _POSIX_TIMERS
+	clock_gettime(CLOCK_REALTIME,&current_time);
+#else
+	gettimeofday(&gtod_current_time,NULL);
+	current_time.tv_sec = gtod_current_time.tv_sec;
+	current_time.tv_nsec = gtod_current_time.tv_usec*CCD_GENERAL_ONE_MICROSECOND_NS;
+#endif
+	seconds_since_epoch = (time_t)(current_time.tv_sec);
+	broken_down_time = gmtime(&(seconds_since_epoch));
+	/* should we be looking at yesterdays date? If hour of day 0..12, yes */
+	if(broken_down_time->tm_hour < 12)
+	{
+		seconds_since_epoch -= (12*60*60); /* subtract 12 hours from seconds since epoch */
+		broken_down_time = gmtime(&(seconds_since_epoch));
+	}
+	/* tm_mon is months since January, 0..11, so add one */
+	month = (broken_down_time->tm_mon+1);
+	/* tm_mday is day of month 1..31. */
+	day = broken_down_time->tm_mday;
+	sprintf(month_day_string,"%02d%02d",month,day);
+	return TRUE;
+}
+
+/**
  * Get a date number. This is an integer of the form yyyymmdd, used as the date indicator
- * in a LT FITS filename. The date is for the start of night, i.e. between mignight and 12 noon the day before is used.
+ * in a SAAO FITS filename. The date is for the start of night, 
+ * i.e. between mignight and 12 noon the day before is used.
  * @param date_number The date number, a pointer to an integer. On successful return, an integer of the form yyyymmdd.
  * @return Returns TRUE if the routine succeeds and returns FALSE if an error occurs.
  */
@@ -649,15 +793,20 @@ static int Fits_Filename_Get_Date_Number(int *date_number)
 }
 
 /**
- * Select routine for scandir. Selects files ending in 0.fits.
+ * Select routine for scandir. Selects files starting with the instrument code (Fits_Filename_Data.Instrument_Code) 
+ * and ending in '.fits'.
  * @param entry The directory entry.
- * @return The routine returns TRUE if the file ends in '0.fits',
+ * @return The routine returns TRUE if the file starts with the instrument code and ends in '.fits',
  *         and so is added to the list of files scandir returns. Otherwise, FALSE it returned.
+ * @see #Fits_Filename_Data
  */
 static int Fits_Filename_File_Select(const struct dirent *entry)
 {
-	if(strstr(entry->d_name,"0.fits")!=NULL)
-		return (TRUE);
+	if(strncmp(entry->d_name,Fits_Filename_Data.Instrument_Code,strlen(Fits_Filename_Data.Instrument_Code)) == 0)
+	{
+		if(strstr(entry->d_name,".fits")!=NULL)
+			return (TRUE);
+	}
 	return (FALSE);
 }
 
@@ -720,4 +869,3 @@ static int fexist(char *filename)
 	fclose(fptr);
 	return TRUE;
 }
-

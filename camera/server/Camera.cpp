@@ -213,7 +213,7 @@ void Camera::initialize()
 {
 	CameraException ce;
 	char *config_dir;
-	char *fits_data_dir;
+	char *fits_data_dir_root;
 	char *fits_data_dir_telescope;
 	char *fits_data_dir_instrument;
 	char *instrument_code;
@@ -241,7 +241,7 @@ void Camera::initialize()
 		throw ce;
 	}
 	/* initialise FITS filename generation code */
-	instrument_code = mConfigFileVM["fits.instrument_code"].as<std::string>().c_str();
+	instrument_code = (char *)(mConfigFileVM["fits.instrument_code"].as<std::string>().c_str());
 	fits_data_dir_root = (char *)(mConfigFileVM["fits.data_dir.root"].as<std::string>().c_str());
 	fits_data_dir_telescope = (char *)(mConfigFileVM["fits.data_dir.telescope"].as<std::string>().c_str());
 	fits_data_dir_instrument = (char *)(mConfigFileVM["fits.data_dir.instrument"].as<std::string>().c_str());
@@ -885,7 +885,6 @@ void Camera::warm_up()
  *     CCD_Setup_Get_NCols / CCD_Setup_Get_Bin_X / CCD_Setup_Get_NRows / CCD_Setup_Get_Bin_Y.
  * <li>We set mExposureCount to the exposure_count parameter, so the status reflects how many images 
  *     we are going to take.
- * <li>We call CCD_Fits_Filename_Next_Multrun to increment the multrun number used for this multrun.
  * <li>We loop over the exposure_count:
  *     <ul>
  *     <li>We set mExposureIndex to the current exposure index (for status propagation).
@@ -912,9 +911,6 @@ void Camera::warm_up()
  * @see LOG4CXX_INFO
  * @see CCD_Exposure_Bias
  * @see CCD_Exposure_Save
- * @see CCD_FITS_FILENAME_EXPOSURE_TYPE
- * @see CCD_FITS_FILENAME_PIPELINE_FLAG
- * @see CCD_Fits_Filename_Next_Multrun
  * @see CCD_Fits_Filename_Next_Run
  * @see CCD_Fits_Filename_Get_Filename
  * @see CCD_Setup_Get_Buffer_Length
@@ -946,15 +942,6 @@ void Camera::multbias_thread(int32_t exposure_count)
 		binned_nrows = CCD_Setup_Get_NRows()/CCD_Setup_Get_Bin_Y();
 		/* initialise exposure count/index status */
 		mExposureCount = exposure_count;
-		/* we are doing a new multrun */
-		retval = CCD_Fits_Filename_Next_Multrun();
-		if(retval == FALSE)
-		{
-			mExposureCount = 0;
-			mExposureIndex = 0;
-			ce = create_ccd_library_exception();
-			throw ce;
-		}	
 		/* loop over number of exposure to take */
 		for(int image_index = 0; image_index < exposure_count; image_index++)
 		{
@@ -979,9 +966,7 @@ void Camera::multbias_thread(int32_t exposure_count)
 				throw ce;
 			}
 			/* get the filename to save to */
-			retval = CCD_Fits_Filename_Get_Filename(CCD_FITS_FILENAME_EXPOSURE_TYPE_BIAS,
-								CCD_FITS_FILENAME_PIPELINE_FLAG_UNREDUCED,
-								filename,256);
+			retval = CCD_Fits_Filename_Get_Filename(filename,256);
 			if(retval == FALSE)
 			{
 				mExposureCount = 0;
@@ -1024,7 +1009,6 @@ void Camera::multbias_thread(int32_t exposure_count)
  *     CCD_Setup_Get_NCols / CCD_Setup_Get_Bin_X / CCD_Setup_Get_NRows / CCD_Setup_Get_Bin_Y.
  * <li>We set the start_time to zero, so the exposure starts immediately.
  * <li>We set mExposureCount to the exposure_count parameter, so the status reflects how many images we are going to take.
- * <li>We call CCD_Fits_Filename_Next_Multrun to increment the multrun number used for this multrun.
  * <li>We loop over the exposure_count:
  *     <ul>
  *     <li>We set mExposureIndex to the current exposure index (for status propagation).
@@ -1052,9 +1036,6 @@ void Camera::multbias_thread(int32_t exposure_count)
  * @see LOG4CXX_INFO
  * @see CCD_Exposure_Expose
  * @see CCD_Exposure_Save
- * @see CCD_FITS_FILENAME_EXPOSURE_TYPE
- * @see CCD_FITS_FILENAME_PIPELINE_FLAG
- * @see CCD_Fits_Filename_Next_Multrun
  * @see CCD_Fits_Filename_Next_Run
  * @see CCD_Fits_Filename_Get_Filename
  * @see CCD_Setup_Get_Buffer_Length
@@ -1092,15 +1073,6 @@ void Camera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
 		start_time.tv_nsec = 0;
 		/* initialise exposure count/index status */
 		mExposureCount = exposure_count;
-		/* we are doing a new multrun */
-		retval = CCD_Fits_Filename_Next_Multrun();
-		if(retval == FALSE)
-		{
-			mExposureCount = 0;
-			mExposureIndex = 0;
-			ce = create_ccd_library_exception();
-			throw ce;
-		}
 		/* loop over number of exposure to take */
 		for(int image_index = 0; image_index < exposure_count; image_index++)
 		{
@@ -1126,9 +1098,7 @@ void Camera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
 				throw ce;
 			}
 			/* get the filename to save to */
-			retval = CCD_Fits_Filename_Get_Filename(CCD_FITS_FILENAME_EXPOSURE_TYPE_DARK,
-								CCD_FITS_FILENAME_PIPELINE_FLAG_UNREDUCED,
-								filename,256);
+			retval = CCD_Fits_Filename_Get_Filename(filename,256);
 			if(retval == FALSE)
 			{
 				mExposureCount = 0;
@@ -1172,7 +1142,6 @@ void Camera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
  * <li>We set the start_time to zero, so the exposure starts immediately.
  * <li>We set mExposureCount to the exposure_count parameter, so the status reflects how many images 
  *     we are going to take.
- * <li>We call CCD_Fits_Filename_Next_Multrun to increment the multrun number used for this multrun.
  * <li>We loop over the exposure_count:
  *     <ul>
  *     <li>We set mExposureIndex to the current exposure index (for status propagation).
@@ -1200,9 +1169,6 @@ void Camera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
  * @see LOG4CXX_INFO
  * @see CCD_Exposure_Expose
  * @see CCD_Exposure_Save
- * @see CCD_FITS_FILENAME_EXPOSURE_TYPE
- * @see CCD_FITS_FILENAME_PIPELINE_FLAG
- * @see CCD_Fits_Filename_Next_Multrun
  * @see CCD_Fits_Filename_Next_Run
  * @see CCD_Fits_Filename_Get_Filename
  * @see CCD_Setup_Get_Buffer_Length
@@ -1215,7 +1181,6 @@ void Camera::multrun_thread(const ExposureType::type exptype,int32_t exposure_co
 {
 	CameraException ce;
 	struct timespec start_time;
-	enum CCD_FITS_FILENAME_EXPOSURE_TYPE fits_filename_exposure_type;
 	char filename[256];
 	size_t image_buffer_length = 0;
 	int retval,binned_ncols,binned_nrows;
@@ -1241,47 +1206,6 @@ void Camera::multrun_thread(const ExposureType::type exptype,int32_t exposure_co
 		start_time.tv_nsec = 0;
 		/* initialise exposure count/index status */
 		mExposureCount = exposure_count;
-		/* we are doing a new multrun */
-		retval = CCD_Fits_Filename_Next_Multrun();
-		if(retval == FALSE)
-		{
-			mExposureCount = 0;
-			mExposureIndex = 0;
-			ce = create_ccd_library_exception();
-			throw ce;
-		}
-		/* Sort out which type of exposure filenames we are generating */
-		switch(exptype)
-		{
-			case ExposureType::BIAS:
-				fits_filename_exposure_type = CCD_FITS_FILENAME_EXPOSURE_TYPE_BIAS;
-				break;
-			case ExposureType::DARK:
-				fits_filename_exposure_type = CCD_FITS_FILENAME_EXPOSURE_TYPE_DARK;
-				break;
-			case ExposureType::EXPOSURE:
-				fits_filename_exposure_type = CCD_FITS_FILENAME_EXPOSURE_TYPE_EXPOSURE;
-				break;
-			case ExposureType::ACQUIRE:
-				fits_filename_exposure_type = CCD_FITS_FILENAME_EXPOSURE_TYPE_ACQUIRE;
-				break;
-			case ExposureType::ARC:
-				fits_filename_exposure_type = CCD_FITS_FILENAME_EXPOSURE_TYPE_ARC;
-				break;
-			case ExposureType::SKYFLAT:
-				fits_filename_exposure_type = CCD_FITS_FILENAME_EXPOSURE_TYPE_SKYFLAT;
-				break;
-			case ExposureType::STANDARD:
-				fits_filename_exposure_type = CCD_FITS_FILENAME_EXPOSURE_TYPE_STANDARD;
-				break;
-			case ExposureType::LAMPFLAT:
-				fits_filename_exposure_type = CCD_FITS_FILENAME_EXPOSURE_TYPE_LAMPFLAT;
-				break;
-			default:
-				ce.message = "Illegal exposure type " + to_string(exptype) + ".";
-				throw ce;
-				break;
-		}
 		/* loop over number of exposure to take */
 		for(int image_index = 0; image_index < exposure_count; image_index++)
 		{
@@ -1307,9 +1231,7 @@ void Camera::multrun_thread(const ExposureType::type exptype,int32_t exposure_co
 				throw ce;
 			}
 			/* get the filename to save to */
-			retval = CCD_Fits_Filename_Get_Filename(fits_filename_exposure_type,
-								CCD_FITS_FILENAME_PIPELINE_FLAG_UNREDUCED,
-								filename,256);
+			retval = CCD_Fits_Filename_Get_Filename(filename,256);
 			if(retval == FALSE)
 			{
 				mExposureCount = 0;

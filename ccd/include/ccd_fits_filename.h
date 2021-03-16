@@ -34,13 +34,9 @@ extern "C" {
 
 extern int CCD_Fits_Filename_Initialise(char *instrument_code,char *data_dir_root,char *data_dir_telescope,
 					char *data_dir_instrument);
-extern int CCD_Fits_Filename_Next_Multrun(void);
 extern int CCD_Fits_Filename_Next_Run(void);
-extern int CCD_Fits_Filename_Next_Window(void);
 extern int CCD_Fits_Filename_Get_Filename(char *filename,int filename_length);
-extern int CCD_Fits_Filename_Multrun_Get(void);
 extern int CCD_Fits_Filename_Run_Get(void);
-extern int CCD_Fits_Filename_Window_Get(void);
 extern int CCD_Fits_Filename_Lock(char *filename);
 extern int CCD_Fits_Filename_UnLock(char *filename);
 extern int CCD_Fits_Filename_Get_Error_Number(void);
