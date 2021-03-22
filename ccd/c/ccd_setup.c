@@ -341,7 +341,7 @@ int CCD_Setup_Startup(void)
 	}
 #if LOGGING > 9
 	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
-			"GetNumberHSSpeeds(channel=0,type=0 (electron multiplication)) returned %d speeds.",
+			"GetNumberHSSpeeds(channel=0,type=0) returned %d speeds.",
 			speed_count);
 #endif /* LOGGING */
 	for(i=0;i < speed_count; i++)
@@ -356,7 +356,7 @@ int CCD_Setup_Startup(void)
 		}
 #if LOGGING > 9
 		CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
-				      "GetHSSpeed(channel=0,type=0 (electron multiplication),index=%d) returned %.2f.",
+				      "GetHSSpeed(channel=0,type=0,index=%d) returned %.2f.",
 				       i,speed);
 #endif /* LOGGING */
 		/* see below, we select index 0 */
