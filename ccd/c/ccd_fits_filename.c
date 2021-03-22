@@ -157,6 +157,10 @@ int CCD_Fits_Filename_Initialise(char *instrument_code,char *data_dir_root,char 
 		return FALSE;
 	}
 	strcpy(Fits_Filename_Data.Instrument_Code,instrument_code);
+#if LOGGING > 5
+	CCD_General_Log_Format("ccd","ccd_fits_filename.c","CCD_Fits_Filename_Initialise",
+			       LOG_VERBOSITY_VERBOSE,"FITS","Instrument Code is '%s'.",Fits_Filename_Data.Instrument_Code);
+#endif
 	/* data_dir_root */
 	if(data_dir_root == NULL)
 	{
@@ -172,6 +176,11 @@ int CCD_Fits_Filename_Initialise(char *instrument_code,char *data_dir_root,char 
 		return FALSE;
 	}
 	strcpy(Fits_Filename_Data.Data_Dir_Root,data_dir_root);
+#if LOGGING > 5
+	CCD_General_Log_Format("ccd","ccd_fits_filename.c","CCD_Fits_Filename_Initialise",
+			       LOG_VERBOSITY_VERBOSE,"FITS","Root data directory is '%s'.",
+			       Fits_Filename_Data.Data_Dir_Root);
+#endif
 	/* data_dir_telescope */
 	if(data_dir_telescope == NULL)
 	{
@@ -187,6 +196,11 @@ int CCD_Fits_Filename_Initialise(char *instrument_code,char *data_dir_root,char 
 		return FALSE;
 	}
 	strcpy(Fits_Filename_Data.Data_Dir_Telescope,data_dir_telescope);
+#if LOGGING > 5
+	CCD_General_Log_Format("ccd","ccd_fits_filename.c","CCD_Fits_Filename_Initialise",
+			       LOG_VERBOSITY_VERBOSE,"FITS","Telescope component of the data directory is '%s'.",
+			       Fits_Filename_Data.Data_Dir_Telescope);
+#endif
 	/* data_dir_instrument */
 	if(data_dir_instrument == NULL)
 	{
@@ -202,7 +216,12 @@ int CCD_Fits_Filename_Initialise(char *instrument_code,char *data_dir_root,char 
 			strlen(data_dir_instrument));
 		return FALSE;
 	}
-	strcpy(Fits_Filename_Data.Data_Dir_Telescope,data_dir_instrument);
+	strcpy(Fits_Filename_Data.Data_Dir_Instrument,data_dir_instrument);
+#if LOGGING > 5
+	CCD_General_Log_Format("ccd","ccd_fits_filename.c","CCD_Fits_Filename_Initialise",
+			       LOG_VERBOSITY_VERBOSE,"FITS","Instrument component of the data directory is '%s'.",
+			       Fits_Filename_Data.Data_Dir_Instrument);
+#endif
 	/* setup data_dir */
 	if(!Fits_Filename_Setup_Data_Directory())
 		return FALSE;
