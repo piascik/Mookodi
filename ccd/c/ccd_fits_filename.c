@@ -135,9 +135,9 @@ int CCD_Fits_Filename_Initialise(char *instrument_code,char *data_dir_root,char 
 	int name_list_count,i,retval,date_number,run_number,fully_parsed;
 	char *chptr = NULL;
 	char filename[256];
-	char inst_code[5] = "";
-	char date_string[17] = "";
-	char run_string[9] = "";
+	char inst_code[5];
+	char date_string[17];
+	char run_string[9];
 	int debug;
 	
 #if LOGGING > 1
