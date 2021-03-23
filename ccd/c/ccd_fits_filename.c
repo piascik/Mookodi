@@ -134,6 +134,7 @@ int CCD_Fits_Filename_Initialise(char *instrument_code,char *data_dir_root,char 
 	struct dirent **name_list = NULL;
 	int name_list_count,i,retval,date_number,run_number,fully_parsed;
 	char *chptr = NULL;
+	char filename[256];
 	char inst_code[5] = "";
 	char date_string[17] = "";
 	char run_string[9] = "";
@@ -247,7 +248,16 @@ int CCD_Fits_Filename_Initialise(char *instrument_code,char *data_dir_root,char 
 				      LOG_VERBOSITY_VERY_VERBOSE,"FITS","Filename %d is %s.",i,name_list[i]->d_name);
 #endif
 		fully_parsed = FALSE;
-		chptr = strtok(name_list[i]->d_name,"_");
+		if(strlen(name_list[i]->d_name) > 255)
+		{
+			Fits_Filename_Error_Number = 26;
+			sprintf(Fits_Filename_Error_String,
+				"CCD_Fits_Filename_Initialise:filename '%s' was too long (%ld).",
+				name_list[i]->d_name,strlen(name_list[i]->d_name));
+			return FALSE;
+		}
+		strcpy(filename,name_list[i]->d_name);
+		chptr = strtok(filename,"_");
 		if(chptr != NULL)
 		{
 			strncpy(inst_code,chptr,4);
@@ -270,8 +280,9 @@ int CCD_Fits_Filename_Initialise(char *instrument_code,char *data_dir_root,char 
 		{
 #if LOGGING > 9
 			CCD_General_Log_Format("ccd","ccd_fits_filename.c","CCD_Fits_Filename_Initialise",
-					      LOG_VERBOSITY_VERY_VERBOSE,"FITS","Filename %s parsed OK.",
-					      name_list[i]->d_name);
+					       LOG_VERBOSITY_VERY_VERBOSE,"FITS",
+					       "Filename %s parsed OK: inst_code = %s,date_string = %s,run_string = %s.",
+					       name_list[i]->d_name,inst_code,date_string,run_string);
 #endif
 			/* check filename is for the right instrument (camera_index) */
 			if(strcmp(inst_code,Fits_Filename_Data.Instrument_Code) == 0)
