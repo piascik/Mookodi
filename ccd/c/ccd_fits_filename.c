@@ -138,7 +138,6 @@ int CCD_Fits_Filename_Initialise(char *instrument_code,char *data_dir_root,char 
 	char inst_code[5];
 	char date_string[9];
 	char run_string[9];
-	int debug;
 	
 #if LOGGING > 1
 	CCD_General_Log("ccd","ccd_fits_filename.c","CCD_Fits_Filename_Initialise",
@@ -268,15 +267,6 @@ int CCD_Fits_Filename_Initialise(char *instrument_code,char *data_dir_root,char 
 			{
 				strncpy(date_string,chptr,8);
 				date_string[8] = '\0';
-				for(debug = 0; debug < 8; debug++)
-				{
-#if LOGGING > 9
-					CCD_General_Log_Format("ccd","ccd_fits_filename.c","CCD_Fits_Filename_Initialise",
-							       LOG_VERBOSITY_VERY_VERBOSE,"FITS",
-							       "date_string[%d] = '%c' (%d).",
-							       debug,date_string[debug],(int)(date_string[debug]));
-#endif
-				}
 				chptr = strtok(NULL,".");
 				if(chptr != NULL)
 				{
