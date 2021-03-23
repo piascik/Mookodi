@@ -136,7 +136,7 @@ int CCD_Fits_Filename_Initialise(char *instrument_code,char *data_dir_root,char 
 	char *chptr = NULL;
 	char filename[256];
 	char inst_code[5];
-	char date_string[17];
+	char date_string[9];
 	char run_string[9];
 	int debug;
 	
@@ -280,8 +280,8 @@ int CCD_Fits_Filename_Initialise(char *instrument_code,char *data_dir_root,char 
 				chptr = strtok(NULL,".");
 				if(chptr != NULL)
 				{
-					strncpy(run_string,chptr,16);
-					run_string[16] = '\0';
+					strncpy(run_string,chptr,8);
+					run_string[8] = '\0';
 					fully_parsed = TRUE;
 				}
 			}
