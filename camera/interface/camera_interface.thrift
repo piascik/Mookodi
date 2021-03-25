@@ -1,5 +1,12 @@
 /* Camera thrift interface */
-
+/**
+ * Enumeration to specify what kind of data a FITS header card (an individual element of a FITS header) contains.
+ * <ul>
+ * <li><b>INTEGER</b>
+ * <li><b>FLOAT</b>
+ * <li><b>STRING</b>
+ * </ul>
+ */
 enum FitsCardType
 {
      INTEGER = 0,
@@ -7,6 +14,16 @@ enum FitsCardType
      STRING = 2
 }
 
+/**
+ * Structure containging the data for a FITS header card (an individual element of a FITS header) contains.
+ * <ul>
+ * <li><b>string key</b> The keyword.
+ * <li><b>FitsCardType valtype</b> What kind of FIRS header card this is.
+ * <li><b>string val</b> The value, as a string.
+ * <li><b>string comment</b> A comment string.
+ * </ul>
+ * @see #FitsCardType
+ */
 struct FitsHeaderCard
 {
        1: string key;
@@ -15,6 +32,15 @@ struct FitsHeaderCard
        4: string comment;
 }
 
+/**
+ * Enumeration to return the current state of an exposure.
+ * <ul>
+ * <li><b>IDLE</b>
+ * <li><b>SETUP</b>
+ * <li><b>EXPOSING</b>
+ * <li><b>READOUT</b>
+ * </ul>
+ */
 enum ExposureState
 {
      IDLE = 0,
@@ -23,6 +49,19 @@ enum ExposureState
      READOUT = 3
 }
 
+/**
+ * Enumeration to configure the type of exposure being performed.
+ * <ul>
+ * <li><b>BIAS</b>
+ * <li><b>DARK</b>
+ * <li><b>EXPOSURE</b>
+ * <li><b>ACQUIRE</b>
+ * <li><b>ARC</b>
+ * <li><b>SKYFLAT</b>
+ * <li><b>STANDARD</b>
+ * <li><b>LAMPFLAT</b>
+ * </ul>
+ */
 enum ExposureType
 {
 	BIAS = 0,
@@ -33,6 +72,19 @@ enum ExposureType
 	SKYFLAT = 5,
 	STANDARD = 6,
 	LAMPFLAT = 7
+}
+
+/**
+ * Enumeration to configure the readout speed of the detector.
+ * <ul>
+ * <li><b>SLOW</b>
+ * <li><b>FAST</b>
+ * </ul>
+ */
+enum ReadoutSpeed
+{
+	SLOW = 0,
+	FAST = 1
 }
 
 struct ImageData
@@ -99,6 +151,7 @@ service CameraService
         void set_binning(1: i8 xbin, 2: i8 ybin) throws (1: CameraException e);
         void set_window(1: i32 x_start, 2: i32 y_start, 3: i32 x_end, 4: i32 y_end) throws (1: CameraException e);
 	void clear_window() throws (1: CameraException e);
+	void set_readout_speed(1: ReadoutSpeed speed) throws (1: CameraException e);
 	void set_fits_headers(1: list<FitsHeaderCard> fits_header) throws (1: CameraException e);
 	void add_fits_header(1: string keyword, 2: FitsCardType valtype,
 	     3: string value,4: string comment) throws (1: CameraException e);
@@ -109,6 +162,8 @@ service CameraService
 	void abort_exposure() throws (1: CameraException e);
 	CameraState get_state() throws (1: CameraException e);
         ImageData get_image_data() throws (1: CameraException e);
+	string get_last_image_filename() throws (1: CameraException e);
+	list<string> get_image_filenames() throws (1: CameraException e);
 	void cool_down() throws (1: CameraException e);
 	void warm_up() throws (1: CameraException e);
 }

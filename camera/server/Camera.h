@@ -27,6 +27,7 @@ class Camera : virtual public CameraServiceIf
     void set_binning(const int8_t xbin, const int8_t ybin);
     void set_window(const int32_t x_start,const int32_t y_start,const int32_t x_end,const int32_t y_end);
     void clear_window();
+    void set_readout_speed(const ReadoutSpeed::type speed);
     
     // FITS header processing routines
     void set_fits_headers(const std::vector<FitsHeaderCard> & fits_info);
@@ -43,6 +44,8 @@ class Camera : virtual public CameraServiceIf
     // Return state and data
     void get_state(CameraState &state);
     void get_image_data(ImageData& img_data);
+    void get_last_image_filename(std::string &filename);
+    void get_image_filenames(std::vector<std::string> &filename_list);
 
     //Camera temperature control
     void cool_down();
