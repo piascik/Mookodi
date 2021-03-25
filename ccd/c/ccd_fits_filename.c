@@ -343,13 +343,17 @@ int CCD_Fits_Filename_Initialise(char *instrument_code,char *data_dir_root,char 
 /**
  * Increments the Run number. Fits_Filename_Setup_Data_Directory is called first, to make sure the data directory
  * exists, and has not changed since the last run (in which case it is created and the run number reset to 0).
+ * Fits_Filename_Get_Date_Number is also called, to roll over the date number used in the filename if necessary.
  * @return Returns TRUE if the routine succeeds and returns FALSE if an error occurs.
  * @see #Fits_Filename_Data
  * @see #Fits_Filename_Setup_Data_Directory
+ * @see #Fits_Filename_Get_Date_Number
  */
 int CCD_Fits_Filename_Next_Run(void)
 {
 	if(!Fits_Filename_Setup_Data_Directory())
+		return FALSE;
+	if(!Fits_Filename_Get_Date_Number(&(Fits_Filename_Data.Current_Date_Number)))
 		return FALSE;
 	Fits_Filename_Data.Current_Run_Number++;
 	return TRUE;
@@ -748,7 +752,7 @@ static int Fits_Filename_Get_Month_Day_String(char *month_day_string)
 	if(month_day_string == NULL)
 	{
 		Fits_Filename_Error_Number = 25;
-		sprintf(Fits_Filename_Error_String,"Fits_Filename_Get_Date_Number:month_day_string was NULL.");
+		sprintf(Fits_Filename_Error_String,"Fits_Filename_Get_Month_Day_String:month_day_string was NULL.");
 		return FALSE;
 	}
 #ifdef _POSIX_TIMERS
