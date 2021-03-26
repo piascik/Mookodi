@@ -152,6 +152,7 @@ service CameraService
         void set_window(1: i32 x_start, 2: i32 y_start, 3: i32 x_end, 4: i32 y_end) throws (1: CameraException e);
 	void clear_window() throws (1: CameraException e);
 	void set_readout_speed(1: ReadoutSpeed speed) throws (1: CameraException e);
+	void set_gain(1: int gain_number) throws (1: CameraException e);
 	void set_fits_headers(1: list<FitsHeaderCard> fits_header) throws (1: CameraException e);
 	void add_fits_header(1: string keyword, 2: FitsCardType valtype,
 	     3: string value,4: string comment) throws (1: CameraException e);
