@@ -89,7 +89,9 @@ enum ReadoutSpeed
 
 struct ImageData
 {
-       1: list<i32> data,
+       1: list<i32> data;
+       2: i32 x_size;
+       3: i32 y_size;
 }
 
 /**
@@ -140,12 +142,17 @@ struct CameraState
 	11: double ccd_temperature;
 }
 
+/**
+ * An exception thrown when a CameraService operation fails. Contains a string message with details of the problem.	
+ */
 exception CameraException
 {
 	1: string message;
 }
 
-/* TODO shutdown? */
+/**
+ * The thrift API support by the MookodiCameraService.
+ */
 service CameraService
 {
         void set_binning(1: i8 xbin, 2: i8 ybin) throws (1: CameraException e);
