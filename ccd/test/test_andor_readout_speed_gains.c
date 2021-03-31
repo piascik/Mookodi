@@ -114,6 +114,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr,"GetNumberVSSpeeds failed %lu.\n",andor_retval);
 		return 2;
 	}
+	fprintf(stdout,"GetNumberVSSpeeds %d vertical speeds.\n",vs_speed_count);
 	for(vs_speed_index = 0; vs_speed_index < vs_speed_count; vs_speed_index++)
 	{
 		andor_retval = GetVSSpeed(vs_speed_index,&vs_speed);
