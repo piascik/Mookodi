@@ -41,6 +41,39 @@ static int Selected_Camera = -1;
  * Filename for configuration directory. 
  */
 static char *Config_Dir = "/usr/local/etc/andor";
+/**
+ * A boolean, if set to TRUE try setting the horizontal readout speed using  Selected_HS_Speed_Index.
+ * @see #Selected_HS_Speed_Index
+ */
+static int Set_HS_Speed = FALSE;
+/**
+ * The horizontal speed index to use when setting the horizontal readout speed.
+ * Only used when Set_HS_Speed is TRUE.
+ * @see #Set_HS_Speed
+ */
+static int Selected_HS_Speed_Index = -1;
+/**
+ * A boolean, if set to TRUE try setting the pre-amp gain using Selected_Pre_Amp_Gain_Index.
+ * @see #Selected_Pre_Amp_Gain_Index
+ */
+static int Set_Pre_Amp_Gain = FALSE;
+/**
+ * The pre-amp gain index to use when setting the pre-amp gain.
+ * Only used when Set_Pre_Amp_Gain is TRUE.
+ * @see #Set_Pre_Amp_Gain
+ */
+static int Selected_Pre_Amp_Gain_Index = -1;
+/**
+ * A boolean, if set to TRUE try setting the vertical readout speed using  Selected_VS_Speed_Index.
+ * @see #Selected_VS_Speed_Index
+ */
+static int Set_VS_Speed = FALSE;
+/**
+ * The vertical speed index to use when setting the vertical readout speed.
+ * Only used when Set_VS_Speed is TRUE.
+ * @see #Set_VS_Speed
+ */
+static int Selected_VS_Speed_Index = -1;
 
 /* internal routines */
 static int Parse_Arguments(int argc, char *argv[]);
@@ -51,6 +84,14 @@ static void Help(void);
  * @param argc The number of arguments to the program.
  * @param argv An array of argument strings.
  * @return This function returns 0 if the program succeeds, and a positive integer if it fails.
+ * @see #Selected_Camera
+ * @see #Config_Dir
+ * @see #Set_HS_Speed
+ * @see #Selected_HS_Speed_Index
+ * @see #Set_Pre_Amp_Gain
+ * @see #Selected_Pre_Amp_Gain_Index
+ * @see #Set_VS_Speed
+ * @see #Selected_VS_Speed_Index
  */
 int main(int argc, char *argv[])
 {
@@ -180,7 +221,7 @@ int main(int argc, char *argv[])
 						return 2;
 					}
 					fprintf(stdout,"IsPreAmpGainAvailable: channel %d, amplifier %d, "
-						"HS Speed index %d (%.6f Hz), Pre-amp gain index %d (gain %.6f)"
+						"HS Speed index %d (%.6f MHz), Pre-amp gain index %d (gain %.6f)"
 						" is avilable = %d.\n",
 						channel_index,amplifier_index,
 						hs_speed_index,hs_speed,pre_amp_gain_index,pre_amp_gain,
@@ -189,6 +230,61 @@ int main(int argc, char *argv[])
 			}/* end for on hs_speed_index */
 		}/* end for on amplifier_index */
 	}/* end for on channel_index */
+	/* do we want to try and set some of these parameters */
+	if(Set_HS_Speed)
+	{
+		andor_retval = SetHSSpeed(0,Selected_HS_Speed_Index);
+		if(andor_retval!=DRV_SUCCESS)
+		{
+			fprintf(stderr,"SetHSSpeed(0,%d) failed %lu.\n",Selected_HS_Speed_Index,andor_retval);
+			return 2;
+		}
+		
+		/* get horizontal speed */
+		andor_retval = GetHSSpeed(0,0,Selected_HS_Speed_Index,&hs_speed);
+		if(andor_retval!=DRV_SUCCESS)
+		{
+			fprintf(stderr,"GetHSSpeed failed %lu.\n",andor_retval);
+			return 2;
+		}
+		fprintf(stdout,"Horizontal readout speed set to index %d (%.3f MHz).\n",Selected_HS_Speed_Index,hs_speed);
+	}
+	if(Set_VS_Speed)
+	{
+		andor_retval = SetVSSpeed(Selected_VS_Speed_Index);
+		if(andor_retval!=DRV_SUCCESS)
+		{
+			fprintf(stderr,"SetVSSpeed(%d) failed %lu.\n",Selected_VS_Speed_Index,andor_retval);
+			return 2;
+		}
+		
+		/* get vertical speed */
+		andor_retval = GetVSSpeed(Selected_VS_Speed_Index,&vs_speed);
+		if(andor_retval!=DRV_SUCCESS)
+		{
+			fprintf(stderr,"GetVSSpeed failed %lu.\n",andor_retval);
+			return 2;
+		}
+		fprintf(stdout,"Vertical readout speed set to index %d (%.3f microseconds/pixel shift).\n",
+			Selected_VS_Speed_Index,vs_speed);
+	}
+	if(Set_Pre_Amp_Gain)
+	{
+		andor_retval = SetPreAmpGain(Selected_Pre_Amp_Gain_Index);
+		if(andor_retval!=DRV_SUCCESS)
+		{
+			fprintf(stderr,"SetPreAmpGain(%d) failed %lu.\n",Selected_Pre_Amp_Gain_Index,andor_retval);
+			return 2;
+		}
+		/* get pre-amp gain */
+		andor_retval = GetPreAmpGain(Selected_Pre_Amp_Gain_Index,&pre_amp_gain);
+		if(andor_retval!=DRV_SUCCESS)
+		{
+			fprintf(stderr,"GetPreAmpGain failed %lu.\n",andor_retval);
+			return 2;
+		}
+		fprintf(stdout,"Pre-Amp Gain set to index %d (gain factor %.2f).\n",Selected_Pre_Amp_Gain_Index,pre_amp_gain);
+	}
 /* close  */
 	fprintf(stdout,"ShutDown()\n");
 	ShutDown();
@@ -205,9 +301,14 @@ static void Help(void)
 {
 	fprintf(stdout,"Test Andor Readout Speed and Gain:Help.\n");
 	fprintf(stdout,"Find out what readout speeds and gains the Andor camera supports using direct Andor library calls.\n");
+	fprintf(stdout,"You can also test setting the horizontal and vertical readout speeds using -hs_speed_index and -vs_speed_index.\n");
+	fprintf(stdout,"You can also test setting the pre-amp gain using -pre_amp_gain_index.\n");
 	fprintf(stdout,"test_andor_readout_speed_gains \n");
 	fprintf(stdout,"\t[-camera <n>]\n");
 	fprintf(stdout,"\t[-co[nfig_dir] <directory>]\n");
+	fprintf(stdout,"\t[-hs_speed_index <0..3>]\n");
+	fprintf(stdout,"\t[-pre_amp_gain_index <0..2>]\n");
+	fprintf(stdout,"\t[-vs_speed_index <0..5>]\n");
 	fprintf(stdout,"\t[-h[elp]]\n");
 	fprintf(stdout,"\n");
 	fprintf(stdout,"\t-help prints out this message and stops the program.\n");
@@ -221,11 +322,20 @@ static void Help(void)
  * @see #Help
  * @see #Selected_Camera
  * @see #Config_Dir
+ * @see #Set_HS_Speed
+ * @see #Selected_HS_Speed_Index
+ * @see #Set_Pre_Amp_Gain
+ * @see #Selected_Pre_Amp_Gain_Index
+ * @see #Set_VS_Speed
+ * @see #Selected_VS_Speed_Index
  */
 static int Parse_Arguments(int argc, char *argv[])
 {
 	int i,retval,log_level;
 
+	Set_HS_Speed = FALSE;
+	Set_Pre_Amp_Gain = FALSE;
+	Set_VS_Speed = FALSE;
 	for(i=1;i<argc;i++)
 	{
 		if((strcmp(argv[i],"-camera")==0))
@@ -265,6 +375,68 @@ static int Parse_Arguments(int argc, char *argv[])
 		{
 			Help();
 			exit(0);
+		}
+		else if((strcmp(argv[i],"-hs_speed_index")==0))
+		{
+			if((i+1)<argc)
+			{
+				retval = sscanf(argv[i+1],"%d",&Selected_HS_Speed_Index);
+				if(retval != 1)
+				{
+					fprintf(stderr,"Parse_Arguments:Parsing selected horizontalal speed index %s failed.\n",
+						argv[i+1]);
+					return FALSE;
+				}
+				i++;
+				Set_HS_Speed = TRUE;
+			}
+			else
+			{
+				fprintf(stderr,"Parse_Arguments:hs_speed_index requires an horizontalal speed index number.\n");
+				return FALSE;
+			}
+
+		}
+		else if((strcmp(argv[i],"-pre_amp_gain_index")==0))
+		{
+			if((i+1)<argc)
+			{
+				retval = sscanf(argv[i+1],"%d",&Selected_Pre_Amp_Gain_Index);
+				if(retval != 1)
+				{
+					fprintf(stderr,"Parse_Arguments:Parsing selected pre-amp gain index %s failed.\n",
+						argv[i+1]);
+					return FALSE;
+				}
+				i++;
+				Set_Pre_Amp_Gain = TRUE;
+			}
+			else
+			{
+				fprintf(stderr,"Parse_Arguments:hs_speed_index requires an horizontalal speed index number.\n");
+				return FALSE;
+			}
+
+		}
+		else if((strcmp(argv[i],"-vs_speed_index")==0))
+		{
+			if((i+1)<argc)
+			{
+				retval = sscanf(argv[i+1],"%d",&Selected_VS_Speed_Index);
+				if(retval != 1)
+				{
+					fprintf(stderr,"Parse_Arguments:Parsing selected vertical speed index %s failed.\n",
+						argv[i+1]);
+					return FALSE;
+				}
+				i++;
+				Set_VS_Speed = TRUE;
+			}
+			else
+			{
+				fprintf(stderr,"Parse_Arguments:vs_speed_index requires an vertical speed index number.\n");
+				return FALSE;
+			}
 		}
 		else
 		{
