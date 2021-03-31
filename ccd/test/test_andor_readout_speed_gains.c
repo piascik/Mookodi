@@ -56,11 +56,11 @@ int main(int argc, char *argv[])
 {
 	unsigned long andor_retval;
 	int retval,value;
-	int channel_count,amplifier_count,pre_amp_gain_count,bit_depth,hs_speed_count;
-	int channel_index,amplifier_index,pre_amp_gain_index,hs_speed_index,is_pre_amp_gain_available;
-	float hs_speed,pre_amp_gain;
+	int channel_count,amplifier_count,pre_amp_gain_count,bit_depth,vs_speed_count,hs_speed_count;
+	int channel_index,amplifier_index,pre_amp_gain_index,vs_speed_index,hs_speed_index,is_pre_amp_gain_available;
+	float vs_speed,hs_speed,pre_amp_gain;
 	at_32 Camera_Handle;
-		
+
 	GetAvailableCameras(&Number_Of_Cameras);
 	fprintf(stdout,"Found %d cameras.\n",Number_Of_Cameras);
 /* parse arguments */
@@ -107,7 +107,24 @@ int main(int argc, char *argv[])
 		return 2;
 	}
 	fprintf(stdout,"GetNumberPreAmpGains returned %d pre amplifier gains.\n",pre_amp_gain_count);
-	/* loop over possible settings */
+	/* print out vertical readout speeds */
+	andor_retval = GetNumberVSSpeeds(&vs_speed_count);
+	if(andor_retval!=DRV_SUCCESS)
+	{
+		fprintf(stderr,"GetNumberVSSpeeds failed %lu.\n",andor_retval);
+		return 2;
+	}
+	for(vs_speed_index = 0; vs_speed_index < vs_speed_count; vs_speed_index++)
+	{
+		andor_retval = GetVSSpeed(vs_speed_index,&vs_speed);
+		if(andor_retval!=DRV_SUCCESS)
+		{
+			fprintf(stderr,"GetVSSpeed failed %lu.\n",andor_retval);
+			return 2;
+		}
+		fprintf(stdout,"GetVSSpeed returned %.6f microseconds/pixel shift VS Speed index %d.\n",vs_speed,vs_speed_index);
+	}/* end for on vs_speed_index */
+	/* loop over possible a/d channel, amplifier, hsspeed, pre-amp settings */
 	for(channel_index=0;channel_index<channel_count;channel_index++)
 	{
 		/* get bit depth */
@@ -139,7 +156,7 @@ int main(int argc, char *argv[])
 					fprintf(stderr,"GetHSSpeed failed %lu.\n",andor_retval);
 					return 2;
 				}
-				fprintf(stdout,"GetHSSpeed returned %.6f Hz for channel %d, amplifier %d "
+				fprintf(stdout,"GetHSSpeed returned %.6f MHz for channel %d, amplifier %d "
 					"and HS Speed index %d.\n",
 					hs_speed,channel_index,amplifier_index,hs_speed_index);
 				for(pre_amp_gain_index = 0; pre_amp_gain_index < pre_amp_gain_count;
@@ -167,7 +184,6 @@ int main(int argc, char *argv[])
 						channel_index,amplifier_index,
 						hs_speed_index,hs_speed,pre_amp_gain_index,pre_amp_gain,
 						is_pre_amp_gain_available);
-
 				}/* end for on pre_amp_gain_index */
 			}/* end for on hs_speed_index */
 		}/* end for on amplifier_index */
