@@ -87,6 +87,16 @@ enum ReadoutSpeed
 	FAST = 1
 }
 
+/**
+ * Valid gain's supported by the camera.
+ */
+enum Gain
+{
+	ONE = 1,
+	TWO = 2,
+	FOUR = 4
+}
+
 struct ImageData
 {
        1: list<i32> data;
