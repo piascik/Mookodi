@@ -26,6 +26,7 @@ class EmulatedCamera : virtual public CameraServiceIf
     void set_window(const int32_t x_start,const int32_t y_start,const int32_t x_end,const int32_t y_end);
     void clear_window();
     void set_readout_speed(const ReadoutSpeed::type speed);
+    void set_gain(const Gain::type gain_number);
     
     // FITS header processing routines
     void set_fits_headers(const std::vector<FitsHeaderCard> & fits_info);
@@ -79,6 +80,14 @@ class EmulatedCamera : virtual public CameraServiceIf
      * An emulated image buffer, used to simulate CCD readouts.
      */
     std::vector<int32_t> mImageBuf;
+    /**
+     * A cached copy of the number of columns (x dimension) of data in the image buffer.
+     */
+    int mImageBufNCols;
+    /**
+     * A cached copy of the number of rows (y dimension) of data in the image buffer.
+     */
+    int mImageBufNRows;
     /**
      * This is used to simulate aborting exposures. It is set to false at the start of a 
      * multbias/multdark/multrun thread, and can be set using abort_exposure, 

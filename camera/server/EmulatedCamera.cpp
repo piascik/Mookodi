@@ -159,6 +159,8 @@ void EmulatedCamera::initialize()
 	mState.exposure_count = 0;
 	mState.exposure_index = 0;
 	mState.ccd_temperature = 0.0;
+	mState.readout_speed = ReadoutSpeed::SLOW;
+	mState.gain = Gain::ONE;
 	mAbort = false;
 	cout << "Detector initialised" << endl;
 	LOG4CXX_INFO(logger,"Detector initialised.");
@@ -283,6 +285,32 @@ void EmulatedCamera::clear_window()
 	cout << "Clear window." << endl;
 	LOG4CXX_INFO(logger,"Clear window.");
 	mState.use_window = false;
+}
+
+/**
+ * Set the readout speed of the camera (either SLOW or FAST).
+ * @param speed The readout speed, of type ReadoutSpeed.
+ * @see ReadoutSpeed
+ * @see #mState
+ */
+void EmulatedCamera::set_readout_speed(const ReadoutSpeed::type speed)
+{
+	cout << "Set readout speed to " << to_string(speed) << "." << endl;
+	LOG4CXX_INFO(logger,"Set readout speed to " << to_string(speed) << ".");
+	mState.readout_speed = speed;
+}
+
+/**
+ * Set the gain of the camera.
+ * @param gain_number The gain factor to configure the camera with os type Gain.
+ * @see Gain
+ * @see #mState
+ */
+void EmulatedCamera::set_gain(const Gain::type gain_number)
+{
+	cout << "Set gain to " << to_string(gain_number) << "." << endl;
+	LOG4CXX_INFO(logger,"Set gain to " << to_string(gain_number) << ".");
+	mState.gain = gain_number;
 }
 
 /**
@@ -433,6 +461,8 @@ void EmulatedCamera::get_state(CameraState &state)
  * Get a copy of the image data.
  * @param img_data An ImageData instance to fill in with the returned image data.
  * @see EmulatedCamera::mImageBuf
+ * @see EmulatedCamera::mImageBufNCols
+ * @see EmulatedCamera::mImageBufNRows
  * @see ImageData
  */
 void EmulatedCamera::get_image_data(ImageData &img_data)
@@ -442,6 +472,34 @@ void EmulatedCamera::get_image_data(ImageData &img_data)
 	std::vector<int32_t>::const_iterator first = mImageBuf.begin();
 	std::vector<int32_t>::const_iterator last = mImageBuf.end();
 	img_data.data.assign(first, last);
+	img_data.x_size = mImageBufNCols;
+	img_data.y_size = mImageBufNRows;
+}
+
+/**
+ * Return the image filename of the last FITS image saved by the camera server.
+ * @param filename On return of this method, the filename will contain a string representation of 
+ *                 the last FITS image filename saved by the camera server.
+ */
+void EmulatedCamera::get_last_image_filename(std::string &filename)
+{
+	/* TODO */
+	filename = "/data/lesedi/mkd/2021/0413/MKD_20210413.0001.fits";
+}
+
+/**
+ * Return a list of FITS image filenames from the current  / last multbias / multdark / multrun 
+ * performed by the camera server.
+ * @param filename_list A vector list containing strings. On return of this method, this lisit will contain 
+ *                      a list of strings representing FITS image filnames of the last multbias / multdark / multrun 
+ *                      performed by the camera server.
+ */
+void EmulatedCamera::get_image_filenames(std::vector<std::string> &filename_list)
+{
+	/* TODO */
+	filename_list.push_back("/data/lesedi/mkd/2021/0413/MKD_20210413.0001.fits");
+	filename_list.push_back("/data/lesedi/mkd/2021/0413/MKD_20210413.0002.fits");
+	filename_list.push_back("/data/lesedi/mkd/2021/0413/MKD_20210413.0003.fits");
 }
 
 /**
@@ -504,6 +562,8 @@ void EmulatedCamera::warm_up()
  * @see EmulatedCamera::mConfigFileVM
  * @see EmulatedCamera::mAbort
  * @see EmulatedCamera::mImageBuf
+ * @see EmulatedCamera::mImageBufNCols
+ * @see EmulatedCamera::mImageBufNRows
  */
 void EmulatedCamera::multbias_thread(int32_t exposure_count)
 {
@@ -522,6 +582,8 @@ void EmulatedCamera::multbias_thread(int32_t exposure_count)
 		reg_width = mConfigFileVM["ccd.ncols"].as<int>();
 		reg_height = mConfigFileVM["ccd.nrows"].as<int>();
 	}
+	mImageBufNCols = reg_width;
+	mImageBufNRows = reg_height;
 	total_pixels = reg_width * reg_height;
  	cout << "multbias thread with exposure count " << exposure_count << "." << endl;
 	LOG4CXX_INFO(logger,"multbias thread with exposure count " << exposure_count << ".");
@@ -605,6 +667,8 @@ void EmulatedCamera::multbias_thread(int32_t exposure_count)
  * @see EmulatedCamera::mConfigFileVM
  * @see EmulatedCamera::mAbort
  * @see EmulatedCamera::mImageBuf
+ * @see EmulatedCamera::mImageBufNCols
+ * @see EmulatedCamera::mImageBufNRows
  */
 void EmulatedCamera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
 {
@@ -623,6 +687,8 @@ void EmulatedCamera::multdark_thread(int32_t exposure_count,int32_t exposure_len
 		reg_width = mConfigFileVM["ccd.ncols"].as<int>();
 		reg_height = mConfigFileVM["ccd.nrows"].as<int>();
 	}
+	mImageBufNCols = reg_width;
+	mImageBufNRows = reg_height;
 	total_pixels = reg_width * reg_height;
  	cout << "multdark thread with exposure count " << exposure_count <<
 		", exposure length " << exposure_length << "ms." << endl;
@@ -720,6 +786,8 @@ void EmulatedCamera::multdark_thread(int32_t exposure_count,int32_t exposure_len
  * @see EmulatedCamera::mConfigFileVM
  * @see EmulatedCamera::mAbort
  * @see EmulatedCamera::mImageBuf
+ * @see EmulatedCamera::mImageBufNCols
+ * @see EmulatedCamera::mImageBufNRows
  */
 void EmulatedCamera::multrun_thread(int32_t exposure_count,int32_t exposure_length)
 {
@@ -738,6 +806,8 @@ void EmulatedCamera::multrun_thread(int32_t exposure_count,int32_t exposure_leng
 		reg_width = mConfigFileVM["ccd.ncols"].as<int>();
 		reg_height = mConfigFileVM["ccd.nrows"].as<int>();
 	}
+	mImageBufNCols = reg_width;
+	mImageBufNRows = reg_height;
 	total_pixels = reg_width * reg_height;
  	cout << "multrun thread with exposure count " << exposure_count <<
 		", exposure length " << exposure_length << "ms." << endl;

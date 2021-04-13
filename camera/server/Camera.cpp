@@ -450,6 +450,30 @@ void Camera::clear_window()
 }
 
 /**
+ * Set the readout speed of the camera (either SLOW or FAST).
+ * @param speed The readout speed, of type ReadoutSpeed.
+ * @see ReadoutSpeed
+ */
+void Camera::set_readout_speed(const ReadoutSpeed::type speed)
+{
+	cout << "Set readout speed to " << to_string(speed) << "." << endl;
+	LOG4CXX_INFO(logger,"Set readout speed to " << to_string(speed) << ".");
+	/* TODO */
+}
+
+/**
+ * Set the gain of the camera.
+ * @param gain_number The gain factor to configure the camera with os type Gain.
+ * @see Gain
+ */
+void Camera::set_gain(const Gain::type gain_number)
+{
+	cout << "Set gain to " << to_string(gain_number) << "." << endl;
+	LOG4CXX_INFO(logger,"Set gain to " << to_string(gain_number) << ".");
+	/* TODO */
+}
+
+/**
  * Add a list of  FITS header to the list of FITS headers to be saved to FITS images.
  * If A FITS header with the specified keyword already exists in the list of headers, it's contents are updated.
  * @param fits_info The list of FITS header cards to add to the FITS header.
@@ -783,12 +807,17 @@ void Camera::get_state(CameraState &state)
 			/* we could throw an exception here */
 			break;	
 	}/* end switch */
+	/* to be implemented */
+	state.readout_speed = ReadoutSpeed::SLOW;
+	state.gain = Gain::ONE;
 }
 
 /**
  * Get a copy of the image data.
  * @param img_data An ImageData instance to fill in with the returned image data.
  * @see Camera::mImageBuf
+ * @see Camera::mImageBufNCols
+ * @see Camera::mImageBufNRows
  * @see logger
  * @see LOG4CXX_INFO
  * @see ImageData
@@ -800,7 +829,32 @@ void Camera::get_image_data(ImageData &img_data)
 	std::vector<int16_t>::const_iterator first = mImageBuf.begin();
 	std::vector<int16_t>::const_iterator last = mImageBuf.end();
 	img_data.data.assign(first, last);
+	img_data.x_size = mImageBufNCols;
+	img_data.y_size = mImageBufNRows;
 }
+
+/**
+ * Return the image filename of the last FITS image saved by the camera server.
+ * @param filename On return of this method, the filename will contain a string representation of 
+ *                 the last FITS image filename saved by the camera server.
+ */
+void Camera::get_last_image_filename(std::string &filename)
+{
+	/* TODO */
+}
+
+/**
+ * Return a list of FITS image filenames from the current  / last multbias / multdark / multrun 
+ * performed by the camera server.
+ * @param filename_list A vector list containing strings. On return of this method, this lisit will contain 
+ *                      a list of strings representing FITS image filnames of the last multbias / multdark / multrun 
+ *                      performed by the camera server.
+ */
+void Camera::get_image_filenames(std::vector<std::string> &filename_list)
+{
+	/* TODO */
+}
+
 
 /**
  * Start cooling down the camera.
@@ -902,6 +956,8 @@ void Camera::warm_up()
  * CameraException with a suitable error message, and then throw the exception.
  * @param exposure_count The number of bias exposures to take. Should be at least 1.
  * @see Camera::mImageBuf
+ * @see Camera::mImageBufNCols
+ * @see Camera::mImageBufNRows
  * @see Camera::mExposureCount
  * @see Camera::mExposureIndex
  * @see Camera::mFitsHeader
@@ -940,6 +996,8 @@ void Camera::multbias_thread(int32_t exposure_count)
 		mImageBuf.resize(image_buffer_length);
 		binned_ncols = CCD_Setup_Get_NCols()/CCD_Setup_Get_Bin_X();
 		binned_nrows = CCD_Setup_Get_NRows()/CCD_Setup_Get_Bin_Y();
+		mImageBufNCols = binned_ncols;
+		mImageBufNRows = binned_nrows;
 		/* initialise exposure count/index status */
 		mExposureCount = exposure_count;
 		/* loop over number of exposure to take */
@@ -1027,6 +1085,8 @@ void Camera::multbias_thread(int32_t exposure_count)
  * @param exposure_count The number of dark exposures to take. Should be at least 1.
  * @param exposure_length The length of one exposure in milliseconds. Should be at least 1.
  * @see Camera::mImageBuf
+ * @see Camera::mImageBufNCols
+ * @see Camera::mImageBufNRows
  * @see Camera::mExposureCount
  * @see Camera::mExposureIndex
  * @see Camera::mFitsHeader
@@ -1068,6 +1128,8 @@ void Camera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
 		mImageBuf.resize(image_buffer_length);
 		binned_ncols = CCD_Setup_Get_NCols()/CCD_Setup_Get_Bin_X();
 		binned_nrows = CCD_Setup_Get_NRows()/CCD_Setup_Get_Bin_Y();
+		mImageBufNCols = binned_ncols;
+		mImageBufNRows = binned_nrows;
 		/* start time is now */
 		start_time.tv_sec = 0;
 		start_time.tv_nsec = 0;
@@ -1160,6 +1222,8 @@ void Camera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
  * @param exposure_count The number of science exposures to take. Should be at least 1.
  * @param exposure_length The length of one exposure in milliseconds. Should be at least 1.
  * @see Camera::mImageBuf
+ * @see Camera::mImageBufNCols
+ * @see Camera::mImageBufNRows
  * @see Camera::mExposureCount
  * @see Camera::mExposureIndex
  * @see Camera::mFitsHeader
@@ -1201,6 +1265,8 @@ void Camera::multrun_thread(const ExposureType::type exptype,int32_t exposure_co
 		mImageBuf.resize(image_buffer_length);
 		binned_ncols = CCD_Setup_Get_NCols()/CCD_Setup_Get_Bin_X();
 		binned_nrows = CCD_Setup_Get_NRows()/CCD_Setup_Get_Bin_Y();
+		mImageBufNCols = binned_ncols;
+		mImageBufNRows = binned_nrows;
 		/* start time is now */
 		start_time.tv_sec = 0;
 		start_time.tv_nsec = 0;
