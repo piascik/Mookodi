@@ -12,7 +12,7 @@ parser.add_argument("value", help="The value of the FITS header.")
 parser.add_argument("comment", help="A commment to put against this FITS header.")
 args = parser.parse_args()
 
-# Create client and start multrun
+# Create client and set parameters
 c= Client()
 valtype = FitsCardType.INTEGER
 if args.type == 'STRING':
