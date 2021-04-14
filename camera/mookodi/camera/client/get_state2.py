@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from mookodi.camera.client.client import Client
 from mookodi.camera.client.camera_interface.ttypes import ExposureState
+from mookodi.camera.client.camera_interface.ttypes import ReadoutSpeed
+from mookodi.camera.client.camera_interface.ttypes import Gain
 
 # Create client
 c= Client()
@@ -17,4 +19,6 @@ print ("Exposure State:"+ ExposureState._VALUES_TO_NAMES[s.exposure_state])
 print ("Exposure State:"+ repr(s.exposure_state))
 print ("Exposure Count:" + repr(s.exposure_count)+ ".")
 print ("Exposure Index:" + repr(s.exposure_index)+ ".")
-print ("CCD Temperature:" + repr(s.ccd_temperature)+ " K.")
+print ("CCD Temperature:" + repr(s.ccd_temperature)+ " C.")
+print ("Readout Speed:"+ ReadoutSpeed._VALUES_TO_NAMES[s.readout_speed])
+print ("Gain:"+ Gain._VALUES_TO_NAMES[s.gain])

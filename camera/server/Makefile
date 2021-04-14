@@ -56,7 +56,7 @@ install: MookodiCameraServer
 	install -m 0755 MookodiCameraServer /usr/local/bin
 
 clean:
-	rm -f $(MOOKODI_CAMERA_BIN_HOME)/*.o || TRUE; rm -f $(EXECUTABLE) || TRUE
+	rm -f $(MOOKODI_CAMERA_BIN_HOME)/server/$(HOSTTYPE)/*.o || TRUE; rm -f $(EXECUTABLE) || TRUE
 	cd ./interface; make clean
 
 tidy:

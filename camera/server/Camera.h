@@ -27,6 +27,8 @@ class Camera : virtual public CameraServiceIf
     void set_binning(const int8_t xbin, const int8_t ybin);
     void set_window(const int32_t x_start,const int32_t y_start,const int32_t x_end,const int32_t y_end);
     void clear_window();
+    void set_readout_speed(const ReadoutSpeed::type speed);
+    void set_gain(const Gain::type gain_number);
     
     // FITS header processing routines
     void set_fits_headers(const std::vector<FitsHeaderCard> & fits_info);
@@ -43,6 +45,8 @@ class Camera : virtual public CameraServiceIf
     // Return state and data
     void get_state(CameraState &state);
     void get_image_data(ImageData& img_data);
+    void get_last_image_filename(std::string &filename);
+    void get_image_filenames(std::vector<std::string> &filename_list);
 
     //Camera temperature control
     void cool_down();
@@ -71,19 +75,23 @@ class Camera : virtual public CameraServiceIf
      */
     struct Fits_Header_Struct mFitsHeader;
     /**
-     * A cached copy of the number of imaging columns on the detector.
+     * A cached copy of the number of imaging columns on the detector. Used for setting the camera readout area
+     * dimension configuration.
      */
     int mCachedNCols;
     /**
-     * A cached copy of the number of imaging rows on the detector.
+     * A cached copy of the number of imaging rows on the detector. Used for setting the camera readout area
+     * dimension configuration.
      */
     int mCachedNRows;
     /**
-     * A cached copy of the current horizontal binning of the detector.
+     * A cached copy of the current horizontal binning of the detector. Used for setting the camera readout area
+     * dimension configuration.
      */
     int mCachedHBin;
     /**
-     * A cached copy of the current vertical binning of the detector.
+     * A cached copy of the current vertical binning of the detector. Used for setting the camera readout area
+     * dimension configuration.
      */
     int mCachedVBin;
     /**
@@ -113,4 +121,12 @@ class Camera : virtual public CameraServiceIf
      * The image buffer, used to hold read-out images.
      */
     std::vector<int16_t> mImageBuf;
+    /**
+     * A cached copy of the number of columns (x dimension) of data in the image buffer.
+     */
+    int mImageBufNCols;
+    /**
+     * A cached copy of the number of rows (y dimension) of data in the image buffer.
+     */
+    int mImageBufNRows;
 };    
