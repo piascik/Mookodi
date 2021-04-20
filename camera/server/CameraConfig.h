@@ -1,21 +1,23 @@
 /**
  * @file
- * @brief Config.h provides a C++ wrapper around plibsys's ini file parser. This provides
- * configuration file support for the camera server.
+ * @brief CameraConfig.h provides a C++ wrapper around plibsys's ini file parser. This provides
+ *                 configuration file support for the camera server.
  * @author Chris Mottram
  * @version $Id$
  */
+#ifndef CAMERACONFIG_H
+#define CAMERACONFIG_H
 #include <log4cxx/logger.h>
 #include <plibsys/plibsys.h>
-#include "Camera.h"
+#include "CameraService.h"
 using std::string;
 using std::vector;
 
-class Config
+class CameraConfig
 {
  public:
-	Config();
-	~Config();
+	CameraConfig();
+	~CameraConfig();
 	void set_config_filename(const std::string & config_filename);
 	void load_config();
 	void get_config_string(const char* section,const char* keyword, char* value, int value_length);
@@ -34,9 +36,11 @@ class Config
 	/**
 	 * The configuration filename to load configuration data from.
 	 */
-	std::string mConfigFilename;
+	std::string mCameraConfigFilename;
 	/**
 	 * The plibsys config file pointer.
 	 */
-	PIniFile *mConfigFile;
+	PIniFile *mCameraConfigFile;
 };    
+#endif
+

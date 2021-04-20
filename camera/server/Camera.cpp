@@ -5,6 +5,7 @@
  * @author Chris Mottram
  * @version $Id$
  */
+#include "CameraConfig.h"
 #include "Camera.h"
 #include <thread>
 #include <vector>
@@ -31,8 +32,11 @@ using std::endl;
 using std::exception;
 using namespace ::apache::thrift;
 using namespace log4cxx;
-namespace po = boost::program_options;
 
+/**
+ * The configuration file section to use for retrieving configuration ("camera").
+ */
+#define CONFIG_CAMERA_SECTION ("camera")
 /**
  * The default target temperature to cool the CCD to.
  */
@@ -91,12 +95,10 @@ static void log_to_log4cxx(char *sub_system,char *source_filename,char *function
 			   int level,char *category,char *string);
 
 /**
- * Constructor for the Camera object. This calls initialize to initialise the camera.
- * @see Camera::initialize
+ * Constructor for the Camera object.
  */
 Camera::Camera()
 {
-	initialize();
 }
 
 /**
@@ -107,69 +109,19 @@ Camera::~Camera()
 }
 
 /**
- * Method to set the configuration filename to load config from in initialize.
- * @param config_filename The configuration filename as a string.
- * @see Camera::mConfigFilename
- * @see Camera::initialize
- * @see Camera::load_config
+ * Method to set the configuration object to load config from in initialize.
+ * @param config The configuration object.
+ * @see Camera::mCameraConfig
  */
-void Camera::set_config_filename(const std::string & config_filename)
+void Camera::set_config(CameraConfig & config)
 {
-	mConfigFilename = config_filename;
-}
-
-/**
- * Method to load configuration data from the previously specified configuration filename (mConfigFilename),
- * into the boost variables map mConfigFileVM.
- * @see Camera::mConfigFilename
- * @see Camera::mConfigFileVM
- * @see logger
- * @see LOG4CXX_INFO
- * @see #DEFAULT_CCD_TARGET_TEMPERATURE
- * @see #DEFAULT_ANDOR_CONFIG_DIR
- * @see #DEFAULT_FULL_FRAME_X_PIXEL_COUNT
- * @see #DEFAULT_FULL_FRAME_Y_PIXEL_COUNT
- * @see #DEFAULT_FITS_INSTRUMENT_CODE
- * @see #DEFAULT_FITS_DATA_DIR_ROOT
- * @see #DEFAULT_FITS_DATA_DIR_TELESCOPE
- * @see #DEFAULT_FITS_DATA_DIR_INSTRUMENT
- */
-void Camera::load_config()
-{
-	po::options_description config_file_options("Configuration");
-
-	cout << "load_config using configuration filename " << mConfigFilename << "." << endl;
-	LOG4CXX_INFO(logger,"load_config using configuration filename " << mConfigFilename);
-	// setup the list of values in the configuration filename
-	config_file_options.add_options()
-            ("ccd.ncols",po::value<int>()->default_value(DEFAULT_FULL_FRAME_X_PIXEL_COUNT),
-             "The number of horizontal/x/column pixels in the full imaging frame.")
-            ("ccd.nrows",po::value<int>()->default_value(DEFAULT_FULL_FRAME_Y_PIXEL_COUNT),
-             "The number of vertical/y/row pixels in the full imaging frame.")
-            ("ccd.target_temperature",po::value<double>()->default_value(DEFAULT_CCD_TARGET_TEMPERATURE),
-             "Temperature to try and cool CCD down to, in degrees centigrade.")
-            ("andor.config_dir",po::value<string>()->default_value(DEFAULT_ANDOR_CONFIG_DIR),
-             "The directory containing the Andor library configuration files.")
-            ("fits.instrument_code",po::value<string>()->default_value(DEFAULT_FITS_INSTRUMENT_CODE),
-             "The FITS instrument code used when generating FITS filenames.")
-            ("fits.data_dir.root",po::value<string>()->default_value(DEFAULT_FITS_DATA_DIR_ROOT),
-             "This is the root of the directory structure to put generated FITS images into.")
-            ("fits.data_dir.telescope",po::value<string>()->default_value(DEFAULT_FITS_DATA_DIR_TELESCOPE),
-             "This string is the telescope part of the directory structure to put generated FITS images into.")
-            ("fits.data_dir.instrument",po::value<string>()->default_value(DEFAULT_FITS_DATA_DIR_INSTRUMENT),
-             "This string is the instrument part of the directory structure to put generated FITS images into.")
-            ;
-	// load the configuration variable map from the config filename.	
-	std::ifstream ifs(mConfigFilename);
-        store(parse_config_file(ifs, config_file_options), mConfigFileVM);
-        notify(mConfigFileVM);
+	mCameraConfig = config;
 }
 
 /**
  * Initialisation method for the camera object. This does the following:
  * <ul>
  * <li>We set the CCD library log handler function to log to stdout.
- * <li>We call load_config to load configuration values from the config file.
  * <li>We retrieve the "andor.config_dir" configuration value and use it to set the Andor config directory in the
  *     CCD library using CCD_Setup_Config_Directory_Set.
  * <li>We connect to and initialise the camera using CCD_Setup_Startup.
@@ -177,16 +129,17 @@ void Camera::load_config()
  *     the data directory root "fits.data_dir.root", 
  *     the telescope component of the data directory "fits.data_dir.telescope",
  *     and the instument component of the data directory "fits.data_dir.instrument",
- *     from the config file values in mConfigFileVM, and use them to initialise FITS filename generation using 
+ *     from the config file values in mCameraConfig, and use them to initialise FITS filename generation using 
  *     CCD_Fits_Filename_Initialise.
  * <li>We initialise the FITS headers (stored in mFitsHeader) using CCD_Fits_Header_Initialise.
  * <li>We setup the cached image data (used to configure the CCD windowing/binning). Some of the
- *     values are read from the config file variable map mConfigFileVM.
+ *     values are read from the config object.
  * <li>We configure the detector readout dimensions to the cached ones using CCD_Setup_Dimensions.
  * <li>We initialise mExposureCount and mExposureIndex to zero.
  * </ul>
  * If a CCD library routine fails we call create_ccd_library_exception to create a CameraException that is then thrown.
- * @see Camera::mConfigFileVM
+ * @see #CONFIG_CAMERA_SECTION
+ * @see Camera::mCameraConfig
  * @see Camera::mFitsHeader
  * @see Camera::mCachedNCols
  * @see Camera::mCachedNRows
@@ -196,7 +149,6 @@ void Camera::load_config()
  * @see Camera::mCachedWindow
  * @see Camera::mExposureCount
  * @see Camera::mExposureIndex
- * @see Camera::load_config
  * @see Camera::create_ccd_library_exception
  * @see logger
  * @see LOG4CXX_INFO
@@ -212,21 +164,19 @@ void Camera::load_config()
 void Camera::initialize()
 {
 	CameraException ce;
-	char *config_dir;
-	char *fits_data_dir_root;
-	char *fits_data_dir_telescope;
-	char *fits_data_dir_instrument;
-	char *instrument_code;
+	char config_dir[256];
+	char fits_data_dir_root[32];
+	char fits_data_dir_telescope[32];
+	char fits_data_dir_instrument[32];
+	char instrument_code[32];
 	int retval;
 	
 	cout << "Initialising Camera." << endl;
 	LOG4CXX_INFO(logger,"Initialising Camera.");
 	/* setup loggers */
 	CCD_General_Set_Log_Handler_Function(log_to_log4cxx);
-	/* load configuration from the config file */
-	load_config();
 	/* setup andor config directory */
-	config_dir = (char *)(mConfigFileVM["andor.config_dir"].as<std::string>().c_str());
+	mCameraConfig.get_config_string(CONFIG_CAMERA_SECTION,"andor.config_dir",config_dir,256);
 	retval = CCD_Setup_Config_Directory_Set(config_dir);
 	if(retval == FALSE)
 	{
@@ -241,10 +191,10 @@ void Camera::initialize()
 		throw ce;
 	}
 	/* initialise FITS filename generation code */
-	instrument_code = (char *)(mConfigFileVM["fits.instrument_code"].as<std::string>().c_str());
-	fits_data_dir_root = (char *)(mConfigFileVM["fits.data_dir.root"].as<std::string>().c_str());
-	fits_data_dir_telescope = (char *)(mConfigFileVM["fits.data_dir.telescope"].as<std::string>().c_str());
-	fits_data_dir_instrument = (char *)(mConfigFileVM["fits.data_dir.instrument"].as<std::string>().c_str());
+	mCameraConfig.get_config_string(CONFIG_CAMERA_SECTION,"fits.instrument_code",instrument_code,32);
+	mCameraConfig.get_config_string(CONFIG_CAMERA_SECTION,"fits.data_dir.root",fits_data_dir_root,32);
+	mCameraConfig.get_config_string(CONFIG_CAMERA_SECTION,"fits.data_dir.telescope",fits_data_dir_telescope,32);
+	mCameraConfig.get_config_string(CONFIG_CAMERA_SECTION,"fits.data_dir.instrument",fits_data_dir_instrument,32);
 	retval = CCD_Fits_Filename_Initialise(instrument_code,fits_data_dir_root,fits_data_dir_telescope,
 					      fits_data_dir_instrument);
 	if(retval == FALSE)
@@ -260,8 +210,8 @@ void Camera::initialize()
 		throw ce;
 	}
 	/* setup cached image dimension data */
-	mCachedNCols = mConfigFileVM["ccd.ncols"].as<int>(); 
-	mCachedNRows = mConfigFileVM["ccd.nrows"].as<int>();
+	mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,"ccd.ncols",&mCachedNCols);
+	mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,"ccd.nrows",&mCachedNRows);
 	mCachedHBin = 1;
 	mCachedVBin = 1;
 	mCachedWindowFlags = false;
@@ -807,7 +757,7 @@ void Camera::get_state(CameraState &state)
 			/* we could throw an exception here */
 			break;	
 	}/* end switch */
-	/* to be implemented */
+	/* TODO to be implemented */
 	state.readout_speed = ReadoutSpeed::SLOW;
 	state.gain = Gain::ONE;
 }
@@ -859,14 +809,14 @@ void Camera::get_image_filenames(std::vector<std::string> &filename_list)
 /**
  * Start cooling down the camera.
  * <ul>
- * <li>We retrieve the target temperature from the config file variable map mConfigFileVM,
+ * <li>We retrieve the target temperature from the config file object mCameraConfig,
  *     "ccd.target_temperature" value.
  * <li>We set the target temperature using CCD_Temperature_Set.
  * <li>We turn the cooler on using CCD_Temperature_Cooler_On.
  * </ul>
  * If setting the CCD temperature fails the method can throw a CameraException 
  * (created using create_ccd_library_exception).
- * @see Camera::mConfigFileVM
+ * @see Camera::mCameraConfig
  * @see Camera::create_ccd_library_exception
  * @see logger
  * @see LOG4CXX_INFO
@@ -882,7 +832,7 @@ void Camera::cool_down()
 	cout << "Cool down the camera." << endl;
 	LOG4CXX_INFO(logger,"Cool down the camera.");
 	/* get the target temperature */
-	target_temperature = mConfigFileVM["ccd.target_temperature"].as<double>();
+	mCameraConfig.get_config_double(CONFIG_CAMERA_SECTION,"ccd.target_temperature",&target_temperature);
 	LOG4CXX_INFO(logger,"Camera temperature setpoint is " << target_temperature << ".");
 	/* set the camera set-point */
 	retval = CCD_Temperature_Set(target_temperature); 

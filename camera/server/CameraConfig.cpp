@@ -1,15 +1,16 @@
 /**
  * @file
- * @brief Config.h provides a C++ wrapper around plibsys's ini file parser. This provides
+ * @brief CameraConfig.h provides a C++ wrapper around plibsys's ini file parser. This provides
  * configuration file support for the camera server.
  * @author Chris Mottram
  * @version $Id$
  */
-#include "Config.h"
+#include "CameraConfig.h"
 #include <vector>
 #include <iostream>
 #include "log4cxx/logger.h"
 #include <plibsys/plibsys.h>
+#include <string.h>
 using std::string;
 using std::vector;
 
@@ -20,50 +21,50 @@ using std::exception;
 using namespace log4cxx;
 
 /**
- * Logger instance for the configuration file (Config.cpp).
+ * Logger instance for the configuration file (CameraConfig.cpp).
  */
-static LoggerPtr logger(Logger::getLogger("mookodi.camera.server.Config"));
+static LoggerPtr logger(Logger::getLogger("mookodi.camera.server.CameraConfig"));
 
 /**
- * Constructor for the Config object. 
+ * Constructor for the CameraConfig object. 
  */
-Config::Config()
+CameraConfig::CameraConfig()
 {
 }
 
 
 /**
- * Destructor for the Config object. Does nothing.
+ * Destructor for the CameraConfig object. Does nothing.
  */
-Config::~Config()
+CameraConfig::~CameraConfig()
 {
 }
 
 /**
  * Method to set the configuration filename to load config from in load_config.
  * @param config_filename The configuration filename as a string.
- * @see Config::mConfigFilename
- * @see Config::load_config
+ * @see CameraConfig::mCameraConfigFilename
+ * @see CameraConfig::load_config
  */
-void Config::set_config_filename(const std::string & config_filename)
+void CameraConfig::set_config_filename(const std::string & config_filename)
 {
-	mConfigFilename = config_filename;
+	mCameraConfigFilename = config_filename;
 }
 
 /**
- * Method to load configuration data from the previously specified configuration filename (mConfigFilename),
+ * Method to load configuration data from the previously specified configuration filename (mCameraConfigFilename),
  * into the config object.
- * @see Config::mConfigFilename
- * @see Config::mConfigFile
+ * @see CameraConfig::mCameraConfigFilename
+ * @see CameraConfig::mCameraConfigFile
  */
-void Config::load_config()
+void CameraConfig::load_config()
 {
 	CameraException ce;
 	PError *error;
 	
-	LOG4CXX_INFO(logger,"load_config using configuration filename " << mConfigFilename);
-	mConfigFile = p_ini_file_new(mConfigFilename.c_str());
-	if(!p_ini_file_parse(mConfigFile,&error))
+	LOG4CXX_INFO(logger,"load_config using configuration filename " << mCameraConfigFilename);
+	mCameraConfigFile = p_ini_file_new(mCameraConfigFilename.c_str());
+	if(!p_ini_file_parse(mCameraConfigFile,&error))
 	{
 		ce = create_config_exception(error);
 		throw ce;
@@ -79,21 +80,21 @@ void Config::load_config()
  * @param  keyword The keyword of the config to search for.
  * @param value An allocated number of characters of length value_length, to store the retrieved value into.
  * @param value_length The length of the allocated memory (in characters) for value. 
- * @see #mConfigFile
+ * @see #mCameraConfigFile
  * @see CameraException
  */
-void Config::get_config_string(const char* section,const char* keyword, char* value, int value_length)
+void CameraConfig::get_config_string(const char* section,const char* keyword, char* value, int value_length)
 {
 	CameraException ce;
 	char * value_p_string = NULL;
 	
-	if(p_ini_file_is_key_exists(mConfigFile,section,keyword) == FALSE)
+	if(p_ini_file_is_key_exists(mCameraConfigFile,section,keyword) == FALSE)
 	{
 		ce = create_config_exception_string("get_config_string:Keyword " + std::string(keyword) +
 						    " does not exist in section " + std::string(section) + ".");
 		throw ce;
 	}
-	value_p_string =  p_ini_file_parameter_string(mConfigFile,section,keyword,"");
+	value_p_string =  p_ini_file_parameter_string(mCameraConfigFile,section,keyword,"");
 	if((int)strlen(value_p_string) >=  value_length)
 	{
 		ce = create_config_exception_string("get_config_string:Keyword "+std::string(keyword)+
@@ -115,10 +116,10 @@ void Config::get_config_string(const char* section,const char* keyword, char* va
  * @param section The section of the config file to search for the keyword in.
  * @param  keyword The keyword of the config to search for.
  * @param value The address of an integer, to store the retrieved value into.
- * @see #mConfigFile
+ * @see #mCameraConfigFile
  * @see CameraException
  */
-void Config::get_config_int(const char* section,const char* keyword, int* value)
+void CameraConfig::get_config_int(const char* section,const char* keyword, int* value)
 {
 	CameraException ce;
 
@@ -127,13 +128,13 @@ void Config::get_config_int(const char* section,const char* keyword, int* value)
 		ce = create_config_exception_string("get_config_int:value is NULL.");
 		throw ce;
 	}
-	if(p_ini_file_is_key_exists(mConfigFile,section,keyword) == FALSE)
+	if(p_ini_file_is_key_exists(mCameraConfigFile,section,keyword) == FALSE)
 	{
 		ce = create_config_exception_string("get_config_int:Keyword "+std::string(keyword)+
 						    " does not exist in section "+std::string(section)+".");
 		throw ce;
 	}
-	(*value) =  p_ini_file_parameter_int(mConfigFile,section,keyword,0);
+	(*value) =  p_ini_file_parameter_int(mCameraConfigFile,section,keyword,0);
 }
 
 /**
@@ -142,10 +143,10 @@ void Config::get_config_int(const char* section,const char* keyword, int* value)
  * @param section The section of the config file to search for the keyword in.
  * @param  keyword The keyword of the config to search for.
  * @param value The address of a double, to store the retrieved value into.
- * @see #mConfigFile
+ * @see #mCameraConfigFile
  * @see CameraException
  */
-void Config::get_config_double(const char* section,const char* keyword, double* value)
+void CameraConfig::get_config_double(const char* section,const char* keyword, double* value)
 {
 	CameraException ce;
 
@@ -154,13 +155,13 @@ void Config::get_config_double(const char* section,const char* keyword, double* 
 		ce = create_config_exception_string("get_config_double:value is NULL.");
 		throw ce;
 	}
-	if(p_ini_file_is_key_exists(mConfigFile,section,keyword) == FALSE)
+	if(p_ini_file_is_key_exists(mCameraConfigFile,section,keyword) == FALSE)
 	{
 		ce = create_config_exception_string("get_config_double:Keyword "+std::string(keyword)+
 						    " does not exist in section "+std::string(section)+".");
 		throw ce;
 	}
-	(*value) =  p_ini_file_parameter_double(mConfigFile,section,keyword,0.0);
+	(*value) =  p_ini_file_parameter_double(mCameraConfigFile,section,keyword,0.0);
 }
 
 /**
@@ -169,10 +170,10 @@ void Config::get_config_double(const char* section,const char* keyword, double* 
  * @param section The section of the config file to search for the keyword in.
  * @param  keyword The keyword of the config to search for.
  * @param value The address of a integer, to store the retrieved value (as a boolean) into.
- * @see #mConfigFile
+ * @see #mCameraConfigFile
  * @see CameraException
  */
-void Config::get_config_boolean(const char* section,const char* keyword, int* value)
+void CameraConfig::get_config_boolean(const char* section,const char* keyword, int* value)
 {
 	CameraException ce;
 
@@ -181,13 +182,13 @@ void Config::get_config_boolean(const char* section,const char* keyword, int* va
 		ce = create_config_exception_string("get_config_boolean:value is NULL.");
 		throw ce;
 	}
-	if(p_ini_file_is_key_exists(mConfigFile,section,keyword) == FALSE)
+	if(p_ini_file_is_key_exists(mCameraConfigFile,section,keyword) == FALSE)
 	{
 		ce = create_config_exception_string("get_config_boolean:Keyword "+std::string(keyword)+
 						    " does not exist in section "+std::string(section)+".");
 		throw ce;
 	}
-	(*value) =  p_ini_file_parameter_boolean(mConfigFile,section,keyword,FALSE);
+	(*value) =  p_ini_file_parameter_boolean(mCameraConfigFile,section,keyword,FALSE);
 }
 
 /**
@@ -197,7 +198,7 @@ void Config::get_config_boolean(const char* section,const char* keyword, int* va
  * @see p_error_get_message
  * @see CameraException
  */
-CameraException Config::create_config_exception(PError *error)
+CameraException CameraConfig::create_config_exception(PError *error)
 {
 	CameraException ce;
 	
@@ -213,7 +214,7 @@ CameraException Config::create_config_exception(PError *error)
  * @return An instance of CameraException with this string is returned.
  * @see CameraException
  */
-CameraException Config::create_config_exception_string(std::string string)
+CameraException CameraConfig::create_config_exception_string(std::string string)
 {
 	CameraException ce;
 	

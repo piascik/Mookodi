@@ -6,6 +6,7 @@
  * @author Chris Mottram
  * @version $Id$
  */
+#include "CameraConfig.h"
 #include "EmulatedCamera.h"
 #include <thread>
 #include <vector>
@@ -17,8 +18,11 @@
 
 using std::cout, std::cerr, std::endl;
 using namespace log4cxx;
-namespace po = boost::program_options;
 
+/**
+ * The configuration file section to use for retrieving configuration ("camera").
+ */
+#define CONFIG_CAMERA_SECTION ("camera")
 /**
  * Camera is an iKon M934, Full frame is 1024 x 1024.
  */
@@ -62,12 +66,10 @@ namespace po = boost::program_options;
 static LoggerPtr logger(Logger::getLogger("mookodi.camera.server.EmulatedCamera"));
 
 /**
- * Constructor for the EmulatedCamera object. This calls initialize to initialise the camera.
- * @see Camera::initialize
+ * Constructor for the EmulatedCamera object. 
  */
 EmulatedCamera::EmulatedCamera()
 {
-    initialize();
 }
 
 /**
@@ -78,73 +80,24 @@ EmulatedCamera::~EmulatedCamera()
 }
 
 /**
- * Method to set the configuration filename to load config from in initialize.
- * @param config_filename The configuration filename as a string.
- * @see EmulatedCamera::mConfigFilename
- * @see EmulatedCamera::initialize
- * @see EmulatedCamera::load_config
+ * Method to set the configuration object to load config from in initialize.
+ * @param config The configuration object.
+ * @see EmulatedCamera::mCameraConfig
  */
-void EmulatedCamera::set_config_filename(const std::string & config_filename)
+void EmulatedCamera::set_config(CameraConfig & config)
 {
-	cout << "Configuration filename set to:" << config_filename << endl;	
-	LOG4CXX_INFO(logger,"Configuration filename set to:" << config_filename);
-	mConfigFilename = config_filename;
-}
-
-/**
- * Method to load configuration data from the previously specified configuration filename (mConfigFilename)),
- * into the boost variables map mConfigFileVM.
- * @see EmulatedCamera::mConfigFilename
- * @see EmulatedCamera::mConfigFileVM
- * @see #DEFAULT_CCD_TARGET_TEMPERATURE
- * @see #DEFAULT_CCD_WARM_TEMPERATURE
- * @see #DEFAULT_ANDOR_CONFIG_DIR
- * @see #DEFAULT_FULL_FRAME_X_PIXEL_COUNT
- * @see #DEFAULT_FULL_FRAME_Y_PIXEL_COUNT
- * @see #DEFAULT_FITS_INSTRUMENT_CODE
- * @see #DEFAULT_FITS_DATA_DIR
- */
-void EmulatedCamera::load_config()
-{
-	po::options_description config_file_options("Configuration");
-
-	cout << "load_config using configuration filename " << mConfigFilename << "." << endl;
-	LOG4CXX_INFO(logger,"load_config using configuration filename " << mConfigFilename);
-	// setup the list of values in the configuration filename
-	config_file_options.add_options()
-            ("ccd.ncols",po::value<int>()->default_value(DEFAULT_FULL_FRAME_X_PIXEL_COUNT),
-             "The number of horizontal/x/column pixels in the full imaging frame.")
-            ("ccd.nrows",po::value<int>()->default_value(DEFAULT_FULL_FRAME_Y_PIXEL_COUNT),
-             "The number of vertical/y/row pixels in the full imaging frame.")
-	    ("ccd.target_temperature",po::value<double>()->default_value(DEFAULT_CCD_TARGET_TEMPERATURE),
-             "Temperature to try and cool CCD down to, in degrees centigrade.")
-            ("ccd.warm_temperature",po::value<double>()->default_value(DEFAULT_CCD_WARM_TEMPERATURE),
-             "Temperature to try and warm the CCD up to, in degrees centigrade.")
-            ("andor.config_dir",po::value<string>()->default_value(DEFAULT_ANDOR_CONFIG_DIR),
-             "The directory containing the Andor library configuration files.")
-            ("fits.instrument_code",po::value<char>()->default_value(DEFAULT_FITS_INSTRUMENT_CODE),
-             "The FITS instrument code used when generating FITS filenames..")
-            ("fits.data_dir",po::value<string>()->default_value(DEFAULT_FITS_DATA_DIR),
-             "The directory to put generated FITS images into.")
-            ;
-	// load the configuration variable map from the config filename.	
-	std::ifstream ifs(mConfigFilename);
-        store(parse_config_file(ifs, config_file_options), mConfigFileVM);
-        notify(mConfigFileVM);
+	mCameraConfig = config;
 }
 
 /**
  * Initialisation method for the emulated camera object. This does the following:
  * <ul>
- * <li>We call load_config to load configuration values from the config file.
  * <li>We setup the cached state.
  * </ul>
- * @see Camera::mConfigFileVM
  * @see Camera::mState
  */
 void EmulatedCamera::initialize()
 {
-	load_config();
 	mState.xbin = 1;
 	mState.ybin = 1;
 	mState.use_window = false;
@@ -207,13 +160,15 @@ void EmulatedCamera::set_binning(const int8_t xbin, const int8_t ybin)
 /**
  * Set the window (region of interest) to use when reading out the CCD.
  * <ul>
- * <li>We check whether the x_start pixel position is less than 1 or greater than the "ccd.ncols" config file value,
+ * <li>We retrieve the ncols from the mCameraConfig object, "ccd.ncols" keyword.
+ * <li>We retrieve the nrows from the mCameraConfig object, "ccd.nrows" keyword.
+ * <li>We check whether the x_start pixel position is less than 1 or greater than the ncols,
  *     and if so we throw an out of range camera exception.
- * <li>We check whether the y_start pixel position is less than 1 or greater than the "ccd.nrows" config file value,
+ * <li>We check whether the y_start pixel position is less than 1 or greater than the nrows,
  *     and if so we throw an out of range camera exception.
- * <li>We check whether the x_end pixel position is less than 1, greater than the "ccd.ncols" config file value,
+ * <li>We check whether the x_end pixel position is less than 1, greater than the ncols config file value,
  *     or less than or equal to x_start, and if so we throw an out of range camera exception.
- * <li>We check whether the y_end pixel position is less than 1, greater than the "ccd.nrows" config file value,
+ * <li>We check whether the y_end pixel position is less than 1, greater than the nrows config file value,
  *     or less than or equal to y_start, and if so we throw an out of range camera exception.
  * <li>We set mState's use_window to true, and set mState's window pixel values to the x_start, y_start, x_end 
  *     and y_end parameters.
@@ -226,43 +181,45 @@ void EmulatedCamera::set_binning(const int8_t xbin, const int8_t ybin)
  *        less than the X size of the detector, and greater than x_start.
  * @param y_end The end Y pixel position of the sub-window. Should be at least 1, 
  *        less than the Y size of the detector, and greater than y_start.
- * @see EmulatedCamera::mConfigFileVM
+ * @see EmulatedCamera::mCameraConfig
  * @see EmulatedCamera::mState
  * @see CameraException
  */
 void EmulatedCamera::set_window(const int32_t x_start,const int32_t y_start,const int32_t x_end,const int32_t y_end)
 {
 	CameraException ce;
+	int ncols, nrows;
 	
 	cout << "Set window to start position ( " << x_start << ", " << y_start << " ), end position ( " << x_end <<
 		", " << y_end << " )." << endl;
 	LOG4CXX_INFO(logger,"Set window to start position ( " << x_start << ", " << y_start <<
 		     " ), end position ( " << x_end << ", " << y_end << " ).");
+	// retrieve needed config
+	mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,"ccd.ncols",&ncols);
+	mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,"ccd.nrows",&nrows);
 	// check window is legal
-	if((x_start < 0)||(x_start >= mConfigFileVM["ccd.ncols"].as<int>()))
+	if((x_start < 0)||(x_start >= ncols))
 	{
 		ce.message = "Window x_start position "+ std::to_string(x_start) +" out of range 1 .. "+
-			std::to_string(mConfigFileVM["ccd.ncols"].as<int>())+".";
+			std::to_string(ncols)+".";
 		throw ce;
 	}
-	if((y_start < 0)||(y_start >= mConfigFileVM["ccd.nrows"].as<int>()))
+	if((y_start < 0)||(y_start >= nrows))
 	{
 		ce.message = "Window y_start position "+ std::to_string(y_start) +" out of range 1 .. "+
-			std::to_string(mConfigFileVM["ccd.nrows"].as<int>())+".";
+			std::to_string(nrows)+".";
 		throw ce;
 	}
-	if((x_end < 0)||(x_end >= mConfigFileVM["ccd.ncols"].as<int>())||(x_end <= x_start))
+	if((x_end < 0)||(x_end >= ncols)||(x_end <= x_start))
 	{
 		ce.message = "Window x_end position "+ std::to_string(x_end) +" out of range "+
-			std::to_string(x_start)+" .. "+
-			std::to_string(mConfigFileVM["ccd.ncols"].as<int>())+".";
+			std::to_string(x_start)+" .. "+std::to_string(ncols)+".";
 		throw ce;
 	}
-	if((y_end < 0)||(y_end >= mConfigFileVM["ccd.nrows"].as<int>())||(y_end <= y_start))
+	if((y_end < 0)||(y_end >= nrows)||(y_end <= y_start))
 	{
 		ce.message = "Window y_end position "+ std::to_string(y_end) +" out of range "+
-			std::to_string(y_start)+" .. "+
-			std::to_string(mConfigFileVM["ccd.nrows"].as<int>())+".";
+			std::to_string(y_start)+" .. "+std::to_string(nrows)+".";
 		throw ce;
 	}
 	// set window state
@@ -504,32 +461,33 @@ void EmulatedCamera::get_image_filenames(std::vector<std::string> &filename_list
 
 /**
  * thrift entry point to start cooling down the camera. 
- * We retrieve the target temperature from the config file variable map mConfigFileVM,
+ * We retrieve the target temperature from the config file object mCameraConfig,
  * "ccd.target_temperature" value, and set the mState.ccd_temperature to this to emulate a cooled CCD.
- * @see EmulatedCamera::mConfigFileVM
+ * @see EmulatedCamera::mCameraConfig
  * @see EmulatedCamera::mState
  */
 void EmulatedCamera::cool_down()
 {
+	double target_temperature;
+
 	cout << "Cool down the camera." << endl;
 	LOG4CXX_INFO(logger,"Cool down the camera.");
-	mState.ccd_temperature = mConfigFileVM["ccd.target_temperature"].as<double>();
+	mCameraConfig.get_config_double(CONFIG_CAMERA_SECTION,"ccd.target_temperature",&target_temperature);
+	mState.ccd_temperature = target_temperature;
 	cout << "Camera temperature setpoint is " << mState.ccd_temperature << "." << endl;
 	LOG4CXX_INFO(logger,"Camera temperature setpoint is " << mState.ccd_temperature << ".");
 }
 
 /**
  * thrift entry point to start warming up the camera. 
- * We retrieve the target temperature from the config file variable map mConfigFileVM,
- * "ccd.warm_temperature" value, and set the mState.ccd_temperature to this to emulate the CCD warmed up.
- * @see EmulatedCamera::mConfigFileVM
+ * We set the mState.ccd_temperature to 10.0 to emulate the CCD warmed up.
  * @see EmulatedCamera::mState
  */
 void EmulatedCamera::warm_up()
 {
 	cout << "Warm up the camera." << endl;
 	LOG4CXX_INFO(logger,"Warm up the camera.");
-	mState.ccd_temperature = mConfigFileVM["ccd.warm_temperature"].as<double>();
+	mState.ccd_temperature = 10.0;
 	cout << "Camera warmed up to " << mState.ccd_temperature << " C." << endl;
 	LOG4CXX_INFO(logger,"Camera warmed up to " << mState.ccd_temperature << " C.");
 }
@@ -538,7 +496,7 @@ void EmulatedCamera::warm_up()
  * Thread to emulate the taking of bias images.
  * <ul>
  * <li>We use mState.use_window to determine whether to are reading out a window or full frame,
- *     and based on that use either mState.window or mConfigFileVM["ccd.ncols"]/mConfigFileVM["ccd.nrows"] 
+ *     and based on that use either mState.window or mCameraConfig config value "ccd.ncols" /mCameraConfig config value "ccd.nrows" 
  *     to calculate the image dimensions.
  * <li>We compute the total number of pixels in the readout image using the data calculated.
  * <li>We intialise mState's exposure_length and exposure_index to 0, and setmState's 
@@ -559,7 +517,7 @@ void EmulatedCamera::warm_up()
  * </ul>
  * @param exposure_count The number of bias exposures to take. Should be at least 1.
  * @see EmulatedCamera::mState
- * @see EmulatedCamera::mConfigFileVM
+ * @see EmulatedCamera::mCameraConfig
  * @see EmulatedCamera::mAbort
  * @see EmulatedCamera::mImageBuf
  * @see EmulatedCamera::mImageBufNCols
@@ -579,8 +537,8 @@ void EmulatedCamera::multbias_thread(int32_t exposure_count)
 	}
 	else
 	{
-		reg_width = mConfigFileVM["ccd.ncols"].as<int>();
-		reg_height = mConfigFileVM["ccd.nrows"].as<int>();
+		mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,"ccd.ncols",&reg_width);
+		mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,"ccd.nrows",&reg_height);
 	}
 	mImageBufNCols = reg_width;
 	mImageBufNRows = reg_height;
@@ -636,7 +594,7 @@ void EmulatedCamera::multbias_thread(int32_t exposure_count)
  * Thread to emulate the taking of dark images.
  * <ul>
  * <li>We use mState.use_window to determine whether to are reading out a window or full frame,
- *     and based on that use either mState.window or mConfigFileVM["ccd.ncols"]/mConfigFileVM["ccd.nrows"] 
+ *     and based on that use either mState.window or mCameraConfig config value "ccd.ncols"/mCameraConfig config value "ccd.nrows" 
  *     to calculate the image dimensions.
  * <li>We compute the total number of pixels in the readout image using the data calculated.
  * <li>We intialise mState's exposure_index to 0, exposure_length to the multdark_thread exposure_length parameter,
@@ -664,7 +622,7 @@ void EmulatedCamera::multbias_thread(int32_t exposure_count)
  * @param exposure_count The number of dark exposures to take. Should be at least 1.
  * @param exposure_length The length of one exposure in milliseconds. Should be at least 1.
  * @see EmulatedCamera::mState
- * @see EmulatedCamera::mConfigFileVM
+ * @see EmulatedCamera::mCameraConfig
  * @see EmulatedCamera::mAbort
  * @see EmulatedCamera::mImageBuf
  * @see EmulatedCamera::mImageBufNCols
@@ -684,8 +642,8 @@ void EmulatedCamera::multdark_thread(int32_t exposure_count,int32_t exposure_len
 	}
 	else
 	{
-		reg_width = mConfigFileVM["ccd.ncols"].as<int>();
-		reg_height = mConfigFileVM["ccd.nrows"].as<int>();
+		mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,"ccd.ncols",&reg_width);
+		mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,"ccd.nrows",&reg_height);
 	}
 	mImageBufNCols = reg_width;
 	mImageBufNRows = reg_height;
@@ -755,7 +713,7 @@ void EmulatedCamera::multdark_thread(int32_t exposure_count,int32_t exposure_len
  * Thread to emulate the taking of multrun images.
  * <ul>
  * <li>We use mState.use_window to determine whether to are reading out a window or full frame,
- *     and based on that use either mState.window or mConfigFileVM["ccd.ncols"]/mConfigFileVM["ccd.nrows"] 
+ *     and based on that use either mState.window or mCameraConfig config value "ccd.ncols"/mCameraConfig config value "ccd.nrows" 
  *     to calculate the image dimensions.
  * <li>We compute the total number of pixels in the readout image using the data calculated.
  * <li>We intialise mState's exposure_index to 0, exposure_length to the multrun_thread exposure_length parameter,
@@ -783,7 +741,7 @@ void EmulatedCamera::multdark_thread(int32_t exposure_count,int32_t exposure_len
  * @param exposure_count The number of science exposures to take. Should be at least 1.
  * @param exposure_length The length of one exposure in milliseconds. Should be at least 1.
  * @see EmulatedCamera::mState
- * @see EmulatedCamera::mConfigFileVM
+ * @see EmulatedCamera::mCameraConfig
  * @see EmulatedCamera::mAbort
  * @see EmulatedCamera::mImageBuf
  * @see EmulatedCamera::mImageBufNCols
@@ -803,8 +761,8 @@ void EmulatedCamera::multrun_thread(int32_t exposure_count,int32_t exposure_leng
 	}
 	else
 	{
-		reg_width = mConfigFileVM["ccd.ncols"].as<int>();
-		reg_height = mConfigFileVM["ccd.nrows"].as<int>();
+		mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,"ccd.ncols",&reg_width);
+		mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,"ccd.nrows",&reg_height);
 	}
 	mImageBufNCols = reg_width;
 	mImageBufNRows = reg_height;

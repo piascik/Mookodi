@@ -13,7 +13,7 @@ LDFLAGS=-L/usr/local/lib -L$(MOOKODI_LIB_HOME) -L$(CFITSIOLIBDIR) $(ANDOR_LDFLAG
 LIBS=-lthriftnb -lthrift -levent -lboost_program_options -lboost_filesystem -lboost_system -lboost_iostreams -lplibsys -llog4cxx -lpthread -lm -lmookodi_ccd $(ANDOR_LIBS) $(CFITSIO_LIBS)
 #-lIDSAC -largtable2 -lopts -lCCfits 
 
-SOURCES=Camera.cpp EmulatedCamera.cpp CameraServer.cpp Config.cpp
+SOURCES=Camera.cpp EmulatedCamera.cpp CameraServer.cpp CameraConfig.cpp
 OBJECTS=$(SOURCES:%.cpp=$(BINDIR)/%.o) 
 
 INTERFACE_SRCS=CameraService.cpp camera_interface_constants.cpp camera_interface_types.cpp

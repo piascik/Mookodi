@@ -4,7 +4,10 @@
  * @author Chris Mottram
  * @version $Id$
  */
+#ifndef EMULATED_CAMERA_H
+#define EMULATED_CAMERA_H
 #include "CameraService.h"
+#include "CameraConfig.h"
 #include <boost/program_options.hpp>
 #include <log4cxx/logger.h>
 
@@ -19,7 +22,7 @@ class EmulatedCamera : virtual public CameraServiceIf
     virtual ~EmulatedCamera();
     void load_config();
     void initialize();
-    void set_config_filename(const std::string & config_filename);
+    void set_config(CameraConfig & config);
 
     // Configure camera
     void set_binning(const int8_t xbin, const int8_t ybin);
@@ -58,13 +61,10 @@ class EmulatedCamera : virtual public CameraServiceIf
 
     // Private member vars
     /**
-     * The configuration filename to load configuration data from.
+     * The configuration object to load configuration data from.
+     * @see CameraConfig
      */
-    std::string mConfigFilename;
-    /**
-     * The loaded config from the configuration filename.
-     */
-    boost::program_options::variables_map mConfigFileVM;
+    CameraConfig mCameraConfig;
     /**
      * A local copy of a CameraState instance, use to emulate exposures and state changes and returned
      * as status when get_state is called.
@@ -99,3 +99,4 @@ class EmulatedCamera : virtual public CameraServiceIf
      */
     bool mAbort;
 };    
+#endif
