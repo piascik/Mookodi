@@ -140,10 +140,17 @@ int main(int argc, char **argv)
 		PropertyConfigurator::configure(vm["logging_config_file"].as<std::string>());
 
 		// Setup the CameraConfig file object
+		std::cout << "Initialising the CameraConfig." << std::endl;
+		LOG4CXX_INFO(logger,"Initialising the CameraConfig.");
+		config.initialise();
+		
+		std::string config_filename =  vm["config_file"].as<std::string>();
+		std::cout << "Setting config_filename to " << config_filename << "." << std::endl;
+		LOG4CXX_INFO(logger,"Setting config_filename to " << config_filename << ".");
+		config.set_config_filename(config_filename);
+		
 		std::cout << "Loading configuration..." << std::endl;
 		LOG4CXX_INFO(logger,"Loading configuration ...");
-		std::string config_filename =  vm["config_file"].as<std::string>();
-		config.set_config_filename(config_filename);
 		config.load_config();
 		
 		// Set up the server

@@ -26,7 +26,7 @@ using namespace log4cxx;
 static LoggerPtr logger(Logger::getLogger("mookodi.camera.server.CameraConfig"));
 
 /**
- * Constructor for the CameraConfig object. 
+ * Constructor for the CameraConfig object.
  */
 CameraConfig::CameraConfig()
 {
@@ -34,10 +34,19 @@ CameraConfig::CameraConfig()
 
 
 /**
- * Destructor for the CameraConfig object. Does nothing.
+ * Destructor for the CameraConfig object.
  */
 CameraConfig::~CameraConfig()
 {
+}
+
+/**
+ * Initialise plibsys.
+ */
+void CameraConfig::initialise()
+{
+	LOG4CXX_DEBUG(logger,"CameraConfig : Initialising plibsys.");
+	p_libsys_init();
 }
 
 /**
@@ -60,9 +69,10 @@ void CameraConfig::set_config_filename(const std::string & config_filename)
 void CameraConfig::load_config()
 {
 	CameraException ce;
-	PError *error;
+	PError *error = NULL;
 	
-	LOG4CXX_INFO(logger,"load_config using configuration filename " << mCameraConfigFilename);
+	LOG4CXX_INFO(logger,"CameraConfig::load_config using configuration filename " << mCameraConfigFilename);
+	std::cout << "CameraConfig::load_config with filename " << mCameraConfigFilename << "." << std::endl;
 	mCameraConfigFile = p_ini_file_new(mCameraConfigFilename.c_str());
 	if(!p_ini_file_parse(mCameraConfigFile,&error))
 	{

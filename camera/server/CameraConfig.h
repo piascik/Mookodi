@@ -18,6 +18,7 @@ class CameraConfig
  public:
 	CameraConfig();
 	~CameraConfig();
+	void initialise();
 	void set_config_filename(const std::string & config_filename);
 	void load_config();
 	void get_config_string(const char* section,const char* keyword, char* value, int value_length);
