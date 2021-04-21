@@ -36,44 +36,7 @@ using namespace log4cxx;
 /**
  * The configuration file section to use for retrieving configuration ("camera").
  */
-#define CONFIG_CAMERA_SECTION ("camera")
-/**
- * The default target temperature to cool the CCD to.
- */
-#define DEFAULT_CCD_TARGET_TEMPERATURE (-60.0)
-/**
- * The default directory storing the installed Andor CCD library configuration files.
- */
-#define DEFAULT_ANDOR_CONFIG_DIR ("/usr/local/etc/andor")
-/**
- * Camera is an iKon M934, Full frame is 1024 x 1024.
- */
-#define DEFAULT_FULL_FRAME_X_PIXEL_COUNT (1024)
-/**
- * Camera is an iKon M934, Full frame is 1024 x 1024.
- */
-#define DEFAULT_FULL_FRAME_Y_PIXEL_COUNT (1024)
-/**
- * The default FITS instrument code, used when generating FITS filenames to specify 'mookodi'.
- * This is used for the filename (not the directory) and is by convention in capitals.
- */
-#define DEFAULT_FITS_INSTRUMENT_CODE     ("MKD")
-/**
- * The default FITS image data directory root,
- * used to construct the directory structure where generated FITS images are stored.
- */
-#define DEFAULT_FITS_DATA_DIR_ROOT       ("/data")
-/**
- * The default FITS image data directory telescope component, 
- * used to construct the directory structure where generated FITS images are stored.
- */
-#define DEFAULT_FITS_DATA_DIR_TELESCOPE  ("lesedi")
-/**
- * The default FITS image data directory instrument component, 
- * used to construct the directory structure where generated FITS images are stored.
- * This is used for the directory (not the filename) and is by convention in lower case.
- */
-#define DEFAULT_FITS_DATA_DIR_INSTRUMENT ("mkd")
+#define CONFIG_CAMERA_SECTION ("Camera")
 /**
  * Convertion from degrees Centigrade to degrees Kelvin.
  */

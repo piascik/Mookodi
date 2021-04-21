@@ -22,15 +22,7 @@ using namespace log4cxx;
 /**
  * The configuration file section to use for retrieving configuration ("camera").
  */
-#define CONFIG_CAMERA_SECTION ("camera")
-/**
- * Camera is an iKon M934, Full frame is 1024 x 1024.
- */
-#define DEFAULT_FULL_FRAME_X_PIXEL_COUNT (1024)
-/**
- * Camera is an iKon M934, Full frame is 1024 x 1024.
- */
-#define DEFAULT_FULL_FRAME_Y_PIXEL_COUNT (1024)
+#define CONFIG_CAMERA_SECTION ("Camera")
 /**
  * Maximum pixel binning in X.
  */
@@ -39,26 +31,6 @@ using namespace log4cxx;
  * Maximum pixel binning in Y.
  */
 #define MAX_Y_BINNING            (16)
-/**
- * The default target temperature to cool the CCD to.
- */
-#define DEFAULT_CCD_TARGET_TEMPERATURE (-60.0)
-/**
- * The default warm temperature to warm the CCD to.
- */
-#define DEFAULT_CCD_WARM_TEMPERATURE (10.0)
-/**
- * The default directory storing the installed Andor CCD library configuration files.
- */
-#define DEFAULT_ANDOR_CONFIG_DIR ("/usr/local/etc/andor")
-/**
- * The default FITS instrument code, used when generating FITS filenames to specify 'mookodi'.
- */
-#define DEFAULT_FITS_INSTRUMENT_CODE     ('m')
-/**
- * The default FITS image data directory, to put generated FITS images.
- */
-#define DEFAULT_FITS_DATA_DIR            ("/icc/tmp")
 
 /**
  * Logger instance for the emulated camera (EmulatedCamera.cpp).
