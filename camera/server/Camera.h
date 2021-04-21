@@ -4,7 +4,10 @@
  * @author Chris Mottram
  * @version $Id$
  */
+#ifndef CAMERA_H
+#define CAMERA_H
 #include "CameraService.h"
+#include "CameraConfig.h"
 #include <log4cxx/logger.h>
 #include <boost/program_options.hpp>
 #include "ccd_fits_header.h"
@@ -21,8 +24,8 @@ class Camera : virtual public CameraServiceIf
     virtual ~Camera();
     void load_config();
     void initialize();
-    void set_config_filename(const std::string & config_filename);
-    
+    void set_config(CameraConfig & config);
+
     // Configure camera
     void set_binning(const int8_t xbin, const int8_t ybin);
     void set_window(const int32_t x_start,const int32_t y_start,const int32_t x_end,const int32_t y_end);
@@ -61,13 +64,9 @@ class Camera : virtual public CameraServiceIf
 				 int image_index,int32_t exposure_count,int32_t exposure_length);
     CameraException create_ccd_library_exception();
     /**
-     * The configuration filename to load configuration data from.
+     * The configuration object to load configuration data from.
      */
-    std::string mConfigFilename;
-    /**
-     * The loaded config from the configuration filename.
-     */
-    boost::program_options::variables_map mConfigFileVM;
+    CameraConfig mCameraConfig;
     /**
      * The variable used to hold FITS header data, used by the CCD library to write FITS headers into read out images.
      * @see Fits_Header_Struct
@@ -130,3 +129,4 @@ class Camera : virtual public CameraServiceIf
      */
     int mImageBufNRows;
 };    
+#endif

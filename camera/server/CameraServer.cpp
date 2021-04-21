@@ -5,6 +5,7 @@
  * @author Chris Mottram
  * @version $Id$
  */
+#include "CameraConfig.h"
 #include "Camera.h"
 #include "EmulatedCamera.h"
 
@@ -51,7 +52,7 @@ const int DEFAULT_PORT=9020;
 /**
  * The default configuration file.
  */
-const std::string DEFAULT_CONFIG_FILE = "mookodi_camera_server.conf";
+const std::string DEFAULT_CONFIG_FILE = "mookodi.conf";
 /**
  * Default logging configuration file.
  */
@@ -117,6 +118,8 @@ int process_options(int argc, char **argv, po::variables_map &vm)
  */
 int main(int argc, char **argv) 
 {
+	CameraConfig config;
+	
 	try
 	{
 		shared_ptr<CameraServiceIf> handler = NULL;
@@ -135,27 +138,41 @@ int main(int argc, char **argv)
 
 		// logging initialisation/configuration
 		PropertyConfigurator::configure(vm["logging_config_file"].as<std::string>());
+
+		// Setup the CameraConfig file object
+		std::cout << "Initialising the CameraConfig." << std::endl;
+		LOG4CXX_INFO(logger,"Initialising the CameraConfig.");
+		config.initialise();
+		
+		std::string config_filename =  vm["config_file"].as<std::string>();
+		std::cout << "Setting config_filename to " << config_filename << "." << std::endl;
+		LOG4CXX_INFO(logger,"Setting config_filename to " << config_filename << ".");
+		config.set_config_filename(config_filename);
+		
+		std::cout << "Loading configuration..." << std::endl;
+		LOG4CXX_INFO(logger,"Loading configuration ...");
+		config.load_config();
 		
 		// Set up the server
 		if (vm.count("emulate_camera"))
 		{
 			std::cout << "Emulating CCD camera..." << std::endl;
 			LOG4CXX_INFO(logger,"Emulating CCD camera...");
-			std::string config_filename =  vm["config_file"].as<std::string>();
 			shared_ptr<EmulatedCamera> emulated_camera = shared_ptr<EmulatedCamera>(new EmulatedCamera());
 			//handler = shared_ptr<CameraServiceIf>(new EmulatedCamera());
 			handler = shared_ptr<CameraServiceIf>(emulated_camera);
-			emulated_camera->set_config_filename(config_filename);
+			emulated_camera->set_config(config);
+			emulated_camera->initialize();
 		}
 		else
 		{
 			std::cout << "Using real camera..." << std::endl;
 			LOG4CXX_INFO(logger,"Using real camera...");
-			std::string config_filename =  vm["config_file"].as<std::string>();
 			shared_ptr<Camera> camera = shared_ptr<Camera>(new Camera());
 			//handler = shared_ptr<CameraServiceIf>(new Camera());
 			handler = shared_ptr<CameraServiceIf>(camera);
-			camera->set_config_filename(config_filename);
+			camera->set_config(config);
+			camera->initialize();
 		}
 		shared_ptr<TProcessor> processor(new CameraServiceProcessor(handler));
 		shared_ptr<TNonblockingServerTransport> serverTransport(new TNonblockingServerSocket(port));
