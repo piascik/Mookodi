@@ -52,7 +52,7 @@ const int DEFAULT_PORT=9020;
 /**
  * The default configuration file.
  */
-const std::string DEFAULT_CONFIG_FILE = "mookodi.conf";
+const std::string DEFAULT_CONFIG_FILE = "/mookodi/conf/mkd.cfg";
 /**
  * Default logging configuration file.
  */
