@@ -167,6 +167,7 @@ int CCD_Setup_Config_Directory_Set(char *directory)
  * <li>We call <b>GetNumberVSSpeeds, GetVSSpeed </b>
  *     to examine vertical shift speeds.
  * <li>Calls <b>GetNumberHSSpeeds,GetHSSpeed </b> to examine horzontal readout speeds.
+ * <li>We call <b>GetNumberPreAmpGains</b>, <b>GetPreAmpGain</b> to log the pre-amp gains available.
  * <li>We call <b>GetNumberADChannels</b> to log the A/D channels available.
  * <li>Calls <b>SetBaselineClamp(1)</b> to set the baseline clamp on.
  * <li>Calls <b>GetDetector</b> to get the detector dimensions and save then to <b>Setup_Data</b>.
@@ -182,8 +183,8 @@ int CCD_Setup_Startup(void)
 {
 	long selected_camera;
 	unsigned int andor_retval;
-	int retval,camera_count,speed_count,i;
-	float speed;
+	int retval,camera_count,speed_count,i,pre_amp_gain_count;
+	float speed,pre_amp_gain;
 
 	Setup_Error_Number = 0;
 #if LOGGING > 1
@@ -329,7 +330,6 @@ int CCD_Setup_Startup(void)
 				       "GetVSSpeed(index=%d) returned %.2f microseconds/pixel shift.",i,speed);
 #endif /* LOGGING */
 	}
-	/* diddly 		Setup_Data.VSSpeed = speed;*/
 	/* log horizontal readout speed data */
 	andor_retval = GetNumberHSSpeeds(0,0,&speed_count);
 	if(andor_retval != DRV_SUCCESS)
@@ -378,6 +378,34 @@ int CCD_Setup_Startup(void)
 	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
 			       "GetNumberADChannels() returned %d A/D channels.",speed_count);
 #endif /* LOGGING */
+	/* get the number of pre-amp gains */
+	andor_retval = GetNumberPreAmpGains(&pre_amp_gain_count);
+	if(andor_retval!=DRV_SUCCESS)
+	{
+		Setup_Error_Number = 16;
+		sprintf(Setup_Error_String,"CCD_Setup_Startup: GetNumberPreAmpGains() failed %s(%u).",
+			CCD_General_Andor_ErrorCode_To_String(andor_retval),andor_retval);
+		return FALSE;
+	}
+#if LOGGING > 9
+	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
+			       "GetNumberPreAmpGains() returned %d gains.",pre_amp_gain_count);
+#endif /* LOGGING */
+	for(i=0;i < pre_amp_gain_count; i++)
+	{
+		andor_retval = GetPreAmpGain(i,&pre_amp_gain);
+		if(andor_retval!=DRV_SUCCESS)
+		{
+			Setup_Error_Number = 17;
+			sprintf(Setup_Error_String,"CCD_Setup_Startup: GetPreAmpGain(%d) failed %s(%u).",
+				i,CCD_General_Andor_ErrorCode_To_String(andor_retval),andor_retval);
+			return FALSE;
+		}
+#if LOGGING > 9
+		CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
+				       "PreAmpGain index %d is %.2f.",i,pre_amp_gain);
+#endif /* LOGGING */
+	} /* end for on pre_amp_gain_count */
 	/* set baseline clamp */
 #if LOGGING > 3
 	CCD_General_Log("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
