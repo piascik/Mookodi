@@ -64,6 +64,9 @@
  * <dt>Horizontal_End</dt> <dd>Horizontal (X) end pixel of the imaging window (inclusive).</dd>
  * <dt>Vertical_Start</dt> <dd>Vertical (Y) start pixel of the imaging window (inclusive).</dd>
  * <dt>Vertical_End</dt> <dd>Vertical (Y) end pixel of the imaging window (inclusive).</dd>
+ * <dt>HS_Speed_Index</dt> <dd>The horizontal speed index to use when setting the horizontal readout speed.</dd>
+ * <dt>VS_Speed_Index</dt> <dd>The vertical speed index to use when setting the vertical readout speed.</dd>
+ * <dt>Pre_Amp_Gain_Index</dt> <dd>The pre-amp gain index to use when setting the pre-amp gain.</dd>
  * </dl>
  * @see #CAMERA_HEAD_MODEL_NAME_LENGTH
  */
@@ -83,6 +86,9 @@ struct Setup_Struct
 	int Horizontal_End;
 	int Vertical_Start;
 	int Vertical_End;
+	int HS_Speed_Index;
+	int VS_Speed_Index;
+	int Pre_Amp_Gain_Index;
 };
 
 
@@ -109,7 +115,7 @@ static char Setup_Error_String[CCD_GENERAL_ERROR_STRING_LENGTH] = "";
  */
 static struct Setup_Struct Setup_Data = 
 {
-	NULL,0,0,"",0,0,0,0,0,FALSE,0,0,0,0
+	NULL,0,0,"",0,0,0,0,0,FALSE,0,0,0,0,0,0,0
 };
 
 /* ----------------------------------------------------------------------------
@@ -604,6 +610,139 @@ void CCD_Setup_Abort(void)
 	CCD_General_Log("setup","ccd_setup.c","CCD_Setup_Abort",LOG_VERBOSITY_TERSE,"CCD",
 			"CCD_Setup_Abort Finished.");
 #endif /* LOGGING */
+}
+
+/**
+ * Set the horizontal shift speed to the setting represented by the specified index in a list of horizontal
+ * shift speeds. This affects the reasdout speed of the detector.
+ * @param hs_speed_index The index into the list of speeds. Valid values are 0 to GetNumberHSSpeeds()-1.
+ *        For the Andor iKon M934 the there are 4 speeds indexs (0..3), and these translate to the following:
+ *        <ul>
+ *        <li><b>0</b> 5MHz
+ *        <li><b>1</b> 3MHz
+ *        <li><b>2</b> 1MHz
+ *        <li><b>3</b> 0.05MHz
+ *        </ul>
+ * @return The routine returns TRUE on success, and FALSE if an error occurs.
+ * @see #Setup_Error_Number
+ * @see #Setup_Error_String
+ * @see #Setup_Data
+ * @see CCD_General_Log
+ * @see CCD_General_Andor_ErrorCode_To_String
+ */
+int CCD_Setup_HS_Speed_Set(int hs_speed_index)
+{
+	unsigned int andor_retval;
+
+	Setup_Error_Number = 0;
+#if LOGGING > 1
+	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_HS_Speed_Set",LOG_VERBOSITY_TERSE,"CCD",
+			       "CCD_Setup_HS_Speed_Set(hs_speed_index = %d) Started.",hs_speed_index);
+#endif /* LOGGING */
+	/* A/D chanel is always 0 for Andor iKon M934 (there is only 1 channel) */
+	andor_retval = SetHSSpeed(0,hs_speed_index);
+	if(andor_retval != DRV_SUCCESS)
+	{
+		Setup_Error_Number = 18;
+		sprintf(Setup_Error_String,"CCD_Setup_HS_Speed_Set: SetHSSpeed(A/D channel=0,hs_speed_index=%d) "
+			"failed %s(%u).",hs_speed_index,CCD_General_Andor_ErrorCode_To_String(andor_retval),
+			andor_retval);
+		return FALSE;
+	}
+	Setup_Data.HS_Speed_Index = hs_speed_index;
+#if LOGGING > 1
+	CCD_General_Log("setup","ccd_setup.c","CCD_Setup_HS_Speed_Set",LOG_VERBOSITY_TERSE,"CCD",
+			"CCD_Setup_HS_Speed_Set Finished.");
+#endif /* LOGGING */
+	return TRUE;
+}
+
+/**
+ * Set the vertical shift speed to the setting represented by the specified index in a list of vertical
+ * shift speeds. This affects the reasdout speed of the detector.
+ * @param vs_speed_index The index into the list of speeds. Valid values are 0 to GetNumberVSSpeeds()-1.
+ *        For the Andor iKon M934 the there are 6 speeds indexs (0..5), and these translate to the following:
+ *        <ul>
+ *        <li><b>0</b> 2.25 microseconds/pixel
+ *        <li><b>1</b> 4.25 microseconds/pixel
+ *        <li><b>2</b> 8.25 microseconds/pixel
+ *        <li><b>3</b> 16.25 microseconds/pixel
+ *        <li><b>4</b> 32.25 microseconds/pixel
+ *        <li><b>5</b> 64.25 microseconds/pixel
+ *        </ul>
+ * @return The routine returns TRUE on success, and FALSE if an error occurs.
+ * @see #Setup_Error_Number
+ * @see #Setup_Error_String
+ * @see #Setup_Data
+ * @see CCD_General_Log
+ * @see CCD_General_Andor_ErrorCode_To_String
+ */
+int CCD_Setup_VS_Speed_Set(int vs_speed_index)
+{
+	unsigned int andor_retval;
+
+	Setup_Error_Number = 0;
+#if LOGGING > 1
+	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_VS_Speed_Set",LOG_VERBOSITY_TERSE,"CCD",
+			       "CCD_Setup_VS_Speed_Set(vs_speed_index = %d) Started.",vs_speed_index);
+#endif /* LOGGING */
+	andor_retval = SetVSSpeed(vs_speed_index);
+	if(andor_retval != DRV_SUCCESS)
+	{
+		Setup_Error_Number = 19;
+		sprintf(Setup_Error_String,"CCD_Setup_VS_Speed_Set: SetVSSpeed(vs_speed_index=%d) "
+			"failed %s(%u).",vs_speed_index,CCD_General_Andor_ErrorCode_To_String(andor_retval),
+			andor_retval);
+		return FALSE;
+	}
+	Setup_Data.VS_Speed_Index = vs_speed_index;
+#if LOGGING > 1
+	CCD_General_Log("setup","ccd_setup.c","CCD_Setup_VS_Speed_Set",LOG_VERBOSITY_TERSE,"CCD",
+			"CCD_Setup_VS_Speed_Set Finished.");
+#endif /* LOGGING */
+	return TRUE;
+}
+
+/**
+ * Set the pre amp gain to the setting represented by the specified index in a list of pre amp gains.
+ * @param pre_amp_gain_index The index into the list of gains. Valid values are 0 to GetNumberPreAmpGains()-1.
+ *        For the Andor iKon M934 the there are 3 pre amp gain indexs (0..2), and these translate to the following:
+ *        <ul>
+ *        <li><b>0</b> 1.0 gain factor
+ *        <li><b>1</b> 2.0 gain factor
+ *        <li><b>2</b> 4.0 gain factor
+ *        </ul>
+ * @return The routine returns TRUE on success, and FALSE if an error occurs.
+ * @see #Setup_Error_Number
+ * @see #Setup_Error_String
+ * @see #Setup_Data
+ * @see CCD_General_Log
+ * @see CCD_General_Andor_ErrorCode_To_String
+ */
+int CCD_Setup_Pre_Amp_Gain_Set(int pre_amp_gain_index)
+{
+	unsigned int andor_retval;
+
+	Setup_Error_Number = 0;
+#if LOGGING > 1
+	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Pre_Amp_Gain_Set",LOG_VERBOSITY_TERSE,"CCD",
+			       "CCD_Setup_Pre_Amp_Gain_Set(pre_amp_gain_index = %d) Started.",pre_amp_gain_index);
+#endif /* LOGGING */
+	andor_retval = SetPreAmpGain(pre_amp_gain_index);
+	if(andor_retval != DRV_SUCCESS)
+	{
+		Setup_Error_Number = 20;
+		sprintf(Setup_Error_String,"CCD_Setup_Pre_Amp_Gain_Set: SetPreAmpGain(pre_amp_gain_index=%d) "
+			"failed %s(%u).",pre_amp_gain_index,CCD_General_Andor_ErrorCode_To_String(andor_retval),
+			andor_retval);
+		return FALSE;
+	}
+	Setup_Data.Pre_Amp_Gain_Index = pre_amp_gain_index;
+#if LOGGING > 1
+	CCD_General_Log("setup","ccd_setup.c","CCD_Setup_Pre_Amp_Gain_Set",LOG_VERBOSITY_TERSE,"CCD",
+			"CCD_Setup_Pre_Amp_Gain_Set Finished.");
+#endif /* LOGGING */
+	return TRUE;
 }
 
 /**
