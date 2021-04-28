@@ -109,6 +109,10 @@ class Camera : virtual public CameraServiceIf
      */
     struct CCD_Setup_Window_Struct mCachedWindow;
     /**
+     * A cached copy of the readout speed last used to configure the camera. Used for status retrieval.
+     */
+    ReadoutSpeed::type mCachedReadoutSpeed;
+    /**
      * Which exposure we are currently taking in the current multrun.
      */
     int mExposureIndex;

@@ -88,6 +88,7 @@ void Camera::set_config(CameraConfig & config)
  * <li>We retrieve the "andor.config_dir" configuration value and use it to set the Andor config directory in the
  *     CCD library using CCD_Setup_Config_Directory_Set.
  * <li>We connect to and initialise the camera using CCD_Setup_Startup.
+ * <li>We configure the initial readout speed to SLOW using set_readout_speed, and pre-amp gain to ONE using set_gain.
  * <li>We retrieve the fits filename instrument code "fits.instrument_code", 
  *     the data directory root "fits.data_dir.root", 
  *     the telescope component of the data directory "fits.data_dir.telescope",
@@ -112,7 +113,11 @@ void Camera::set_config(CameraConfig & config)
  * @see Camera::mCachedWindow
  * @see Camera::mExposureCount
  * @see Camera::mExposureIndex
+ * @see Camera::set_readout_speed
+ * @see Camera::set_gain
  * @see Camera::create_ccd_library_exception
+ * @see ReadoutSpeed
+ * @see Gain
  * @see logger
  * @see LOG4CXX_INFO
  * @see CCD_General_Set_Log_Handler_Function
@@ -153,6 +158,9 @@ void Camera::initialize()
 		ce = create_ccd_library_exception();
 		throw ce;
 	}
+	/* configure initial readout speed and pre-amp gain */
+	set_readout_speed(ReadoutSpeed::SLOW);
+	set_gain(Gain::ONE);
 	/* initialise FITS filename generation code */
 	mCameraConfig.get_config_string(CONFIG_CAMERA_SECTION,"fits.instrument_code",instrument_code,32);
 	mCameraConfig.get_config_string(CONFIG_CAMERA_SECTION,"fits.data_dir.root",fits_data_dir_root,32);
@@ -364,14 +372,60 @@ void Camera::clear_window()
 
 /**
  * Set the readout speed of the camera (either SLOW or FAST).
+ * <ul>
+ * <li>We retrieve the horizontal shift speed index from the config (mCameraConfig), using the camera section key
+ *     "ccd.readout_speed.hs_speed_index.SLOW|FAST".
+ * <li>We retrieve the vertical shift speed index from the config (mCameraConfig), using the camera section key
+ *     "ccd.readout_speed.vs_speed_index.SLOW|FAST".
+ * <li>We configure the camera's horizontal shift speed by calling. CCD_Setup_Set_HS_Speed.
+ * <li>We configure the camera's vertical shift speed by calling. CCD_Setup_Set_VS_Speed.
+ * <li>We update mCachedReadoutSpeed to reflect the newly configured readout speed.
+ * </ul>
+ * If an error occurs configuring the camera or retrieving the config, a CameraException is thrown.
  * @param speed The readout speed, of type ReadoutSpeed.
+ * @see Camera::mCameraConfig
+ * @see Camera::mCachedReadoutSpeed
+ * @see #CONFIG_CAMERA_SECTION
+ * @see Camera::create_ccd_library_exception
+ * @see logger
+ * @see LOG4CXX_INFO
+ * @see LOG4CXX_DEBUG
  * @see ReadoutSpeed
+ * @see CCD_Setup_Set_HS_Speed
+ * @see CCD_Setup_Set_VS_Speed
  */
 void Camera::set_readout_speed(const ReadoutSpeed::type speed)
 {
+	CameraException ce;
+	std::string keyword;
+	int retval;
+	int hs_speed_index,vs_speed_index;
+	
 	cout << "Set readout speed to " << to_string(speed) << "." << endl;
 	LOG4CXX_INFO(logger,"Set readout speed to " << to_string(speed) << ".");
-	/* TODO */
+	/* Get the horizontal and vertical shift speeds configured for this readout speed */
+	keyword = "ccd.readout_speed.hs_speed_index."+to_string(speed);
+	mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,keyword.c_str(),&hs_speed_index);
+	keyword = "ccd.readout_speed.vs_speed_index."+to_string(speed);
+	mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,keyword.c_str(),&vs_speed_index);
+	/* configure the camera appropriately */
+	LOG4CXX_DEBUG(logger,"Using horizontal shift speed index " << std::to_string(hs_speed_index) << ".");
+	retval = CCD_Setup_Set_HS_Speed(hs_speed_index);
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	LOG4CXX_DEBUG(logger,"Using vertical shift speed index " << std::to_string(vs_speed_index) << ".");
+	retval = CCD_Setup_Set_VS_Speed(vs_speed_index);
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	/* we update the cached value, used for status */
+	mCachedReadoutSpeed = speed;
+	LOG4CXX_INFO(logger,"Readout speed set to " << to_string(speed) << ".");
 }
 
 /**
@@ -603,6 +657,7 @@ void Camera::abort_exposure()
  *     the status's exposure_state, elapsed_exposure_length and remaining_exposure_length state.
  * <li>Based on the exposure status, we either retrieve the current CCD temperature using CCD_Temperature_Get, or if
  *     the detector is currently exposing or reading out, a cached temperature using CCD_Temperature_Get_Cached_Temperature.
+ * <li>We set the readout speed status to mCachedReadoutSpeed.
  * </ul>
  * If retrieving the CCD temperature fails the method can throw a CameraException 
  * (created using create_ccd_library_exception).
@@ -613,6 +668,7 @@ void Camera::abort_exposure()
  * @see Camera::mCachedVBin
  * @see Camera::mCachedWindowFlags
  * @see Camera::mCachedWindow
+ * @see Camera::mCachedReadoutSpeed
  * @see Camera::mExposureCount
  * @see Camera::mExposureIndex
  * @see Camera::create_ccd_library_exception
@@ -721,7 +777,7 @@ void Camera::get_state(CameraState &state)
 			break;	
 	}/* end switch */
 	/* TODO to be implemented */
-	state.readout_speed = ReadoutSpeed::SLOW;
+	state.readout_speed = mCachedReadoutSpeed;
 	state.gain = Gain::ONE;
 }
 
