@@ -1324,6 +1324,8 @@ void Camera::multrun_thread(const ExposureType::type exptype,int32_t exposure_co
  *                   CCD_Fits_Header_TimeSpec_To_UtStart_String to format the string.
  * <li><b>DATE-OBS</b> We retrieve the start exposure timestamp using CCD_Exposure_Start_Time_Get. We use 
  *                   CCD_Fits_Header_TimeSpec_To_Date_Obs_String to format the string.
+ * <li><b>VSHIFT</b> The vertical shift speed in microseconds/pixel, retrieved from the CCD library using CCD_Setup_Get_VS_Speed.
+ * <li><b>HSHIFT</b> The horizontal shift speed im MHz, retrieved from the CCD library using CCD_Setup_Get_HS_Speed.
  * </ul>
  * @param exptype What kind of exposure this is, of type ExposureType.
  * @param exposure_type What kind of exposure we are doing, from the ExposureType thrift enumeration.
@@ -1351,6 +1353,8 @@ void Camera::multrun_thread(const ExposureType::type exptype,int32_t exposure_co
  * @see CCD_Setup_Get_Camera_Serial_Number
  * @see CCD_TEMPERATURE_STATUS
  * @see CCD_Temperature_Get
+ * @see CCD_Setup_Get_VS_Speed
+ * @see CCD_Setup_Get_HS_Speed
  */
 void Camera::add_camera_fits_headers(const ExposureType::type exptype,
 				    int image_index,int32_t exposure_count,int32_t exposure_length)
@@ -1362,6 +1366,7 @@ void Camera::add_camera_fits_headers(const ExposureType::type exptype,
 	char img_rect_buff[128];
 	char time_string[32];
 	double temperature;
+	float vs_speed,hs_speed;
 	int retval,xs,ys,xe,ye;
 	
 	/* EXPTYPE */
@@ -1508,6 +1513,34 @@ void Camera::add_camera_fits_headers(const ExposureType::type exptype,
 		throw ce;
 	}
 	retval = CCD_Fits_Header_Add_String(&mFitsHeader,"SUBRECT",img_rect_buff,"Sub-maging area");
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	/* VSHIFT */
+	vs_speed = CCD_Setup_Get_VS_Speed();
+	retval = CCD_Fits_Header_Add_Float(&mFitsHeader,"VSHIFT",(double)vs_speed,"vertical shift speed");
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	retval = CCD_Fits_Header_Add_Units(&mFitsHeader,"VSHIFT","us/pixel");
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	/* HSHIFT */
+	hs_speed = CCD_Setup_Get_HS_Speed();
+	retval = CCD_Fits_Header_Add_Float(&mFitsHeader,"HSHIFT",(double)hs_speed,"horizontal shift speed");
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	retval = CCD_Fits_Header_Add_Units(&mFitsHeader,"HSHIFT","MHz");
 	if(retval == FALSE)
 	{
 		ce = create_ccd_library_exception();
