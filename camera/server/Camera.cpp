@@ -430,14 +430,63 @@ void Camera::set_readout_speed(const ReadoutSpeed::type speed)
 
 /**
  * Set the gain of the camera.
- * @param gain_number The gain factor to configure the camera with os type Gain.
+ * <ul>
+ * <li>We convert the gain_number gain factor to a pre amp gain index as follows (for an Andor iKon M934);
+ *     <ul>
+ *     <li><b>Pre-amp gain index     "gain factor"  Gain (gain_number)</b>
+ *     <li>0                      1.0            ONE
+ *     <li>1                      2.0            TWO
+ *     <li>2                      4.0            FOUR
+ *     </ul>
+ * <li>We call CCD_Setup_Set_Pre_Amp_Gain to configure the camera's gain.
+ * </ul>
+ * @param gain_number The gain factor to configure the camera with of type Gain.
  * @see Gain
+ * @see CCD_Setup_Set_Pre_Amp_Gain
+ * @see #mCachedGain
  */
 void Camera::set_gain(const Gain::type gain_number)
 {
+	CameraException ce;
+	int retval,pre_amp_gain_index;
+	
 	cout << "Set gain to " << to_string(gain_number) << "." << endl;
 	LOG4CXX_INFO(logger,"Set gain to " << to_string(gain_number) << ".");
-	/* TODO */
+	/* CCD_Setup_Set_Pre_Amp_Gain takes a pre amp gain index, which according to test_andor_readout_speed_gains.c
+	** has the following values for an Andor iKon M934:
+	** Pre-amp gain index     "gain factor"  Gain (gain_number)
+	** 0                      1.0            ONE
+	** 1                      2.0            TWO
+	** 2                      4.0            FOUR
+	*/
+	switch(gain_number)
+	{
+		case Gain::ONE:
+			pre_amp_gain_index = 0;
+			break;
+		case Gain::TWO:
+			pre_amp_gain_index = 1;
+			break;
+		case Gain::FOUR:
+			pre_amp_gain_index = 2;
+			break;
+		default:
+			ce.message = "set_gain: gain_number "+ to_string(gain_number) +" is not supported.";
+			throw ce;
+			break;
+	}
+	LOG4CXX_DEBUG(logger,"Gain " << to_string(gain_number) << " has pre-amp gain index of " <<
+		      std::to_string(pre_amp_gain_index) << ".");
+	retval = CCD_Setup_Set_Pre_Amp_Gain(pre_amp_gain_index);
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	/* update the cached gain value (used for status serving */
+	mCachedGain = gain_number;
+	LOG4CXX_INFO(logger,"Gain now set to " << to_string(gain_number) <<
+		     " , pre-amp gain index " << std::to_string(pre_amp_gain_index) <<".");
 }
 
 /**
@@ -658,6 +707,7 @@ void Camera::abort_exposure()
  * <li>Based on the exposure status, we either retrieve the current CCD temperature using CCD_Temperature_Get, or if
  *     the detector is currently exposing or reading out, a cached temperature using CCD_Temperature_Get_Cached_Temperature.
  * <li>We set the readout speed status to mCachedReadoutSpeed.
+ * <li>We set the gain status to mCachedGain.
  * </ul>
  * If retrieving the CCD temperature fails the method can throw a CameraException 
  * (created using create_ccd_library_exception).
@@ -669,6 +719,7 @@ void Camera::abort_exposure()
  * @see Camera::mCachedWindowFlags
  * @see Camera::mCachedWindow
  * @see Camera::mCachedReadoutSpeed
+ * @see Camera::mCachedGain
  * @see Camera::mExposureCount
  * @see Camera::mExposureIndex
  * @see Camera::create_ccd_library_exception
@@ -776,9 +827,9 @@ void Camera::get_state(CameraState &state)
 			/* we could throw an exception here */
 			break;	
 	}/* end switch */
-	/* TODO to be implemented */
+	/* Set readout speed and gain from cached values */
 	state.readout_speed = mCachedReadoutSpeed;
-	state.gain = Gain::ONE;
+	state.gain = mCachedGain;
 }
 
 /**
@@ -1366,7 +1417,7 @@ void Camera::add_camera_fits_headers(const ExposureType::type exptype,
 	char img_rect_buff[128];
 	char time_string[32];
 	double temperature;
-	float vs_speed,hs_speed;
+	float vs_speed,hs_speed,pre_amp_gain;
 	int retval,xs,ys,xe,ye;
 	
 	/* EXPTYPE */
@@ -1541,6 +1592,14 @@ void Camera::add_camera_fits_headers(const ExposureType::type exptype,
 		throw ce;
 	}
 	retval = CCD_Fits_Header_Add_Units(&mFitsHeader,"HSHIFT","MHz");
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	/* GAIN */
+	pre_amp_gain = CCD_Setup_Get_Pre_Amp_Gain();
+	retval = CCD_Fits_Header_Add_Float(&mFitsHeader,"GAIN",(double)pre_amp_gain,"pre-amp gain factor");
 	if(retval == FALSE)
 	{
 		ce = create_ccd_library_exception();
