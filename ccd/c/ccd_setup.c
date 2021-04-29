@@ -69,6 +69,7 @@
  * <dt>VS_Speed_Index</dt> <dd>The vertical speed index to use when setting the vertical readout speed.</dd>
  * <dt>VS_Speed</dt> <dd>The vertical speed for the specified VS_Speed_Index, in microseconds/pixel.</dd>
  * <dt>Pre_Amp_Gain_Index</dt> <dd>The pre-amp gain index to use when setting the pre-amp gain.</dd>
+ * <dt>Pre_Amp_Gain</dt> <dd>The actual pre-amp gain for the specified Pre_Amp_Gain_Index.</dd>
  * </dl>
  * @see #CAMERA_HEAD_MODEL_NAME_LENGTH
  */
@@ -93,6 +94,7 @@ struct Setup_Struct
 	int VS_Speed_Index;
 	float VS_Speed;
 	int Pre_Amp_Gain_Index;
+	float Pre_Amp_Gain;
 };
 
 
@@ -731,6 +733,8 @@ int CCD_Setup_Set_VS_Speed(int vs_speed_index)
 
 /**
  * Set the pre amp gain to the setting represented by the specified index in a list of pre amp gains.
+ * After setting the pre-amp gain to the specified index we retrieve the actual gain factor 
+ * and store it in Setup_Data.Pre_Amp_Gain.
  * @param pre_amp_gain_index The index into the list of gains. Valid values are 0 to GetNumberPreAmpGains()-1.
  *        For the Andor iKon M934 the there are 3 pre amp gain indexs (0..2), and these translate to the following:
  *        <ul>
@@ -745,28 +749,38 @@ int CCD_Setup_Set_VS_Speed(int vs_speed_index)
  * @see CCD_General_Log
  * @see CCD_General_Andor_ErrorCode_To_String
  */
-int CCD_Setup_Pre_Amp_Gain_Set(int pre_amp_gain_index)
+int CCD_Setup_Set_Pre_Amp_Gain(int pre_amp_gain_index)
 {
 	unsigned int andor_retval;
 
 	Setup_Error_Number = 0;
 #if LOGGING > 1
-	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Pre_Amp_Gain_Set",LOG_VERBOSITY_TERSE,"CCD",
-			       "CCD_Setup_Pre_Amp_Gain_Set(pre_amp_gain_index = %d) Started.",pre_amp_gain_index);
+	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Set_Pre_Amp_Gain",LOG_VERBOSITY_TERSE,"CCD",
+			       "CCD_Setup_Set_Pre_Amp_Gain(pre_amp_gain_index = %d) Started.",pre_amp_gain_index);
 #endif /* LOGGING */
 	andor_retval = SetPreAmpGain(pre_amp_gain_index);
 	if(andor_retval != DRV_SUCCESS)
 	{
 		Setup_Error_Number = 20;
-		sprintf(Setup_Error_String,"CCD_Setup_Pre_Amp_Gain_Set: SetPreAmpGain(pre_amp_gain_index=%d) "
+		sprintf(Setup_Error_String,"CCD_Setup_Set_Pre_Amp_Gain: SetPreAmpGain(pre_amp_gain_index=%d) "
 			"failed %s(%u).",pre_amp_gain_index,CCD_General_Andor_ErrorCode_To_String(andor_retval),
 			andor_retval);
 		return FALSE;
 	}
 	Setup_Data.Pre_Amp_Gain_Index = pre_amp_gain_index;
+	/* get the actual pre-amp gain factor as reported by the camera and store it in Setup_Data.Pre_Amp_Gain */
+	andor_retval = GetPreAmpGain(pre_amp_gain_index,&(Setup_Data.Pre_Amp_Gain));
+	if(andor_retval != DRV_SUCCESS)
+	{
+		Setup_Error_Number = 26;
+		sprintf(Setup_Error_String,"CCD_Setup_Set_Pre_Amp_Gain: GetPreAmpGain(pre_amp_gain_index=%d) "
+			"failed %s(%u).",pre_amp_gain_index,CCD_General_Andor_ErrorCode_To_String(andor_retval),
+			andor_retval);
+		return FALSE;
+	}
 #if LOGGING > 1
-	CCD_General_Log("setup","ccd_setup.c","CCD_Setup_Pre_Amp_Gain_Set",LOG_VERBOSITY_TERSE,"CCD",
-			"CCD_Setup_Pre_Amp_Gain_Set Finished.");
+	CCD_General_Log("setup","ccd_setup.c","CCD_Setup_Set_Pre_Amp_Gain",LOG_VERBOSITY_TERSE,"CCD",
+			"CCD_Setup_Set_Pre_Amp_Gain Finished.");
 #endif /* LOGGING */
 	return TRUE;
 }
@@ -970,6 +984,30 @@ float CCD_Setup_Get_VS_Speed(void)
 int CCD_Setup_Get_VS_Speed_Index(void)
 {
 	return Setup_Data.VS_Speed_Index;
+}
+
+/**
+ * Return the current pre amp gain factor, last configured using CCD_Setup_Set_Pre_Amp_Gain.
+ * CCD_Setup_Set_Pre_Amp_Gain stores this value in Setup_Data, and it is this that is returned.
+ * @return The current pre-amp gain factor in use by the camera.
+ * @see #Setup_Data
+ * @see CCD_Setup_Set_Pre_Amp_Gain
+ */
+float CCD_Setup_Get_Pre_Amp_Gain(void)
+{
+	return Setup_Data.Pre_Amp_Gain;
+}
+
+/**
+ * Return the current pre-amp gain index, which was used to configure the camera in CCD_Setup_Set_Pre_Amp_Gain.
+ * CCD_Setup_Set_Pre_Amp_Gain stores this value in Setup_Data, and it is this that is returned.
+ * @return The current pre-amp gain index.
+ * @see #Setup_Data
+ * @see CCD_Setup_Set_Pre_Amp_Gain
+ */
+int CCD_Setup_Get_Pre_Amp_Gain_Index(void)
+{
+	return Setup_Data.Pre_Amp_Gain_Index;
 }
 
 /**
