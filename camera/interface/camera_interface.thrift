@@ -90,9 +90,9 @@ enum ReadoutSpeed
 /**
  * Valid gain factors supported by the camera.
  * <ul> 
- * <li><b>ONE</b>
- * <li><b>TWO</b>
- * <li><b>FOUR</b>
+ * <li><b>ONE</b> Gain factor of 1.
+ * <li><b>TWO</b> Gain factor of 2.
+ * <li><b>FOUR</b> Gain factor of 4.
  * </ul>
  */
 enum Gain
