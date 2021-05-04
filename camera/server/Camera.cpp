@@ -100,6 +100,7 @@ void Camera::set_config(CameraConfig & config)
  *     values are read from the config object.
  * <li>We configure the detector readout dimensions to the cached ones using CCD_Setup_Dimensions.
  * <li>We initialise mExposureCount and mExposureIndex to zero.
+ * <li>We initialise mLastImageFilename and mImageFilenameList to empty strings/vectors.
  * </ul>
  * If a CCD library routine fails we call create_ccd_library_exception to create a CameraException that is then thrown.
  * @see #CONFIG_CAMERA_SECTION
@@ -113,6 +114,8 @@ void Camera::set_config(CameraConfig & config)
  * @see Camera::mCachedWindow
  * @see Camera::mExposureCount
  * @see Camera::mExposureIndex
+ * @see Camera::mLastImageFilename
+ * @see Camera::mImageFilenameList
  * @see Camera::set_readout_speed
  * @see Camera::set_gain
  * @see Camera::create_ccd_library_exception
@@ -210,6 +213,8 @@ void Camera::initialize()
 	}
 	mExposureCount = 0;
 	mExposureIndex = 0;
+	mLastImageFilename = "";
+	mImageFilenameList = {};	
 }
 
 /**
@@ -857,10 +862,11 @@ void Camera::get_image_data(ImageData &img_data)
  * Return the image filename of the last FITS image saved by the camera server.
  * @param filename On return of this method, the filename will contain a string representation of 
  *                 the last FITS image filename saved by the camera server.
+ * @see Camera::mLastImageFilename
  */
 void Camera::get_last_image_filename(std::string &filename)
 {
-	/* TODO */
+	filename = mLastImageFilename;
 }
 
 /**
@@ -869,10 +875,11 @@ void Camera::get_last_image_filename(std::string &filename)
  * @param filename_list A vector list containing strings. On return of this method, this lisit will contain 
  *                      a list of strings representing FITS image filnames of the last multbias / multdark / multrun 
  *                      performed by the camera server.
+ * @see Camera::mImageFilenameList
  */
 void Camera::get_image_filenames(std::vector<std::string> &filename_list)
 {
-	/* TODO */
+	filename_list = mImageFilenameList;
 }
 
 
@@ -959,6 +966,7 @@ void Camera::warm_up()
  *     CCD_Setup_Get_NCols / CCD_Setup_Get_Bin_X / CCD_Setup_Get_NRows / CCD_Setup_Get_Bin_Y.
  * <li>We set mExposureCount to the exposure_count parameter, so the status reflects how many images 
  *     we are going to take.
+ * <li>We clear the mImageFilenameList vector.
  * <li>We loop over the exposure_count:
  *     <ul>
  *     <li>We set mExposureIndex to the current exposure index (for status propagation).
@@ -969,6 +977,8 @@ void Camera::warm_up()
  *     <li>We call add_camera_fits_headers to add the internally generated camera FITS headers to mFitsHeader.
  *     <li>We call CCD_Exposure_Save to save the read out data in mImageBuf to the generated FITS filename with the 
  *         FITS headers from mFitsHeader.
+ *     <li>We update mLastImageFilename with the newly saved FITS filename, 
+ *         and add the filename to the mImageFilenameList list.
  *     </ul>
  * <li>
  * </ul>
@@ -980,6 +990,8 @@ void Camera::warm_up()
  * @see Camera::mImageBufNRows
  * @see Camera::mExposureCount
  * @see Camera::mExposureIndex
+ * @see Camera::mLastImageFilename
+ * @see Camera::mImageFilenameList
  * @see Camera::mFitsHeader
  * @see Camera::add_camera_fits_headers
  * @see Camera::create_ccd_library_exception
@@ -1020,6 +1032,7 @@ void Camera::multbias_thread(int32_t exposure_count)
 		mImageBufNRows = binned_nrows;
 		/* initialise exposure count/index status */
 		mExposureCount = exposure_count;
+		mImageFilenameList.clear();
 		/* loop over number of exposure to take */
 		for(int image_index = 0; image_index < exposure_count; image_index++)
 		{
@@ -1064,6 +1077,9 @@ void Camera::multbias_thread(int32_t exposure_count)
 				ce = create_ccd_library_exception();
 				throw ce;
 			}
+			/* update last image filename and add generated filename to list of FITS images */
+			mLastImageFilename = filename;
+			mImageFilenameList.push_back(std::string(filename));
 		}/* end for on exposure_count */
 	}
 	catch(TException&e)
@@ -1087,6 +1103,7 @@ void Camera::multbias_thread(int32_t exposure_count)
  *     CCD_Setup_Get_NCols / CCD_Setup_Get_Bin_X / CCD_Setup_Get_NRows / CCD_Setup_Get_Bin_Y.
  * <li>We set the start_time to zero, so the exposure starts immediately.
  * <li>We set mExposureCount to the exposure_count parameter, so the status reflects how many images we are going to take.
+ * <li>We clear the mImageFilenameList vector.
  * <li>We loop over the exposure_count:
  *     <ul>
  *     <li>We set mExposureIndex to the current exposure index (for status propagation).
@@ -1095,8 +1112,10 @@ void Camera::multbias_thread(int32_t exposure_count)
  *     <li>We increment the FITS filename run number by calling CCD_Fits_Filename_Next_Run.
  *     <li>We call CCD_Fits_Filename_Get_Filename to generate a FITS filename.
  *     <li>We call add_camera_fits_headers to add the internally generated camera FITS headers to mFitsHeader.
- *     <li>We call CCD_Exposure_Save to save the read out data in mImageBuf to the generated FITS filename with the FITS headers
- *         from mFitsHeader.
+ *     <li>We call CCD_Exposure_Save to save the read out data in mImageBuf to the generated FITS filename 
+ *         with the FITS headers from mFitsHeader.
+ *     <li>We update mLastImageFilename with the newly saved FITS filename, 
+ *         and add the filename to the mImageFilenameList list.
  *     </ul>
  * <li>
  * </ul>
@@ -1109,6 +1128,8 @@ void Camera::multbias_thread(int32_t exposure_count)
  * @see Camera::mImageBufNRows
  * @see Camera::mExposureCount
  * @see Camera::mExposureIndex
+ * @see Camera::mLastImageFilename
+ * @see Camera::mImageFilenameList
  * @see Camera::mFitsHeader
  * @see Camera::add_camera_fits_headers
  * @see Camera::create_ccd_library_exception
@@ -1155,6 +1176,7 @@ void Camera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
 		start_time.tv_nsec = 0;
 		/* initialise exposure count/index status */
 		mExposureCount = exposure_count;
+		mImageFilenameList.clear();
 		/* loop over number of exposure to take */
 		for(int image_index = 0; image_index < exposure_count; image_index++)
 		{
@@ -1200,6 +1222,9 @@ void Camera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
 				ce = create_ccd_library_exception();
 				throw ce;
 			}
+			/* update last image filename and add generated filename to list of FITS images */
+			mLastImageFilename = filename;
+			mImageFilenameList.push_back(std::string(filename));
 		}/* end for on exposure_count */
 	}
 	catch(TException&e)
@@ -1224,6 +1249,7 @@ void Camera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
  * <li>We set the start_time to zero, so the exposure starts immediately.
  * <li>We set mExposureCount to the exposure_count parameter, so the status reflects how many images 
  *     we are going to take.
+ * <li>We clear the mImageFilenameList vector.
  * <li>We loop over the exposure_count:
  *     <ul>
  *     <li>We set mExposureIndex to the current exposure index (for status propagation).
@@ -1234,6 +1260,8 @@ void Camera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
  *     <li>We call add_camera_fits_headers to add the internally generated camera FITS headers to mFitsHeader.
  *     <li>We call CCD_Exposure_Save to save the read out data in mImageBuf to the generated FITS filename with the 
  *         FITS headers from mFitsHeader.
+ *     <li>We update mLastImageFilename with the newly saved FITS filename, 
+ *         and add the filename to the mImageFilenameList list.
  *     </ul>
  * <li>
  * </ul>
@@ -1246,6 +1274,8 @@ void Camera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
  * @see Camera::mImageBufNRows
  * @see Camera::mExposureCount
  * @see Camera::mExposureIndex
+ * @see Camera::mLastImageFilename
+ * @see Camera::mImageFilenameList
  * @see Camera::mFitsHeader
  * @see Camera::add_camera_fits_headers
  * @see Camera::create_ccd_library_exception
@@ -1292,6 +1322,7 @@ void Camera::multrun_thread(const ExposureType::type exptype,int32_t exposure_co
 		start_time.tv_nsec = 0;
 		/* initialise exposure count/index status */
 		mExposureCount = exposure_count;
+		mImageFilenameList.clear();
 		/* loop over number of exposure to take */
 		for(int image_index = 0; image_index < exposure_count; image_index++)
 		{
@@ -1338,6 +1369,9 @@ void Camera::multrun_thread(const ExposureType::type exptype,int32_t exposure_co
 				ce = create_ccd_library_exception();
 				throw ce;
 			}
+			/* update last image filename and add generated filename to list of FITS images */
+			mLastImageFilename = filename;
+			mImageFilenameList.push_back(std::string(filename));
 		}/* end for on exposure_count */
 	}
 	catch(TException&e)
@@ -1353,7 +1387,7 @@ void Camera::multrun_thread(const ExposureType::type exptype,int32_t exposure_co
 }
 
 /**
- * Method to add some of the internal FITS headers generatde from within the camera to mFitsHeader,
+ * Method to add some of the internal FITS headers generated from within the camera to mFitsHeader,
  * which are then saved to the generated FITS images. Headers added are:
  * <ul>
  * <li><b>EXPTYPE</b> String describing exposure type: BIAS DARK EXPOSURE ACQUIRE ARC SKYFLAT STANDARD LAMPFLAT
