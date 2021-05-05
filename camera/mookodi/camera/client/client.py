@@ -81,7 +81,7 @@ if __name__ == '__main__':
     c.set_fits_headers(fi)
     print("Before exposure:")
     print(c.get_state())
-    c.start_multrun(ExposureType.EXPOSURE,1,10000)
+    c.start_multrun(1,10000)
     print("Started exposure")
     for i in range(16):
         print("Got state:")
