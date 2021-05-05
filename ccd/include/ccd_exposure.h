@@ -59,10 +59,6 @@ enum CCD_EXPOSURE_STATUS
 extern void CCD_Exposure_Initialise(void);
 extern int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure_length,
 			       void *buffer,size_t buffer_length);
-extern int CCD_Exposure_Mult_Runat(struct timespec start_time,int open_shutter,int exposure_length_ms,
-				   int total_duration_ms,
-				   int (*save_function)(void *buffer,size_t buffer_length,struct timespec date_obs,
-							int exposure_index, int andor_index, long accumulation,long series));
 extern int CCD_Exposure_Bias(void *buffer,size_t buffer_length);
 extern int CCD_Exposure_Abort(void);
 extern enum CCD_EXPOSURE_STATUS CCD_Exposure_Status_Get(void);
