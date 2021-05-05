@@ -50,31 +50,6 @@ enum ExposureState
 }
 
 /**
- * Enumeration to configure the type of exposure being performed.
- * <ul>
- * <li><b>BIAS</b>
- * <li><b>DARK</b>
- * <li><b>EXPOSURE</b>
- * <li><b>ACQUIRE</b>
- * <li><b>ARC</b>
- * <li><b>SKYFLAT</b>
- * <li><b>STANDARD</b>
- * <li><b>LAMPFLAT</b>
- * </ul>
- */
-enum ExposureType
-{
-	BIAS = 0,
-	DARK = 1,
-	EXPOSURE = 2,
-	ACQUIRE = 3,
-	ARC = 4,
-	SKYFLAT = 5,
-	STANDARD = 6,
-	LAMPFLAT = 7
-}
-
-/**
  * Enumeration to configure the readout speed of the detector.
  * <ul>
  * <li><b>SLOW</b>
@@ -194,10 +169,10 @@ exception CameraException
  * <li><b>add_fits_header</b> Add an individual FITS header to the CameraService's internal list, which will be
  *                             be added to the next FITS image genreated by a readout.
  * <li><b>clear_fits_headers</b> Remove all the current FITS headers from the CameraService's internal list.
+ * <li><b>start_expose</b> Start a thread to take a single exposure of a specified exposure length (in ms).
  * <li><b>start_multbias</b> Start a thread to take a series of bias frames.
  * <li><b>start_multdark</b> Start a thread to take a series of dark frames of a specified exposure length (in ms).
- * <li><b>start_multrun</b> Start a thread to take a series of exposures of the specified exposure type,
- *                          of a specified exposure length (in ms)
+ * <li><b>start_multrun</b> Start a thread to take a series of exposures of the specified exposure length (in ms).
  * <li><b>abort_exposure</b> Abort (stop) a currently running multbias / multdark / multrun
  * <li><b>get_state</b> Get the current state of the camera / configuration / multbias / multdark / multrun.
  * <li><b>get_image_data</b> Get a copy of the last image read out by the camera. 
@@ -225,9 +200,10 @@ service CameraService
 	void add_fits_header(1: string keyword, 2: FitsCardType valtype,
 	     3: string value,4: string comment) throws (1: CameraException e);
 	void clear_fits_headers() throws (1: CameraException e);
+	void start_expose(1: i32 exposure_length, 2: bool save_image) throws (1: CameraException e);
 	void start_multbias(1: i32 exposure_count) throws (1: CameraException e);
 	void start_multdark(1: i32 exposure_count, 2: i32 exposure_length) throws (1: CameraException e);
-	void start_multrun(1: ExposureType exptype, 2: i32 exposure_count, 3: i32 exposure_length) throws (1: CameraException e);
+	void start_multrun(1: i32 exposure_count, 2: i32 exposure_length) throws (1: CameraException e);
 	void abort_exposure() throws (1: CameraException e);
 	CameraState get_state() throws (1: CameraException e);
         ImageData get_image_data() throws (1: CameraException e);

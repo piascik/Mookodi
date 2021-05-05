@@ -279,6 +279,29 @@ void EmulatedCamera::clear_fits_headers()
 }
 
 /**
+ * thrift entry point to take an exposure with the camera. 
+ * A new thread running an instance of expose_thread is started.
+ * @param exposure_length The exposure length of each frame in milliseconds. Must be at least 1 ms.
+ * @param save_image A boolean, if true save the image in a FITS filename, otherwise don't 
+ *        (the image data can be retrieved using the get_image_data method).
+ * @see Camera::expose_thread
+ * @see Camera::get_image_data
+ * @see logger
+ * @see LOG4CXX_INFO
+ */
+void EmulatedCamera::start_expose(const int32_t exposure_length, const bool save_image)
+{
+	CameraException ce;
+
+	cout << "Starting expose thread with exposure length " << exposure_length <<
+		"ms and save_image " << save_image << "." << endl;
+	LOG4CXX_INFO(logger,"Starting expose thread with exposure length " << exposure_length <<
+		     "ms and save_image " << save_image << ".");
+	std::thread thrd(&EmulatedCamera::expose_thread, this, exposure_length, save_image);
+	thrd.detach();
+}
+
+/**
  * thrift entry point to start taking multiple biases. A new thread running an instance of multbias_thread is started.
  * @param exposure_count The number of biases to take. Must be at least one.
  * @see EmulatedCamera::multbias_thread
@@ -332,15 +355,12 @@ void EmulatedCamera::start_multdark(const int32_t exposure_count,const int32_t e
 /**
  * thrift entry point to start taking multiple science frames. 
  * A new thread running an instance of multrun_thread is started.
- * @param exptype What kind of exposure we are doing, of type ExposureType. Only the EXPOSURE, STANDARD, ARC and LAMP
- *       types are supported by this method.
  * @param exposure_count The number of frames to take. Must be at least one.
  * @param exposure_length The exposure length of each frame in milliseconds. Must be at least 1 ms.
  * @see Camera::multrun_thread
  * @see CameraException
  */
-void EmulatedCamera::start_multrun(const ExposureType::type exptype, const int32_t exposure_count,
-				   const int32_t  exposure_length)
+void EmulatedCamera::start_multrun(const int32_t exposure_count,const int32_t  exposure_length)
 {
 	CameraException ce;
 
@@ -354,10 +374,10 @@ void EmulatedCamera::start_multrun(const ExposureType::type exptype, const int32
 		ce.message = "Exposure length "+ std::to_string(exposure_length) +" too small.";
 		throw ce;
 	}
-	cout << "Starting multrun thread with exposure type " << to_string(exptype) <<
-		",exposure count " << exposure_count << ", exposure length " << exposure_length << "ms." << endl;
-	LOG4CXX_INFO(logger,"Starting multrun thread with exposure type " << to_string(exptype) <<
-		     ", exposure count " << exposure_count << ", exposure length " << exposure_length << "ms.");
+	cout << "Starting multrun thread with exposure count " << exposure_count <<
+		", exposure length " << exposure_length << "ms." << endl;
+	LOG4CXX_INFO(logger,"Starting multrun thread with exposure count " << exposure_count <<
+		     ", exposure length " << exposure_length << "ms.");
 	std::thread thrd(&EmulatedCamera::multrun_thread, this, exposure_count, exposure_length);
 	thrd.detach();
 }
@@ -462,6 +482,114 @@ void EmulatedCamera::warm_up()
 	mState.ccd_temperature = 10.0;
 	cout << "Camera warmed up to " << mState.ccd_temperature << " C." << endl;
 	LOG4CXX_INFO(logger,"Camera warmed up to " << mState.ccd_temperature << " C.");
+}
+
+/**
+ * Thread to emulate the taking of an image.
+ * <ul>
+ * <li>We use mState.use_window to determine whether to are reading out a window or full frame,
+ *     and based on that use either mState.window or mCameraConfig config value "ccd.ncols"/mCameraConfig config value "ccd.nrows" 
+ *     to calculate the image dimensions.
+ * <li>We compute the total number of pixels in the readout image using the data calculated.
+ * <li>We intialise mState's exposure_index to 0, exposure_length to the multrun_thread exposure_length parameter,
+ *     and set mState's exposure_count to 1.
+ * <li>We initialise mAbort to false.
+ * <li>We set mState's exposure_state to exposing, exposure_index to 0, 
+ *     elapsed_exposure_length to 0 and remaining_exposure_length to the exposure_length parameter.
+ * <li>We enter a while loop, while mState's remaining_exposure_length is greater than 0 and mAbort is false:
+ *     <ul>
+ *     <li>We sleep for 1 second.
+ *     <li>We decrement mState's remaining_exposure_length by 1000 ms.
+ *     <li>We increment mState's elapsed_exposure_length by 1000 ms.
+ *     </ul>
+ * <li>We check whether mAbort is set true, and if so reset mState's exposure_state to idle and exit the thread.
+ * <li>We set mState's exposure_state to readout, and sleep for a second to emulate the readout.
+ * <li>We resize mImageBuf to the computed total number of pixels in the readout image.
+ * <li>We loop over the image dimensions setting the pixel value in mImageBuf.
+ * <li>We sleep for another second.
+ * <li>We check whether mAbort is set true, and if so reset mState's exposure_state to idle and exit the thread.
+ * <li>We reset mState's exposure_state to idle.
+ * </ul>
+ * @param exposure_length The length of one exposure in milliseconds. Should be at least 1.
+ * @param save_image A boolean, whether to save the taken image to disc - ignored by the camera emulator.
+ * @see EmulatedCamera::mState
+ * @see EmulatedCamera::mCameraConfig
+ * @see EmulatedCamera::mAbort
+ * @see EmulatedCamera::mImageBuf
+ * @see EmulatedCamera::mImageBufNCols
+ * @see EmulatedCamera::mImageBufNRows
+ */
+void EmulatedCamera::expose_thread(int32_t exposure_length, bool save_image)
+{
+	int reg_width;
+	int reg_height;
+	int total_pixels;
+
+	// setup image dimensions
+	if(mState.use_window)
+	{
+		reg_width = (mState.window.x_end - mState.window.x_start)+1;
+		reg_height = (mState.window.y_end - mState.window.y_start)+1; 	
+	}
+	else
+	{
+		mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,"ccd.ncols",&reg_width);
+		mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,"ccd.nrows",&reg_height);
+	}
+	mImageBufNCols = reg_width;
+	mImageBufNRows = reg_height;
+	total_pixels = reg_width * reg_height;
+ 	cout << "expose thread with exposure length " << exposure_length << "ms." << endl;
+	LOG4CXX_INFO(logger,"expose thread with exposure length " << exposure_length << "ms.");
+	mState.exposure_length = exposure_length;
+	mState.exposure_count = 1;
+	mState.exposure_index = 0;
+	mAbort = false;
+	mState.exposure_state = ExposureState::EXPOSING;
+	mState.elapsed_exposure_length = 0;
+	mState.remaining_exposure_length = exposure_length;
+	cout << "Starting exposure of length " << exposure_length << " ms." << endl;
+	LOG4CXX_INFO(logger,"Starting exposure of length " << exposure_length << " ms.");
+	// Simulate the exposure
+	while ( (mState.remaining_exposure_length > 0) && (mAbort == false))
+	{
+		// sleep for 1 second
+		std::this_thread::sleep_for(std::chrono::seconds(1));
+		// reduce remaining exposure length by 1000 ms
+		mState.remaining_exposure_length -= 1000;
+		// increased elapsed exposure length by 1000 ms
+		mState.elapsed_exposure_length  += 1000;
+	}
+	if(mAbort)
+	{
+		mState.exposure_state = ExposureState::IDLE;
+		return;
+	}
+	// Simulate the readout
+	cout << "Starting readout" << endl;
+	LOG4CXX_INFO(logger,"Starting readout");
+	mState.exposure_state = ExposureState::READOUT;
+	std::this_thread::sleep_for(std::chrono::seconds(1));   
+	mImageBuf.resize(total_pixels);
+	for (int i = 0; i < reg_height; i++)
+	{
+		for (int j = 0; j < reg_width; j++)
+		{
+			mImageBuf[i*reg_width+j] = (i*j) * pow(2, 14) / total_pixels;
+		}
+	}
+	std::this_thread::sleep_for(std::chrono::seconds(1));
+	// We're done
+	cout << "Exposure complete." << endl;
+	LOG4CXX_INFO(logger,"Exposure complete.");
+	if(mAbort)
+	{
+		mState.exposure_state = ExposureState::IDLE;
+		return;
+	}
+	mState.exposure_state = ExposureState::IDLE;
+	cout << "Expose complete" << endl;
+	LOG4CXX_INFO(logger,"Expose complete");
 }
 
 /**
@@ -689,7 +817,7 @@ void EmulatedCamera::multdark_thread(int32_t exposure_count,int32_t exposure_len
  *     to calculate the image dimensions.
  * <li>We compute the total number of pixels in the readout image using the data calculated.
  * <li>We intialise mState's exposure_index to 0, exposure_length to the multrun_thread exposure_length parameter,
- *     and setmState's exposure_count to the multrun_thread parameter value.
+ *     and set mState's exposure_count to the multrun_thread parameter value.
  * <li>We initialise mAbort to false.
  * <li>We do a for loop over mState.exposure_count:
  *     <ul>

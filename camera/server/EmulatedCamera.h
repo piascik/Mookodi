@@ -38,9 +38,10 @@ class EmulatedCamera : virtual public CameraServiceIf
     void clear_fits_headers();
     
     // Take and process exposures
+    void start_expose(const int32_t exposure_length, const bool save_image);
     void start_multbias(const int32_t exposure_count);
     void start_multdark(const int32_t exposure_count,const int32_t exposure_length);
-    void start_multrun(const ExposureType::type exptype, const int32_t exposure_count,const int32_t  exposure_length);
+    void start_multrun(const int32_t exposure_count,const int32_t  exposure_length);
     void abort_exposure();
     
     // Return state and data
@@ -55,6 +56,7 @@ class EmulatedCamera : virtual public CameraServiceIf
     
   private:
     // Private methods
+    void expose_thread(int32_t exposure_length, bool save_image);
     void multbias_thread(int32_t exposure_count);
     void multdark_thread(int32_t exposure_count,int32_t exposure_time);
     void multrun_thread(int32_t exposure_count,int32_t exposure_time);
