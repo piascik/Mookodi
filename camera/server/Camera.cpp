@@ -52,8 +52,6 @@ using namespace log4cxx;
 static LoggerPtr logger(Logger::getLogger("mookodi.camera.server.Camera"));
 
 /* internal C functions */
-static void log_to_stdout(char *sub_system,char *source_filename,char *function,
-			  int level,char *category,char *string);
 static void log_to_log4cxx(char *sub_system,char *source_filename,char *function,
 			   int level,char *category,char *string);
 
@@ -1570,7 +1568,7 @@ void Camera::multrun_thread(int32_t exposure_count,int32_t exposure_length)
  * </ul>
  * @param image_index Which image out of the exposure_count number of images we are currently doing.
  * @param exposure_count The number of images in the Multrun/Multbias/MultDark.
- * @param The exposure length, in milliseconds, of this image.
+ * @param exposure_length The exposure length, in milliseconds, of this image.
  * @see Camera::create_ccd_library_exception
  * @see mFitsHeader
  * @see Camera::mCachedNCols
@@ -1803,23 +1801,6 @@ CameraException Camera::create_ccd_library_exception()
 	std::string str(error_buffer);
 	ce.message = str;
 	return ce;
-}
-
-/**
- * A C function conforming to the CCD library logging interface. This causes messages to be logged to cout, in the form:
- * "function : string".
- * @param sub_system The sub system. Can be NULL.
- * @param source_filename The source filename. Can be NULL.
- * @param function The function calling the log. Can be NULL.
- * @param level At what level is the log message (TERSE/high level or VERBOSE/low level), 
- *         a valid member of LOG_VERBOSITY.
- * @param category What sort of information is the message. Designed to be used as a filter. Can be NULL.
- * @param string The log message to be logged. 
- */
-static void log_to_stdout(char *sub_system,char *source_filename,char *function,
-			   int level,char *category,char *string)
-{
-	cout << function << ":" << string << endl;
 }
 
 /**

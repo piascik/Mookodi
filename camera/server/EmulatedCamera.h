@@ -20,7 +20,6 @@ class EmulatedCamera : virtual public CameraServiceIf
     // Set up system
     EmulatedCamera();
     virtual ~EmulatedCamera();
-    void load_config();
     void initialize();
     void set_config(CameraConfig & config);
 
