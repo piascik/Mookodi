@@ -46,30 +46,28 @@
 /* data types */
 /**
  * Structure used to hold local data to ccd_exposure.
- * <dl>
- * <dt>Exposure_Status</dt> <dd>Whether an operation is being performed to CLEAR, EXPOSE or READOUT the CCD.</dd>
- * <dt>Start_Time</dt> <dd>The time stamp when an exposure was started.</dd>
- * <dt>Exposure_Length</dt> <dd>The last exposure length to be set (ms).</dd>
- * <dt>Abort</dt> <dd>Whether to abort an exposure.</dd>
- * <dt>Exposure_Index</dt> <dd>The current exposure being done.</dd>
- * <dt>Exposure_Count</dt> <dd>The number of exposures to be done in the MULTRUN.</dd>
- * <dt>Accumulation</dt> <dd>The current Andor accumulation.</dd>
- * <dt>Series</dt> <dd>The current Andor series.</dd>
- * <dt>Exposure_Loop_Pause_Length</dt> <dd>An amount of time to pause/sleep, in milliseconds, each time
- *     round the loop whilst waiting for an exposure to be done (DRV_ACQUIRING -> DRV_IDLE).
- * </dl>
  * @see #CCD_EXPOSURE_STATUS
  */
 struct Exposure_Struct
 {
+	/** Whether an operation is being performed to CLEAR, EXPOSE or READOUT the CCD. */
 	enum CCD_EXPOSURE_STATUS Exposure_Status;
+	/** The time stamp when an exposure was started. */
 	struct timespec Start_Time;
+	/** The last exposure length to be set (ms). */
 	volatile int Exposure_Length;
-	volatile int Abort;/* This is volatile as a different thread may change this variable. */
+	/** Whether to abort an exposure. This is volatile as a different thread may change this variable. */
+	volatile int Abort;
+	/** The current exposure being done. */
 	volatile int Exposure_Index;
+	/** The number of exposures to be done in the MULTRUN. */
 	volatile int Exposure_Count;
+	/** The current Andor accumulation. */
 	volatile int Accumulation;
+	/** The current Andor series. */
 	volatile int Series;
+	/** An amount of time to pause/sleep, in milliseconds, each time
+	 *     round the loop whilst waiting for an exposure to be done (DRV_ACQUIRING -> DRV_IDLE). */
 	int Exposure_Loop_Pause_Length;
 };
 

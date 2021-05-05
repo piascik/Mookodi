@@ -33,26 +33,23 @@
 
 /* data types */
 /**
- * Data type holding local data to ccd_general. This consists of the following:
- * <dl>
- * <dt>Log_Handler</dt> <dd>Function pointer to the routine that will log messages passed to it.</dd>
- * <dt>Log_Filter</dt> <dd>Function pointer to the routine that will filter log messages passed to it.
- * 		The funtion will return TRUE if the message should be logged, and FALSE if it shouldn't.</dd>
- * <dt>Log_Filter_Level</dt> <dd>A globally maintained log filter level. 
- * 		This is set using CCD_General_Set_Log_Filter_Level.
- * 		CCD_General_Log_Filter_Level_Absolute tests it against
- * 		message levels to determine whether to log messages.</dd>
- * </dl>
+ * Data type holding local data to ccd_general.
  * @see #CCD_General_Log
  * @see #CCD_General_Set_Log_Filter_Level
  * @see #CCD_General_Log_Filter_Level_Absolute
  */
 struct General_Struct
 {
+	/** Function pointer to the routine that will log messages passed to it. */
 	void (*Log_Handler)(char *sub_system,char *source_filename,char *function,
 			    int level,char *category,char *string);
+	/** Function pointer to the routine that will filter log messages passed to it.
+	 * 		The funtion will return TRUE if the message should be logged, and FALSE if it shouldn't. */
 	int (*Log_Filter)(char *sub_system,char *source_filename,char *function,
 			  int level,char *category,char *string);
+	/** A globally maintained log filter level.  This is set using CCD_General_Set_Log_Filter_Level.
+	 * CCD_General_Log_Filter_Level_Absolute tests it against message levels to determine 
+	 * whether to log messages. */
 	int Log_Filter_Level;
 };
 
@@ -422,7 +419,7 @@ void CCD_General_Set_Log_Filter_Level(int level)
 /**
  * A log message filter routine, to be used for the General_Data.Log_Filter function pointer.
  * @param sub_system The sub system. Can be NULL.
- * @param source_file The source filename. Can be NULL.
+ * @param source_filename The source filename. Can be NULL.
  * @param function The function calling the log. Can be NULL.
  * @param level At what level is the log message (TERSE/high level or VERBOSE/low level), 
  *         a valid member of LOG_VERBOSITY.

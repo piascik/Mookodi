@@ -26,19 +26,17 @@
 /* data types */
 /**
  * Internal temperature Data structure. Contains cached temperature data.
- * <dl>
- * <dt>Target_Temperature</dt> <dd>Cached target temperature, in degrees C</dd>
- * <dt>Cached_Temperature</dt> <dd>Cached temperature, in degrees C</dd>
- * <dt>Cached_Temperature_Status</dt> <dd>Cached Status of type CCD_TEMPERATURE_STATUS.</dd>
- * <dt>Cache_Date_Stamp</dt> <dd>Date cached data was acquired, of type struct timespec.</dd>
- * </dl>
  * @see #CCD_TEMPERATURE_STATUS
  */
 struct Temperature_Struct
 {
+	/** Cached target temperature, in degrees C */
 	double Target_Temperature;
+	/** Cached temperature, in degrees C */
 	double Cached_Temperature;
+	/** Cached Status of type CCD_TEMPERATURE_STATUS. */
 	enum CCD_TEMPERATURE_STATUS Cached_Temperature_Status;
+	/** Date cached data was acquired, of type struct timespec. */
 	struct timespec Cache_Date_Stamp;
 };
 

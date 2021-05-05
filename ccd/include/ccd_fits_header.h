@@ -22,18 +22,15 @@ extern "C" {
 /**
  * Structure defining the contents of a FITS header. Note the common basic FITS cards may not
  * be defined in this list.
- * <dl>
- * <dt>Card_List</dt> <dd>A list of Fits_Header_Card_Struct.</dd>
- * <dt>Card_Count</dt> <dd>The number of cards in the (reallocatable) list.</dd>
- * <dt>Allocated_Card_Count</dt> <dd>The amount of memory allocated in the Card_List pointer, 
- *     in terms of number of cards.</dd>
- * </dl>
  * @see #Fits_Header_Card_Struct
  */
 struct Fits_Header_Struct
 {
+	/** The list of Fits_Header_Card_Struct, each element representing one keyword/value pair in the header. */
 	struct Fits_Header_Card_Struct *Card_List;
+	/** The number of cards in the (reallocatable) list. */
 	int Card_Count;
+	/** The amount of memory allocated in the Card_List pointer, in terms of number of cards. */
 	int Allocated_Card_Count;
 };
 

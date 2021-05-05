@@ -20,7 +20,7 @@
 /**
  * Define this to enable strdup in 'string.h', which is a BSD 4.3 prototypes.
  */
-#define _BSD_SOURCE 1
+#define _DEFAULT_SOURCE 1
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,53 +47,51 @@
 
 /* data types */
 /**
- * Data type holding local data to andor_setup. This consists of the following:
- * <dl>
- * <dt>Config_Dir</dt> <dd>Pointer to a string containing the Andor config directory used for initialisation.</dd>
- * <dt>Selected_Camera</dt> <dd>A long, saying which camera to use. Usually '0'.
- * <dt>Camera_Handle</dt> <dd>The Andor library camera handle.</dd>
- * <dt>Camera_Head_Model_Name</dt> <dd>The camera's head model name, as read off the camera head to 
- *                                     identify the camera. Of length CAMERA_HEAD_MODEL_NAME_LENGTH.</dd>
- * <dt>Camera_Serial_Number</dt> <dd>The camera's serial number, read off the head to identify the camera.</dd>
- * <dt>Detector_X_Pixel_Count</dt> <dd>The number of pixels on the detector in the X direction.</dd>
- * <dt>Detector_Y_Pixel_Count</dt> <dd>The number of pixels on the detector in the Y direction.</dd>
- * <dt>Horizontal_Bin</dt> <dd>Horizontal (X) binning factor.</dd>
- * <dt>Vertical_Bin</dt> <dd>Vertical (Y) binning factor.</dd>
- * <dt>Is_Window</dt> <dd>Boolean, TRUE if the current config is a windowed one, FALSE if full frame.</dd>
- * <dt>Horizontal_Start</dt> <dd>Horizontal (X) start pixel of the imaging window (inclusive).</dd>
- * <dt>Horizontal_End</dt> <dd>Horizontal (X) end pixel of the imaging window (inclusive).</dd>
- * <dt>Vertical_Start</dt> <dd>Vertical (Y) start pixel of the imaging window (inclusive).</dd>
- * <dt>Vertical_End</dt> <dd>Vertical (Y) end pixel of the imaging window (inclusive).</dd>
- * <dt>HS_Speed_Index</dt> <dd>The horizontal speed index to use when setting the horizontal readout speed.</dd>
- * <dt>HS_Speed</dt> <dd>The horizontal speed for the specified HS_Speed_Index, in MHz.</dd>
- * <dt>VS_Speed_Index</dt> <dd>The vertical speed index to use when setting the vertical readout speed.</dd>
- * <dt>VS_Speed</dt> <dd>The vertical speed for the specified VS_Speed_Index, in microseconds/pixel.</dd>
- * <dt>Pre_Amp_Gain_Index</dt> <dd>The pre-amp gain index to use when setting the pre-amp gain.</dd>
- * <dt>Pre_Amp_Gain</dt> <dd>The actual pre-amp gain for the specified Pre_Amp_Gain_Index.</dd>
- * </dl>
+ * Data type holding local data to andor_setup. 
  * @see #CAMERA_HEAD_MODEL_NAME_LENGTH
  */
 struct Setup_Struct
 {
+	/** Pointer to a string containing the Andor config directory used for initialisation. */
 	char *Config_Dir;
+	/** A long, saying which camera to use. Usually '0'. */
 	int Selected_Camera;
+	/** The Andor library camera handle. */
 	int Camera_Handle;
+	/** The camera's head model name, as read off the camera head to identify the camera. 
+	 * Of length CAMERA_HEAD_MODEL_NAME_LENGTH.*/
 	char Camera_Head_Model_Name[CAMERA_HEAD_MODEL_NAME_LENGTH];
+	/** The camera's serial number, read off the head to identify the camera. */
 	int Camera_Serial_Number;
+	/** The number of pixels on the detector in the X direction. */
 	int Detector_X_Pixel_Count;
+	/** The number of pixels on the detector in the Y direction. */
 	int Detector_Y_Pixel_Count;
+	/** Horizontal (X) binning factor. */
 	int Horizontal_Bin;
+	/** Vertical (Y) binning factor. */
 	int Vertical_Bin;
+	/** Boolean, TRUE if the current config is a windowed one, FALSE if full frame. */
 	int Is_Window;
+	/** Horizontal (X) start pixel of the imaging window (inclusive). */
 	int Horizontal_Start;
+	/** Horizontal (X) end pixel of the imaging window (inclusive). */
 	int Horizontal_End;
+	/** Vertical (Y) start pixel of the imaging window (inclusive). */
 	int Vertical_Start;
+	/** Vertical (Y) end pixel of the imaging window (inclusive). */
 	int Vertical_End;
+	/** The horizontal speed index to use when setting the horizontal readout speed. */
 	int HS_Speed_Index;
+	/** The horizontal speed for the specified HS_Speed_Index, in MHz. */
 	float HS_Speed;
+	/** The vertical speed index to use when setting the vertical readout speed. */
 	int VS_Speed_Index;
+	/** The vertical speed for the specified VS_Speed_Index, in microseconds/pixel. */
 	float VS_Speed;
+	/** The pre-amp gain index to use when setting the pre-amp gain. */
 	int Pre_Amp_Gain_Index;
+	/** The actual pre-amp gain for the specified Pre_Amp_Gain_Index. */
 	float Pre_Amp_Gain;
 };
 
@@ -184,6 +182,7 @@ int CCD_Setup_Config_Directory_Set(char *directory)
  * <li>Calls <b>SetBaselineClamp(1)</b> to set the baseline clamp on.
  * <li>Calls <b>GetDetector</b> to get the detector dimensions and save then to <b>Setup_Data</b>.
  * <li>Calls <b>SetShutter</b> to set the Andor library shutter settings to auto with no shutter delay.
+ * </ul>
  * @return The routine returns TRUE on success, and FALSE if an error occurs.
  * @see #Setup_Data
  * @see #Setup_Error_Number

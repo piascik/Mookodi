@@ -16,20 +16,19 @@ extern "C" {
 
 /* structures */
 /**
- * Structure holding position information for one window on the CCD. Fields are:
- * <dl>
- * <dt>X_Start</dt> <dd>The pixel number of the X start position of the window (upper left corner).</dd>
- * <dt>Y_Start</dt> <dd>The pixel number of the Y start position of the window (upper left corner).</dd>
- * <dt>X_End</dt> <dd>The pixel number of the X end position of the window (lower right corner).</dd>
- * <dt>Y_End</dt> <dd>The pixel number of the Y end position of the window (lower right corner).</dd>
- * </dl>
+ * @struct CCD_Setup_Window_Struct
+ * Structure holding position information for one window on the CCD.
  * @see #CCD_Setup_Dimensions
  */
 struct CCD_Setup_Window_Struct
 {
+	/** The pixel number of the X start position of the window (upper left corner). */
 	int X_Start;
+	/** Y_Start The pixel number of the Y start position of the window (upper left corner). */
 	int Y_Start;
+	/** The pixel number of the X end position of the window (lower right corner). */
 	int X_End;
+	/** The pixel number of the Y end position of the window (lower right corner). */
 	int Y_End;
 };
 

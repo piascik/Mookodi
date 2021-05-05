@@ -67,19 +67,7 @@ enum Fits_Header_Type_Enum
 
 /**
  * Structure containing information on a FITS header entry.
- * <dl>
- * <dt>Keyword</dt> <dd>Keyword string of length FITS_HEADER_KEYWORD_STRING_LENGTH.</dd>
- * <dt>Type</dt> <dd>Which value in the value union to use.</dd>
- * <dt>Value</dt> <dd>Union containing the following elements:
- *                    <ul>
- *                    <li>String (of length FITS_HEADER_VALUE_STRING_LENGTH).
- *                    <li>Int
- *                    <li>Float (of type double).
- *                    <li>Boolean (an integer, should be 0 (FALSE) or 1 (TRUE)).
- *                    </ul>
- *                </dd>
- * <dt>Comment</dt> <dd>String of length FITS_HEADER_COMMENT_STRING_LENGTH.</dd>
- * </dl>
+ * @see #Fits_Header_Type_Enum
  * @see #FITS_HEADER_VALUE_STRING_LENGTH
  * @see #FITS_HEADER_KEYWORD_STRING_LENGTH
  * @see #FITS_HEADER_UNITS_STRING_LENGTH
@@ -87,16 +75,25 @@ enum Fits_Header_Type_Enum
  */
 struct Fits_Header_Card_Struct
 {
+	/** Keyword string of length FITS_HEADER_KEYWORD_STRING_LENGTH. */
 	char Keyword[FITS_HEADER_KEYWORD_STRING_LENGTH]; /* columns 1-8 */
+	/** Which value in the value union to use. */
 	enum Fits_Header_Type_Enum Type;
+	/** A union representing the value of the keyword */
 	union
 	{
+		/** If Type is FITS_HEADER_TYPE_STRING, the string value (of length FITS_HEADER_VALUE_STRING_LENGTH). */
 		char String[FITS_HEADER_VALUE_STRING_LENGTH]; /* columns 11-80 */
+		/** If Type is FITS_HEADER_TYPE_INTEGER, the integer value. */
 		int Int;
+		/** If Type is FITS_HEADER_TYPE_FLOAT, the float value (of type double). */
 		double Float;
+		/** If Type if FITS_HEADER_TYPE_LOGICAL, the boolean value (an integer, should be 0 (FALSE) or 1 (TRUE)). */
 		int Boolean;
 	} Value;
+	/** What units the value is in */
 	char Units[FITS_HEADER_UNITS_STRING_LENGTH]; /* columns 10-80 */
+	/** String of length FITS_HEADER_COMMENT_STRING_LENGTH. */
 	char Comment[FITS_HEADER_COMMENT_STRING_LENGTH]; /* columns 10-80  not already units columns */
 };
 
