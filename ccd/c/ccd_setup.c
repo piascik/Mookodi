@@ -212,7 +212,7 @@ int CCD_Setup_Startup(void)
 		return FALSE;
 	}
 #if LOGGING > 5
-	CCD_General_Log_Format("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,NULL,
+	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
 			       "Andor library reports %d cameras.",camera_count);
 #endif /* LOGGING */
 	if((Setup_Data.Selected_Camera >= camera_count) || (Setup_Data.Selected_Camera < 0))
@@ -233,7 +233,7 @@ int CCD_Setup_Startup(void)
 	}
 	/* set current camera */
 #if LOGGING > 5
-	CCD_General_Log_Format("ccd","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,NULL,
+	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
 			       "SetCurrentCamera(%d).",Setup_Data.Camera_Handle);
 #endif /* LOGGING */
 	andor_retval = SetCurrentCamera(Setup_Data.Camera_Handle);
@@ -543,7 +543,7 @@ int CCD_Setup_Dimensions(int ncols,int nrows,int hbin,int vbin,int window_flags,
 	/* check unbinned window can be binned into a whole number of pixels.
 	** Otherwise Andor GetImage code fails with P2_INVALID. */
 #if LOGGING > 9
-	CCD_General_Log_Format("ccd","ccd_setup.c","CCD_Setup_Dimensions",LOG_VERBOSITY_VERY_VERBOSE,NULL,
+	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Dimensions",LOG_VERBOSITY_VERY_VERBOSE,"CCD",
 			       "Check window can be binned into a whole number of pixels:"
 			       "(((hend %d - hstart %d)+1)%%hbin %d) = %d.",
 			       Setup_Data.Horizontal_End,Setup_Data.Horizontal_Start,Setup_Data.Horizontal_Bin,
@@ -558,7 +558,7 @@ int CCD_Setup_Dimensions(int ncols,int nrows,int hbin,int vbin,int window_flags,
 		return FALSE;
 	}
 #if LOGGING > 9
-	CCD_General_Log_Format("ccd","ccd_setup.c","CCD_Setup_Dimensions",LOG_VERBOSITY_VERY_VERBOSE,NULL,
+	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Dimensions",LOG_VERBOSITY_VERY_VERBOSE,"CCD",
 			       "Check window can be binned into a whole number of pixels:"
 			       "(((vend %d - vstart %d)+1)%%vbin %d) = %d.",
 			       Setup_Data.Vertical_End,Setup_Data.Vertical_Start,Setup_Data.Vertical_Bin,
@@ -573,7 +573,7 @@ int CCD_Setup_Dimensions(int ncols,int nrows,int hbin,int vbin,int window_flags,
 		return FALSE;
 	}
 #if LOGGING > 1
-	CCD_General_Log_Format("ccd","ccd_setup.c","CCD_Setup_Dimensions",LOG_VERBOSITY_VERBOSE,NULL,
+	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Dimensions",LOG_VERBOSITY_VERBOSE,"ANDOR",
 			       "Calling SetImage(hbin=%d,vbin=%d,hstart=%d,hend=%d,vstart=%d,vend=%d).",
 			       Setup_Data.Horizontal_Bin,Setup_Data.Vertical_Bin,
 			       Setup_Data.Horizontal_Start,Setup_Data.Horizontal_End,
@@ -1042,7 +1042,7 @@ int CCD_Setup_Get_Buffer_Length(size_t *buffer_length)
 	(*buffer_length) = (size_t)((CCD_Setup_Get_NCols() * CCD_Setup_Get_NRows())/
 				    (CCD_Setup_Get_Bin_X() * CCD_Setup_Get_Bin_Y()));
 #if LOGGING > 9
-	CCD_General_Log_Format("ccd","ccd_setup.c","CCD_Setup_Get_Buffer_Length",LOG_VERBOSITY_VERBOSE,"CCD",
+	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Get_Buffer_Length",LOG_VERBOSITY_VERBOSE,"CCD",
 			       "buffer_length %ld pixels = (ncols %d x nrows %d) / (binx %d x biny %d).",
 			       (*buffer_length),CCD_Setup_Get_NCols(),CCD_Setup_Get_NRows(),
 			       CCD_Setup_Get_Bin_X(),CCD_Setup_Get_Bin_Y());
@@ -1062,7 +1062,7 @@ int CCD_Setup_Allocate_Image_Buffer(void **buffer,size_t *buffer_length)
 	size_t binned_pixel_count;
 
 #if LOGGING > 0
-	CCD_General_Log("ccd","ccd_setup.c","CCD_Setup_Allocate_Image_Buffer",LOG_VERBOSITY_VERBOSE,"ANDOR",
+	CCD_General_Log("setup","ccd_setup.c","CCD_Setup_Allocate_Image_Buffer",LOG_VERBOSITY_VERBOSE,"CCD",
 			"started.");
 #endif
 	if(buffer == NULL)
@@ -1089,7 +1089,7 @@ int CCD_Setup_Allocate_Image_Buffer(void **buffer,size_t *buffer_length)
 		return FALSE;
 	}
 #if LOGGING > 0
-	CCD_General_Log("ccd","ccd_setup.c","CCD_Setup_Allocate_Image_Buffer",LOG_VERBOSITY_VERBOSE,"ANDOR",
+	CCD_General_Log("setup","ccd_setup.c","CCD_Setup_Allocate_Image_Buffer",LOG_VERBOSITY_VERBOSE,"CCD",
 			"finished.");
 #endif
 	return TRUE;

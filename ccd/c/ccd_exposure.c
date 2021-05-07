@@ -153,11 +153,11 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 
 	Exposure_Error_Number = 0;
 #if LOGGING > 1
-	CCD_General_Log("ccd","ccd_exposure.c","CCD_Exposure_Expose",LOG_VERBOSITY_INTERMEDIATE,NULL,
+	CCD_General_Log("ccd","ccd_exposure.c","CCD_Exposure_Expose",LOG_VERBOSITY_INTERMEDIATE,"CCD",
 			"CCD_Exposure_Expose started.");
 #endif
 #if LOGGING > 5
-	CCD_General_Log_Format("ccd","ccd_exposure.c","CCD_Exposure_Expose",LOG_VERBOSITY_INTERMEDIATE,NULL,
+	CCD_General_Log_Format("ccd","ccd_exposure.c","CCD_Exposure_Expose",LOG_VERBOSITY_INTERMEDIATE,"CCD",
 			       "CCD_Exposure_Expose(open_shutter=%d,start_time=%ld,exposure_length=%d,buffer=%p,"
 			       "buffer_length=%ld).",open_shutter,start_time.tv_sec,exposure_length,
 			       buffer,buffer_length);
@@ -265,7 +265,7 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 #endif
 #if LOGGING > 3
 			CCD_General_Log_Format("ccd","ccd_exposure.c","CCD_Exposure_Expose",
-					       LOG_VERBOSITY_VERBOSE,NULL,
+					       LOG_VERBOSITY_VERBOSE,"CCD",
 					       "Waiting for exposure start time (%ld,%ld).",
 					       current_time.tv_sec,start_time.tv_sec);
 #endif
@@ -340,7 +340,7 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 		if((acquisition_counter%1000)==0)
 		{
 			CCD_General_Log_Format("ccd","ccd_exposure.c","CCD_Exposure_Expose",
-					       LOG_VERBOSITY_VERBOSE,NULL,
+					       LOG_VERBOSITY_VERBOSE,"CCD",
 					       "Current Acquisition Status after %d loops is %s(%u).",
 					       acquisition_counter,
 					       CCD_General_Andor_ErrorCode_To_String(exposure_status),
@@ -375,7 +375,7 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 		if((acquisition_counter%1000)==0)
 		{
 			CCD_General_Log_Format("ccd","ccd_exposure.c","CCD_Exposure_Expose",
-					       LOG_VERBOSITY_VERBOSE,NULL,
+					       LOG_VERBOSITY_VERBOSE,"CCD",
 					       "Start_Time = %s, current_time = %s, fdifftime = %.2f s,"
 					       "difftime = %.2f s, exposure length = %d ms, timeout length = %.2f s, "
 					       "is a timeout = %d.",ctime(&(Exposure_Data.Start_Time.tv_sec)),
@@ -405,14 +405,14 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 			sprintf(Exposure_Error_String,"CCD_Exposure_Expose:"
 				"Timeout (Andor library stuck in DRV_ACQUIRING).");
 			CCD_General_Log_Format("ccd","ccd_exposure.c","CCD_Exposure_Expose",
-					       LOG_VERBOSITY_VERY_TERSE,NULL,
+					       LOG_VERBOSITY_VERY_TERSE,"ANDOR",
 					       "Timeout (Andor library stuck in DRV_ACQUIRING).");
 			return FALSE;
 		}
 	}
 	while(exposure_status==DRV_ACQUIRING);
 #if LOGGING > 3
-	CCD_General_Log_Format("ccd","ccd_exposure.c","CCD_Exposure_Expose",LOG_VERBOSITY_VERBOSE,NULL,
+	CCD_General_Log_Format("ccd","ccd_exposure.c","CCD_Exposure_Expose",LOG_VERBOSITY_VERBOSE,"ANDOR",
 			       "Acquisition Status after %d loops is %s(%u).",acquisition_counter,
 			       CCD_General_Andor_ErrorCode_To_String(exposure_status),exposure_status);
 #endif
@@ -443,7 +443,7 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 	Exposure_Debug_Buffer("CCD_Exposure_Expose",(unsigned short*)buffer,buffer_length);
 #endif
 #if LOGGING > 1
-	CCD_General_Log("ccd","ccd_exposure.c","CCD_Exposure_Expose",LOG_VERBOSITY_INTERMEDIATE,NULL,
+	CCD_General_Log("ccd","ccd_exposure.c","CCD_Exposure_Expose",LOG_VERBOSITY_INTERMEDIATE,"CCD",
 			"CCD_Exposure_Expose finished.");
 #endif
 	return TRUE;
@@ -586,10 +586,10 @@ int CCD_Exposure_Save(char *filename,void *buffer,size_t buffer_length,int ncols
 	double dvalue;
 
 #if LOGGING > 5
-	CCD_General_Log("ccd","ccd_exposure.c","CCD_Exposure_Save",LOG_VERBOSITY_INTERMEDIATE,NULL,"started.");
+	CCD_General_Log("ccd","ccd_exposure.c","CCD_Exposure_Save",LOG_VERBOSITY_INTERMEDIATE,"FITS","started.");
 #endif
 #if LOGGING > 5
-	CCD_General_Log_Format("ccd","ccd_exposure.c","CCD_Exposure_Save",LOG_VERBOSITY_INTERMEDIATE,NULL,
+	CCD_General_Log_Format("ccd","ccd_exposure.c","CCD_Exposure_Save",LOG_VERBOSITY_INTERMEDIATE,"FITS",
 			       "Saving to '%s', buffer of length %ld with dimensions %d x %d.",filename,
 			       buffer_length,ncols,nrows);
 #endif
@@ -673,7 +673,7 @@ int CCD_Exposure_Save(char *filename,void *buffer,size_t buffer_length,int ncols
 		return FALSE;
 	}
 #if LOGGING > 5
-	CCD_General_Log("ccd","ccd_exposure.c","CCD_Exposure_Save",LOG_VERBOSITY_INTERMEDIATE,NULL,"finished.");
+	CCD_General_Log("ccd","ccd_exposure.c","CCD_Exposure_Save",LOG_VERBOSITY_INTERMEDIATE,"FITS","finished.");
 #endif
 	return TRUE;
 }
@@ -843,7 +843,7 @@ static void Exposure_Debug_Buffer(char *description,unsigned short *buffer,size_
 		sprintf(buff+strlen(buff),"[%d] = %hu,",i,buffer[i]);
 	}
 #if LOGGING > 9
-	CCD_General_Log("ccd","ccd_exposure.c","Exposure_Debug_Buffer",LOG_VERBOSITY_INTERMEDIATE,NULL,buff);
+	CCD_General_Log("ccd","ccd_exposure.c","Exposure_Debug_Buffer",LOG_VERBOSITY_INTERMEDIATE,"FITS",buff);
 #endif	
 }
 
