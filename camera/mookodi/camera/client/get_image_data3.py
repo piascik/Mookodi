@@ -26,7 +26,6 @@ if image_data.data is not None:
     for x in range(x_size):
         for y in range(y_size):
             pixel_value = image_data.data[(y*x_size)+x]
-            #print ( "x " + repr(x) + "y " + repr(y) + " pixel value " + repr(pixel_value))
             # pixel_value is 0..65535
             # rescale to 0..255?
             pixel_value = int((pixel_value * args.scale_image * 255) / 65536)
