@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from PIL import Image
 from mookodi.camera.client.client import Client
 from mookodi.camera.client.camera_interface.ttypes import ImageData
 
@@ -13,5 +14,15 @@ if image_data.data is not None:
     print ("Minimum pixel value is " + repr(min(image_data.data)))
     print ("Maximum pixel value is " + repr(max(image_data.data)))
     print ("Mean pixel value is " + repr(sum(image_data.data)/len(image_data.data)))
+    # Mode: 'L' 8 bit, 'I;16' 16-bit unsigned, 'I' 32 bit signed
+    output_image = Image.new(mode='I', size=(x_size, y_size)) 
+    for x in range(y_size):
+        for y in range(x_size):
+            pixel_value = image_data.data[(y*x_size)+x]
+            # pixel_value is 0..65535
+            # rescale to 0..255?
+            #pixel_value = pixel_value * 255 / 65536
+            output_image.putpixel((x,y), pixel_value)
+    output_image.show()
 else:
     print ("There is no image data.")
