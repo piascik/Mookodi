@@ -16,12 +16,14 @@ if image_data.data is not None:
     print ("Mean pixel value is " + repr(sum(image_data.data)/len(image_data.data)))
     # Mode: 'L' 8 bit, 'I;16' 16-bit unsigned, 'I' 32 bit signed
     output_image = Image.new(mode='I', size=(x_size, y_size)) 
-    for x in range(y_size):
-        for y in range(x_size):
+    for x in range(x_size):
+        for y in range(y_size):
             pixel_value = image_data.data[(y*x_size)+x]
+            #print ( "x " + repr(x) + "y " + repr(y) + " pixel value " + repr(pixel_value))
             # pixel_value is 0..65535
             # rescale to 0..255?
-            #pixel_value = pixel_value * 255 / 65536
+            pixel_value = int(pixel_value * 255 / 65536)
+            #print ( "x " + repr(x) + "y " + repr(y) + " pixel value " + repr(pixel_value))
             output_image.putpixel((x,y), pixel_value)
     output_image.show()
 else:
