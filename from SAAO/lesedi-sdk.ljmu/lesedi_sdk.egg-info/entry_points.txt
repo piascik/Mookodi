@@ -1,0 +1,3 @@
+[console_scripts]
+lesedi-cli = lesedi.sdk.cli:main
+
