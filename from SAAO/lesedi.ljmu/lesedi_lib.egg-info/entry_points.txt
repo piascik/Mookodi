@@ -1,0 +1,8 @@
+[console_scripts]
+lesedi = lesedi.lib.server:run
+lesedi-aux = lesedi.lib.aux.driver:main
+lesedi-dome = lesedi.lib.dome.driver:main
+lesedi-focuser = lesedi.lib.focuser.driver:main
+lesedi-rotator = lesedi.lib.rotator.driver:main
+lesedi-telescope = lesedi.lib.telescope.driver:main
+

@@ -1,0 +1,14 @@
+[Unit]
+Description=Lesedi Controller Daemon
+After=network.target
+
+[Service]
+PIDFile=/run/lesedi.pid
+User=observer
+Group=observer
+ExecStart=/home/observer/venv/bin/lesedi --config /usr/local/etc/lesedi.ini
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+
+[Install]
+WantedBy=multi-user.target

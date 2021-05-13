@@ -1,0 +1,4 @@
+thrift
+astropy==3.2.3
+pymodbus==2.3.0
+Twisted==19.10.0
