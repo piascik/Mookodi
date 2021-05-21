@@ -8,7 +8,7 @@ class ReductionController(object):
 	# Read bias, dark, flat, filenames
 	# Hold in memory for immedaite use
 
-    def reduce_image(raw_filename="undefined", reduced_filename="undefined", error=0):
+    def reduce_image(raw_filename=None, reduced_filename=None, error=0):
         '''Basic CCD reductions for acquisition images.
 
         Applies a simple bias, dark, flat using calibration files that the user has to provide 
@@ -53,5 +53,31 @@ class ReductionController(object):
         # return error state to calling process.
 
         return error
+
+
+
+class AcquisitionController(object):
+    def __init__(self):
+        '''Read the config file and set variables'''
+
+
+    def aquire_brightest(filename=None, target_ra, target_dec, target_skypa, magic_pix_x, magic_pix_y, offset_ra=None, offset_dec=None, error=0):
+        '''Performs a WCS fit and returns to MKD a telescope delRA, delDEC in seconds of arc 
+        required to place the specified RA,Dec on the specified pixel.
+        Coordinates are all specified in a sky reference frame (RA, Dec, arcsec etc)
+        '''
+        return error
+
+    def aquire_wcs(filename=None, target_ra, target_dec, radius=100, magic_pix_x, magic_pix_y, offset_x=None, offset_y=None, error=0):
+        '''Runs source detection on image. The target is assumed to be the brightest source detected 
+        within a specified radius of the specified magic pixel. Service returns to MKD the offset_x, offset_y
+        in pixels required to place the assumed target on the specified pixel. 
+        Coordinates are all specified in the instrument focal plane (X,Y, pixels etc).
+        '''
+        return error
+
+    def aquire_wcs():
+
+
 
 
