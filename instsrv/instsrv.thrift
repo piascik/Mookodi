@@ -1,35 +1,42 @@
 // Apache Thrift Hello World service IDL
 
 enum DeployState {
-    GET = 0,
-    ENA = 1,
-    DIS = 2,
-    UNK = 3,
-    ERR = 4,
-    INV = 5,
+    UNK = -5
+    BAD = -4
+    ERR = -3,
+    INV = -2,
+    GET = -1,
+    DIS =  0,
+    ENA =  1,
 }
 
 enum DetectorState {
-    GET    = 0,
-    IDLE   = 1,
-    EXPOSE = 2,
-    READOUT= 3,
-    UNK    = 4,
-    ERR    = 5,
-    INV    = 6,
+    UNK    = -5
+    BAD    = -4
+    ERR    = -3,
+    INV    = -2,
+    GET    = -1,
+    IDLE   =  0,
+    EXPOSE =  1,
+    READOUT=  2,
+}
+
+enum FilterID {
+    Filter0 = 0,
+    Filter1 = 1,
 }
 
 enum FilterState {
-    GET  = 0,
-    POS1 = 1,
-    POS2 = 2,
-    POS3 = 3,
-    POS4 = 4,
-    POS5 = 5,
-    POS6 = 6,
-    UNK  = 7,
-    ERR  = 8,
-    INV  = 9,
+    BAD  = -4,
+    ERR  = -3,
+    INV  = -2,
+    GET  = -1,
+    POS0 =  0,
+    POS1 =  1,
+    POS2 =  2,
+    POS3 =  3,
+    POS4 =  4,
+    POS5 =  5,
 }
 
 enum FlatType {
@@ -54,8 +61,8 @@ struct DetectorConfig {
     3: double Gain = 0.5,
     4: i32    Bin  = 1,
     5: i32    Rate = 0,
-    6: FilterState Filter1 = FilterState.UNK,
-    7: FilterState Filter2 = FilterState.UNK, 
+    6: FilterState Filter0 = FilterState.BAD,
+    7: FilterState Filter1 = FilterState.BAD, 
     8: i32    Repeat = 1, 
     9: bool   Shutter= false,
    10: string RA  = "00:00:00.000",
@@ -63,12 +70,17 @@ struct DetectorConfig {
    12: AcquireType Acquire = AcquireType.WCS,
 }
 
+struct FilterConfig {
+    1: FilterState Filter0 = FilterState.BAD,
+    2: FilterState Filter1 = FilterState.BAD, 
+}
+
 service InstSrv {
-    string CtrlSlit  (1: DeployState state )
-    string CtrlGrism (1: DeployState state )
-    string CtrlMirror(1: DeployState state )
-    string CtrlLamp  (1: DeployState state )
-    string CtrlArc   (1: DeployState state )
-    DetectorConfig   CtrlDetector(1: DetectorConfig config )
-    oneway void      CtrlDetectOW(1: DetectorConfig config )
+    DeployState  CtrlSlit   (1: DeployState state )
+    DeployState  CtrlGrism  (1: DeployState state )
+    DeployState  CtrlMirror (1: DeployState state )
+    DeployState  CtrlLamp   (1: DeployState state )
+    DeployState  CtrlArc    (1: DeployState state )
+    FilterState  CtrlFilter (1: FilterID filter, 2: FilterState state )
+    FilterConfig CtrlFilters(1: FilterConfig config, 2: i32 timeout_ms )
 }
