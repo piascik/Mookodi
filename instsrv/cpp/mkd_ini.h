@@ -1,14 +1,15 @@
-/*!
- * Look-up tables and associated #defines 
- * For the main() module the global data is both defined and initialised here  
- * For all other modules the data declarated as extern in a block at the bottom of this file 
- */
+/** @file   mkd_ini.h
+  *
+  * @brief Look-up tables and associated #defines 
+  *
+  * @author asp
+  *
+  * @date   2021-05-21
+  *
+  * @version $Id$
+  */
 
-/*
-** CONFIGURATION:
-** Configuration information is read from a .ini file into global variables  
-*/
-
+// Configuration information is read from a .ini file into global variables  
 // Data types that can be read from .ini file
 #define CFG_TYPE_STR      0
 #define CFG_TYPE_INT      1
@@ -23,7 +24,7 @@
 #define CFG_SECT_PIO "PIO"
 
 #ifdef MAIN
-// Table defning the configuration data that can be read from .ini file
+// Table defining configuration data that can be read from .ini file
 mkd_ini_t mkd_ini[] = {
 // Field text           Section          Field Type      Pointer to storage               Default  Min Max   Description
 { "WorkingDirectory"   ,CFG_SECT_GEN, CFG_TYPE_STR, &gen_DirWork            ,GEN_DIR_WORK , 0, 0}, //

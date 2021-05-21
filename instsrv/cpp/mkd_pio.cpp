@@ -1,16 +1,27 @@
-#include "mkd.h"
+/** @file   mkd_pio.cpp
+  *
+  * @brief  Programmable I/O functions  
+  *
+  * @author asp
+  *
+  * @date   2021-05-21
+  *
+  * @version $Id$
+  */
+
 #define FAC FAC_PIO
-
+#include "mkd.h"
 #include "InstSrv.h"
-//#include <thrift/protocol/TBinaryProtocol.h>
-//#include <thrift/server/TSimpleServer.h>
-//#include <thrift/transport/TServerSocket.h>
-//#include <thrift/transport/TBufferTransports.h>
 
-
-
+// USB serial device file descriptor
 static int pio_fd = 0;
 
+/* @brief Open PIO serial port device fiel descriptor 
+ *
+ * @param[in]  *device = Serial pseudo-device name 
+ *
+ * @return      MKD_OK = Success, MKD_FAIL = Failure 
+ */
 int pio_open( const char *device  )
 {
     if ( (pio_fd = open( device, O_RDWR | O_NOCTTY | O_SYNC )) < 0 )
@@ -22,6 +33,10 @@ int pio_open( const char *device  )
 
 /* @brief Set serial port attributes
  *
+ * @param[in]   baud   = Baud rate 
+ * @param[in]   parity = Parity 
+ *
+ * @return      MKD_OK = Success, MKD_FAIL = Failure 
  */
 int pio_set_attrib( int baud, int parity)
 {
@@ -34,8 +49,7 @@ int pio_set_attrib( int baud, int parity)
     cfsetispeed(&tty, baud);
 
     tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8;     // 8-bit chars
-    // disable IGNBRK for mismatched baud tests; otherwise receive break
-    // as \000 chars
+    // Disable IGNBRK for mismatched baud tests; otherwise receive break as \000 chars
     tty.c_iflag &= ~IGNBRK; // disable break processing
 
     tty.c_lflag     = 0;    // no signaling chars, no echo,
@@ -57,7 +71,7 @@ int pio_set_attrib( int baud, int parity)
 }
 
 
-/* @brief Enable or disable serial block when reading
+/* @brief Enable or disable serial block reading
  *
  * @param[in]   block = true | false
  *
@@ -81,13 +95,13 @@ int pio_set_blocking(int block)
 }
 
 
-/* @brief Set PIO port 0 output state
+/* @brief Set PIO port 0 to be output
  *
  * @param[out]  out = PIO output state as unsigned byte   
  *
- * @return  0 = Success, -1 = Device accces fail
+ * @return  MKD_OK = Success, MKD_FAIL = Device access fail
  */
-int pio_set_output( unsigned char out, int ret ) 
+int pio_set_output( unsigned char out ) 
 {
     char cmd[MAX_STR+1];
     char chk[MAX_STR+1];
@@ -97,15 +111,15 @@ int pio_set_output( unsigned char out, int ret )
     sprintf( cmd, "@00D000" );
     sprintf( chk, "!00" );
     if (MKD_FAIL == pio_command( cmd, chk, buf, MAX_STR )) 
-        return DeployState::ERR; 
+        return MKD_FAIL; 
   
 //  Set output value 
     sprintf( cmd, "@00P0%2.2X", out );
     sprintf( chk, "!00" );
     if (MKD_FAIL == pio_command( cmd, chk, buf, MAX_STR ) )
-        return DeployState::ERR; 
+        return MKD_FAIL; 
 
-    return ret;
+    return MKD_OK;
 }
 
 
@@ -235,5 +249,5 @@ int pio_command( char *cmd, char *chk, char *rep, int max )
         return mkd_log( MKD_OK, LOG_DBG, FAC, "read() suppressed"); 
     }
 
-    return -1;
+    return MKD_FAIL;
 }

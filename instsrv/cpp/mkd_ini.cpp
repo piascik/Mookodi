@@ -1,9 +1,22 @@
-#include "mkd.h"
+/** @file   mkd_ini.cpp
+  *
+  * @brief  Read configuration file and initialise working variables
+  *
+  * @author asp
+  *
+  * @date   2021-05-21
+  *
+  * @version $Id$
+  */
+
 #define FAC FAC_INI
+#include "mkd.h"
 
-
-/*!
- * Read configuration .ini file
+/* @brief Read configuration file
+ *
+ * @param[in]  *fname = File name 
+ *
+ * @return      MKD_OK = Success, MKD_FAIL = Failure
  */
 int ini_read( const char *fname )
 {
@@ -49,4 +62,3 @@ int ini_read( const char *fname )
     }
     return MKD_OK;
 }
-

@@ -1,3 +1,14 @@
+/** @file   mkd_log.cpp
+  *
+  * @brief  Logging functions 
+  *
+  * @author asp
+  *
+  * @date   2021-05-21
+  *
+  * @version $Id$
+  */
+
 #include "mkd.h"
 
 using std::cout;
@@ -66,7 +77,6 @@ int mkd_log_obsolete( int ret, int lvl, int fac, const char *fmt, ... )
 }
 
 
-
 /** @brief     Wrapper to log to log4cxx. 
   *            Used in-line, returning true | false.
   *
@@ -97,9 +107,10 @@ int mkd_log( int ret, int lvl, int fac, const char *fmt, ... )
 }
 
 
-/** CJM
- * A C function conforming to the CCD library logging interface. This causes messages to be logged to cout, in the form:
- * "function : string".
+/** From CJM
+ * C function conforming to the CCD library logging interface.
+ * This causes messages to be logged to cout, in the form:
+ *   "function : string".
  * @param sub_system The sub system. Can be NULL.
  * @param source_filename The source filename. Can be NULL.
  * @param function The function calling the log. Can be NULL.
@@ -115,8 +126,7 @@ static void log_to_stdout(char *sub_system, char *source_filename, char *functio
 }
 
 
-
-/** CJM
+/** From CJM
  * A C function conforming to the CCD library logging interface. This causes messages to be logged to log4cxx logger ,
  * in the form:
  * category << ":" << sub_system << ":" << source_filename << ":" << "function : string".

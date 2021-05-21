@@ -1,11 +1,14 @@
 /** @file   mkd_dat.h
   *
-  * @brief  Mookodi global variables. Data declared within mok.c, external everywhere else.
+  * @brief  Mookodi global variables. Data declared in main module, external everywhere else
   * 
   * @author asp 
   * 
-  * @date   2020-10-01 
+  * @date   2021-05-21 
+  * 
+  * @version $Id$
   */
+
 #ifdef MAIN
 
 // Colour codes for text output
@@ -23,11 +26,10 @@ const char *log_colour[] =
     COL_NULL,  // CMD  - Default 
 };
 
-// Facility names, NUL is unused. Must match FAC order in mok.h
+// Facility names, NUL is unused. Must match FAC order in mdk.h
 const char *fac_lvls[] = {"NUL","MOK","LOG","UTL","INI","CAM","PIO","FTS","ACT","WHL","CMD"};
 
-// In decreasing order of severity as used for debug level, Must match LOG order in mok.h
-
+// In decreasing order of severity as used for debug level, Must match LOG order in mdk.h
 const char *log_lvls[] = {"NONE","CRIT","SYS","ERR","WRN","IMG","INF","ACT","DBG","CMD"};
 
 int   log_lvl = LOG_WRN;      // Default log level

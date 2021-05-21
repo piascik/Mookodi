@@ -1,10 +1,12 @@
-/** @file   mok.h
+/** @file   mkd.h
   *
-  * @brief  MOPTOP general header included by all modules
+  * @brief  General header included by all Mookodi modules
   *
   * @author asp 
   *
   * @date   2021-04-22 
+  *
+  * @version $Id$
   */
 
 // Needed for extended dirent() functionality
@@ -126,6 +128,8 @@ enum LOG_VERBOSITY
 #define TIM_MILLISECOND  1000.0
 #define TIM_MICROSECOND  1000000.0
 #define TIM_NANOSECOND   1000000000
+// Timeouts
+#define TMO_USB          1000 // USB communication timeout
 
 // PIO BMCM module commands
 #define PIO_DEV_NAME     "/dev/ttyACM0"
@@ -175,15 +179,15 @@ enum LOG_VERBOSITY
 
 // General purpose configs
 #define GEN_DIR_WORK          "./"
-#define GEN_FILE_INIT         "mok.ini"
-#define GEN_FILE_LOG          "mok.log"
+#define GEN_FILE_INIT         "mkd.cfg"
+#define GEN_FILE_LOG          "mkd.log"
 
 // Linear Actuator Controller (LAC) 
 #define LAC_VID               0x04D8 // Vendor ID  = Microchip Technology Inc.
 #define LAC_PID               0xFC5F // Product ID = Custom USB device             
 #define LAC_COUNT             2 // Number of LACs
-#define LAC_ONE		      0 // Index into LAC tables 
-#define LAC_TWO		      1 
+#define LAC_0		      0 // Index into LAC tables 
+#define LAC_1		      1 
 #define LAC_POSITIONS         5 // Number of filter positions
 
 // LAC registers 
@@ -221,12 +225,12 @@ enum LOG_VERBOSITY
 typedef struct mkd_ini_s {
     const char   *key;  // Key name
     const char   *sect; // Section name
-    int     type; // Data type
-    void   *ptr;  // Pointer to variable
-    const char   *str;  // Default string value
-    double  val;  // Default value
-    double  lo;   // Limit sanity check 
-    double  hi;   // Limit sanity check
+    int    type; // Data type
+    void  *ptr;  // Pointer to variable
+    const  char   *str;  // Default string value
+    double val;  // Default value
+    double lo;   // Limit sanity check 
+    double hi;   // Limit sanity check
 } mkd_ini_t;
 
 // Pre-defined LAC positions
@@ -270,7 +274,7 @@ int pio_set_attrib  ( int baud, int parity );
 int pio_set_blocking( int block );
 int pio_get_input   ( unsigned char *inp );
 int pio_get_output  ( unsigned char *out );
-int pio_set_output  ( unsigned char  out, int ret );
+int pio_set_output  ( unsigned char  out );
 int pio_command     ( char *cmd, char *chk, char *rep, int max );
 
 // Linear actuator functions
