@@ -1,12 +1,38 @@
 import configparser
 import logging as log
+from astropy.io import fits
 
 class ReductionController(object):
 
     def __init__(self):
         '''Read the config file and load the calibrations into memory'''
-	# Read bias, dark, flat, filenames
-	# Hold in memory for immedaite use
+
+        self.config = configparser.ConfigParser()
+        self.config.read('config/mkd.cfg')
+
+        #for key in self.config['Reduction']:
+        #  print(key," is ",self.config['Reduction'][key])
+
+	# Read bias, dark, flat, filenames.  Hold in memory for immediate use
+        # For Bias and Flat we should never need the header. For Dark we do need the header.
+	# We do not care what detector and instrument configs were used. That is the operator's 
+        # responsibility. We use whatever they give us.
+
+        hdu = fits.open(self.config['Reduction']['reduction.image.bias'])
+        self.bias_data = hdu[0].data
+        hdu.close()
+
+        hdu = fits.open(self.config['Reduction']['reduction.image.dark'])
+        # Read any one of XPOSURE, EXPOSURE, EXPTIME
+        self.dark_exposure = hdu[0].header.['EXPOSURE']
+        self.dark_data = hdu[0].data
+        hdu.close()
+
+        hdu = fits.open(self.config['Reduction']['reduction.image.flat'])
+        self.flat_data = hdu[0].data
+        hdu.close()
+
+
 
     def reduce_image(raw_filename=None, reduced_filename=None, error=0):
         '''Basic CCD reductions for acquisition images.
@@ -37,38 +63,53 @@ class ReductionController(object):
         Since detector configuration may be different foe acquisition images and spectra, these
         calibrations are generally different form the bias, dark, flat for spectral reductions.
         '''
-        # Tasks to perform
-        #
-        # Read bias, dark, flat, filenames
-        #
+
+        error = 0
+
+        # Read the raw FITS
+        hdu = fits.open( raw_filename )
+        raw_data = hdu[0].data
+        headdata = hdu[0].header
+        raw_exposure = hdu[0].header.['EXPOSURE']
+        hdu.close()
+
         # Subtract bias image as is from science image. No scaling or configurable options.
-        #
-        # Bias subtracted dark image, scaled by integration time from science image. 
-        # Keyword EXPOSURE is read from both dark and science frame to define the scaling.
-        #
+        # Subtract dark image scaled by ratio of hte EXPOSURE times
         # Divide science image by the flatfield image as is. No scaling or configurable options.
-        #
+        reduced_data = ( raw_data - XXX.bias_data - (raw_exposure/XXX.dark_exposure)*XXX.dark_data ) / XXX.flat_data
+
         # Write reduced image to disk. Output filename - TBD
         #
         # return error state to calling process.
+        headdata['L1'] = 'True'
+        headdata['L1BIAS'] = XXX.config['Reduction']['reduction.image.bias']
+        headdata['L1DARK'] = XXX.config['Reduction']['reduction.image.dark']
+        headdata['L1FLAT'] = XXX.config['Reduction']['reduction.image.flat']
+        fits.writeto(reduced_filename, reduced_data, header=headdata, overwrite=True)
 
         return error
+
+
 
 
 
 class AcquisitionController(object):
     def __init__(self):
         '''Read the config file and set variables'''
+        self.config = configparser.ConfigParser()
+        self.config.read('config/mkd.cfg')
+        for key in self.config['Acquisition']:
+          print(key)
 
 
-    def aquire_brightest(filename=None, target_ra, target_dec, target_skypa, magic_pix_x, magic_pix_y, offset_ra=None, offset_dec=None, error=0):
+    def aquire_wcs(filename=None, target_ra, target_dec, target_skypa, magic_pix_x, magic_pix_y, offset_ra=None, offset_dec=None, error=0):
         '''Performs a WCS fit and returns to MKD a telescope delRA, delDEC in seconds of arc 
         required to place the specified RA,Dec on the specified pixel.
         Coordinates are all specified in a sky reference frame (RA, Dec, arcsec etc)
         '''
         return error
 
-    def aquire_wcs(filename=None, target_ra, target_dec, radius=100, magic_pix_x, magic_pix_y, offset_x=None, offset_y=None, error=0):
+    def aquire_brightest(filename=None, target_ra, target_dec, radius=100, magic_pix_x, magic_pix_y, offset_x=None, offset_y=None, error=0):
         '''Runs source detection on image. The target is assumed to be the brightest source detected 
         within a specified radius of the specified magic pixel. Service returns to MKD the offset_x, offset_y
         in pixels required to place the assumed target on the specified pixel. 
