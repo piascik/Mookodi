@@ -98,6 +98,7 @@ void Camera::set_config(CameraConfig & config)
  *     values are read from the config object.
  * <li>We configure the detector readout dimensions to the cached ones using CCD_Setup_Dimensions.
  * <li>We initialise mExposureCount and mExposureIndex to zero.
+ * <li>We initialise mImageBufNCols / mImageBufNRows to zero.
  * <li>We initialise mLastImageFilename and mImageFilenameList to empty strings/vectors.
  * </ul>
  * If a CCD library routine fails we call create_ccd_library_exception to create a CameraException that is then thrown.
@@ -112,6 +113,8 @@ void Camera::set_config(CameraConfig & config)
  * @see Camera::mCachedWindow
  * @see Camera::mExposureCount
  * @see Camera::mExposureIndex
+ * @see Camera::mImageBufNCols
+ * @see Camera::mImageBufNRows
  * @see Camera::mLastImageFilename
  * @see Camera::mImageFilenameList
  * @see Camera::set_readout_speed
@@ -211,6 +214,8 @@ void Camera::initialize()
 	}
 	mExposureCount = 0;
 	mExposureIndex = 0;
+	mImageBufNCols = 0;
+	mImageBufNRows = 0;
 	mLastImageFilename = "";
 	mImageFilenameList = {};	
 }

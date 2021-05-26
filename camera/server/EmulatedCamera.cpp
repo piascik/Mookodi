@@ -65,6 +65,8 @@ void EmulatedCamera::set_config(CameraConfig & config)
  * Initialisation method for the emulated camera object. This does the following:
  * <ul>
  * <li>We setup the cached state.
+ * <li>We set mAbort to false.
+ * <li>We initialise mImageBufNCols/mImageBufNRows to 0.
  * </ul>
  * @see Camera::mState
  */
@@ -87,6 +89,8 @@ void EmulatedCamera::initialize()
 	mState.readout_speed = ReadoutSpeed::SLOW;
 	mState.gain = Gain::ONE;
 	mAbort = false;
+	mImageBufNCols = 0;
+	mImageBufNRows = 0;
 	cout << "Detector initialised" << endl;
 	LOG4CXX_INFO(logger,"Detector initialised.");
 }
