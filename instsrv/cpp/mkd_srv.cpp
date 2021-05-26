@@ -18,6 +18,7 @@
 #include <thrift/transport/TServerSocket.h>
 #include <thrift/transport/TBufferTransports.h>
 #include "mkd.h"
+#include <iostream>
 
 using namespace ::apache::thrift;
 using namespace ::apache::thrift::protocol;
@@ -32,6 +33,7 @@ class InstSrvHandler : virtual public InstSrvIf {
  public:
   InstSrvHandler() {
 //  Initialization 
+//  std::cout << "Instsrv running\n";
 
 //  Init. plib system 
     p_libsys_init();
@@ -58,7 +60,7 @@ class InstSrvHandler : virtual public InstSrvIf {
  * @param[in] lac   = LAC ID 
  * @param[in] state = Filter position
  *
- * @return  ERR=Failed, BAD=Not inposition, POS1-6=Position  
+ * @return  ERR=Failed, BAD=Not in position, POS1-6=Position  
  */
 FilterState::type CheckFilter( int lac, FilterState::type state )
 {
@@ -112,11 +114,15 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
 //Set/get slit deployment output state
   DeployState::type CtrlSlit(const DeployState::type state) {
     unsigned char     out; 
-    DeployState::type ret;
+    DeployState::type ret = DeployState::ERR;
+
+    LOG4CXX_INFO(logger, "CtrlSlit");
 
 //  Get the current output state  
-    if ( MKD_OK != pio_get_output( &out ) )
-      return ret;
+    if ( MKD_OK != pio_get_output( &out ) ) {
+      LOG4CXX_ERROR(logger, "CtrlSlit");
+      return DeployState::ERR;
+    }
 
 //  If GET query, return the output state
     if ( state == DeployState::GET ) {
@@ -124,20 +130,21 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
     } 
     else if (( state  == DeployState::ENA                            )&& 
              ( MKD_OK == pio_set_output( out |=  PIO_OUT_SLIT_DEPLOY))&&   
-             ( MKD_OK == pio_get_output(&out                        ))  ) {   
-      ret = out & PIO_OUT_SLIT_DEPLOY ? DeployState::ENA : DeployState::DIS;            
+             ( MKD_OK == pio_get_output(&out                        ))&&
+             ( out & PIO_OUT_SLIT_DEPLOY                              )  ) {   
+       ret = CheckDeploy( PIO_OUT_SLIT_DEPLOY, PIO_INP_SLIT_DEPLOY, PIO_INP_SLIT_STOW);  
     }
     else if (( state  == DeployState::DIS                            )&& 
              ( MKD_OK == pio_set_output( out &= ~PIO_OUT_SLIT_DEPLOY))&&   
-             ( MKD_OK == pio_get_output(&out                        ))  ) {   
-      ret = out & PIO_OUT_SLIT_DEPLOY ? DeployState::ENA : DeployState::DIS;            
+             ( MKD_OK == pio_get_output(&out                        ))&&   
+             ( ~out & PIO_OUT_SLIT_DEPLOY                            )  ) {   
+       ret = CheckDeploy( PIO_OUT_SLIT_DEPLOY, PIO_INP_SLIT_DEPLOY, PIO_INP_SLIT_STOW);  
     }
     else {
-      ret = DeployState::INV;
+      ret = ret;
     }
 
-    LOG4CXX_INFO(logger, "CtrlSlit");
-    return DeployState::ERR;
+    return ret;
   }
 
 
@@ -146,9 +153,11 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
     unsigned char     out;
     DeployState::type ret = DeployState::ERR;
 
+    LOG4CXX_INFO(logger, "CtrlGrism");
+
 //  Get the current output state
-    if ( MKD_OK != pio_get_output( &out ) )
-      return ret;
+    if ( MKD_FAIL == pio_get_output( &out ) )
+      return DeployState::ERR;
 
 //  If GET query, return the output state
     if ( state == DeployState::GET ) {
@@ -156,27 +165,30 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
     }
     else if (( state  == DeployState::ENA                             )&&
              ( MKD_OK == pio_set_output( out |=  PIO_OUT_GRISM_DEPLOY))&&
-             ( MKD_OK == pio_get_output(&out                         ))  ) {
-      ret = out & PIO_OUT_GRISM_DEPLOY ? DeployState::ENA : DeployState::DIS;
+             ( MKD_OK == pio_get_output(&out                         ))&&
+             ( out & PIO_OUT_GRISM_DEPLOY                             )  ) {   
+      ret = CheckDeploy( PIO_OUT_GRISM_DEPLOY, PIO_INP_GRISM_DEPLOY, PIO_INP_GRISM_STOW);  
     }
     else if (( state  == DeployState::DIS                             )&&
              ( MKD_OK == pio_set_output( out &= ~PIO_OUT_GRISM_DEPLOY))&&
-             ( MKD_OK == pio_get_output(&out                         ))  ) {
-      ret = out & PIO_OUT_GRISM_DEPLOY ? DeployState::ENA : DeployState::DIS;
+             ( MKD_OK == pio_get_output(&out                         ))&&
+             ( ~out & PIO_OUT_GRISM_DEPLOY                            )  ) {   
+      ret = CheckDeploy( PIO_OUT_GRISM_DEPLOY, PIO_INP_GRISM_DEPLOY, PIO_INP_GRISM_STOW);  
     }
     else {
       ret = DeployState::INV;
     }
 
-    LOG4CXX_INFO(logger, "CtrlGrism");
-    return DeployState::ERR; 
+    return ret; 
   }
 
 
 //Set/get mirror deployment output state
   DeployState::type CtrlMirror(const DeployState::type state) {
     unsigned char     out;
-    DeployState::type ret;
+    DeployState::type ret = DeployState::ERR;
+
+    LOG4CXX_INFO(logger, "CtrlMirror");
 
 //  Get the current output state
     if ( MKD_OK != pio_get_output( &out ) )
@@ -188,27 +200,30 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
     }
     else if (( state  == DeployState::ENA                              )&&
              ( MKD_OK == pio_set_output( out |=  PIO_OUT_MIRROR_DEPLOY))&&
-             ( MKD_OK == pio_get_output(&out                          ))  ) {
-      ret = out & PIO_OUT_MIRROR_DEPLOY ? DeployState::ENA : DeployState::DIS;
+             ( MKD_OK == pio_get_output(&out                          ))&&
+             ( out & PIO_OUT_MIRROR_DEPLOY                             )  ) {   
+      ret = CheckDeploy( PIO_OUT_MIRROR_DEPLOY, PIO_INP_MIRROR_DEPLOY, PIO_INP_MIRROR_STOW);  
     }
     else if (( state  == DeployState::DIS                              )&&
              ( MKD_OK == pio_set_output( out &= ~PIO_OUT_MIRROR_DEPLOY))&&
-             ( MKD_OK == pio_get_output(&out                          ))  ) {
-      ret = out & PIO_OUT_MIRROR_DEPLOY ? DeployState::ENA : DeployState::DIS;
+             ( MKD_OK == pio_get_output(&out                          ))&&
+             ( ~out & PIO_OUT_MIRROR_DEPLOY                            )  ) {   
+      ret = CheckDeploy( PIO_OUT_MIRROR_DEPLOY, PIO_INP_MIRROR_DEPLOY, PIO_INP_MIRROR_STOW);  
     }
     else {
       ret = DeployState::INV;
     }
 
-    LOG4CXX_INFO(logger, "CtrlMirror");
-    return DeployState::ERR;
+    return ret;
   }
 
 
 //Set/get tungsten lamp output state
   DeployState::type CtrlLamp(const DeployState::type state) {
     unsigned char     out;
-    DeployState::type ret;
+    DeployState::type ret = DeployState::ERR;
+
+    LOG4CXX_INFO(logger, "CtrlLamp");
 
 //  Get the current output state
     if ( MKD_OK != pio_get_output( &out ) )
@@ -220,27 +235,30 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
     }
     else if (( state  == DeployState::ENA                         )&&
              ( MKD_OK == pio_set_output( out |=  PIO_OUT_WLAMP_ON))&&
-             ( MKD_OK == pio_get_output(&out                     ))  ) {
+             ( MKD_OK == pio_get_output(&out                     ))&&
+             ( out & PIO_OUT_WLAMP_ON                             )  ) {   
       ret = out & PIO_OUT_WLAMP_ON ? DeployState::ENA : DeployState::DIS;
     }
     else if (( state  == DeployState::DIS                         )&&
              ( MKD_OK == pio_set_output( out &= ~PIO_OUT_WLAMP_ON))&&
-             ( MKD_OK == pio_get_output(&out                     ))  ) {
+             ( MKD_OK == pio_get_output(&out                     ))&&
+             ( ~out & PIO_OUT_WLAMP_ON                            )  ) {   
       ret = out & PIO_OUT_WLAMP_ON ? DeployState::ENA : DeployState::DIS;
     }
     else {
       ret = DeployState::INV;
     }
 
-    LOG4CXX_INFO(logger, "CtrlLamp");
-    return DeployState::ERR;
+    return ret;
   }
 
 
 //Set/get arc output state
   DeployState::type CtrlArc(const DeployState::type state) {
     unsigned char     out;
-    DeployState::type ret;
+    DeployState::type ret = DeployState::ERR;
+
+    LOG4CXX_INFO(logger, "CtrlArc");
 
 //  Get the current output state
     if ( MKD_OK != pio_get_output( &out ) )
@@ -252,20 +270,21 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
     }
     else if (( state  == DeployState::ENA                       )&&
              ( MKD_OK == pio_set_output( out |=  PIO_OUT_ARC_ON))&&
-             ( MKD_OK == pio_get_output(&out                   ))  ) {
+             ( MKD_OK == pio_get_output(&out                   ))&&
+             ( out & PIO_OUT_ARC_ON                             )  ) {   
       ret = out & PIO_OUT_ARC_ON ? DeployState::ENA : DeployState::DIS;
     }
     else if (( state  == DeployState::DIS                       )&&
              ( MKD_OK == pio_set_output( out &= ~PIO_OUT_ARC_ON))&&
-             ( MKD_OK == pio_get_output(&out                   ))  ) {
+             ( MKD_OK == pio_get_output(&out                   ))&&
+             ( ~out & PIO_OUT_ARC_ON                            )  ) {   
       ret = out & PIO_OUT_ARC_ON ? DeployState::ENA : DeployState::DIS;
     }
     else {
       ret = DeployState::INV;
     }
 
-    LOG4CXX_INFO(logger, "CtrlArc");
-    return DeployState::ERR;
+    return ret;
   }
 
 
