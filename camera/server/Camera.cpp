@@ -223,7 +223,7 @@ void Camera::initialize()
 /**
  * Set the binning to use when reading out the CCD.
  * <ul>
- * <li>We set the cached binning variables mCachedNCols and mCachedNRows to the input parameters.
+ * <li>We set the cached binning variables mCachedHBin and mCachedVBin to the input parameters.
  * <li>We call CCD_Setup_Dimensions with the cached detector binning/window dimensions to configure
  *     the detector to the new dimensions.
  * </ul>
