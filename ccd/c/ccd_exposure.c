@@ -105,6 +105,9 @@ static char Exposure_Error_String[CCD_GENERAL_ERROR_STRING_LENGTH] = "";
 /* internal functions */
 static int Exposure_Wait_For_Start_Time(struct timespec start_time);
 static void Exposure_Debug_Buffer(char *description,unsigned short *buffer,size_t buffer_length);
+static void Exposure_Flip_X(int ncols,int nrows,unsigned short *exposure_data);
+static void Exposure_Flip_Y(int ncols,int nrows,unsigned short *exposure_data);
+
 static int fexist(char *filename);
 
 /* ----------------------------------------------------------------------------
@@ -123,6 +126,38 @@ void CCD_Exposure_Initialise(void)
 
 /**
  * Do an exposure.
+ * <ul>
+ * <li>We call <b>SetAcquisitionMode(1)</b> to set the Andor library to do a single scan (rather than a kinetic series).
+ * <li>If we want to open the shutter, we call <b>SetShutter(1,0,0,0)</b> else we call <b>SetShutter(1,2,0,0)</b> to
+ *     keep the shutter closed (for biases and darks).
+ * <li>We setup Exposure_Data's Exposure_Length, Exposure_Index and Exposure_Count for status reporting.
+ * <li>We call <b>SetExposureTime</b> to set the camera's exposure length.
+ * <li>We check the image buffer is not NULL, call CCD_Setup_Get_Buffer_Length to get it's allocated length, and 
+ *     use CCD_Setup_Get_NCols / CCD_Setup_Get_NRows / CCD_Setup_Get_Bin_X / CCD_Setup_Get_Bin_Y 
+ *     to compute binned image dimensions (for image flipping).
+ * <li>We reset the Exposure_Data Abort flag.
+ * <li>If start_time is not zero, we enter a loop until the the correct start_time is acheived.
+ * <li>We take a timestamp and store it in Exposure_Data.Start_Time, and set Exposure_Data.Exposure_Status to 
+ *     CCD_EXPOSURE_STATUS_EXPOSE.
+ * <li>We call <b>StartAcquisition</b> to tell the Andor library to start the exposure.
+ * <li>We enter a loop:
+ *     <ul>
+ *     <li>We sleep for a millisecond.
+ *     <li>We call <b>GetStatus</b> to see what exposure status the Andor library is currently in.
+ *     <li>We check Exposure_Data.Abort to see if we have been aborted 
+ *         (and if so call <b>AbortAcquisition</b> and return an error as the exposure has failed).
+ *     <li>We check whether we have been in the acquisition loop too long 
+ *         (Exposure_Data+Exposure_LengthEXPOSURE_TIMEOUT_SECS) and if so return a timeout error.
+ *     <li>We exit the loop if the exposure status is no longer DRV_ACQUIRING.
+ *     </ul>
+ * <li>We set Exposure_Data.Exposure_Status to CCD_EXPOSURE_STATUS_READOUT.
+ * <li>We call <b>GetAcquiredData16</b> to get the acquired data into the image buffer.
+ * <li>If CCD_Setup_Get_Flip_X returns TRUE, we call Exposure_Flip_X to flip the image data in X.
+ * <li>If CCD_Setup_Get_Flip_Y returns TRUE, we call Exposure_Flip_Y to flip the image data in Y.
+ * <li>We set Exposure_Data.Exposure_Status to CCD_EXPOSURE_STATUS_NONE.
+ * <li>We call <b>GetAcquisitionProgress</b> to update some ExposureData status.
+ * <li>We returrn TRUE (success).
+ * </ul>
  * @param open_shutter A boolean, TRUE to open the shutter, FALSE to leave it closed (dark).
  * @param start_time The time to start the exposure. If both the fields in the <i>struct timespec</i> are zero,
  * 	the exposure can be started at any convenient time.
@@ -134,10 +169,18 @@ void CCD_Exposure_Initialise(void)
  *	occurs or the exposure is aborted.
  * @see #Exposure_Error_Number
  * @see #Exposure_Error_String
+ * @see #Exposure_Flip_X
+ * @see #Exposure_Flip_Y
  * @see #Exposure_Debug_Buffer
  * @see CCD_General_Log
  * @see CCD_General_Andor_ErrorCode_To_String
  * @see CCD_Setup_Get_Buffer_Length
+ * @see CCD_Setup_Get_Flip_X
+ * @see CCD_Setup_Get_Flip_Y
+ * @see CCD_Setup_Get_NCols
+ * @see CCD_Setup_Get_NRows
+ * @see CCD_Setup_Get_Bin_X
+ * @see CCD_Setup_Get_Bin_Y
  */
 int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure_length,
 			void *buffer,size_t buffer_length)
@@ -149,7 +192,7 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 	at_u32 andor_pixel_count;
 	size_t pixel_count;
 	unsigned int andor_retval;
-	int accumulation,series,exposure_status,acquisition_counter,done;
+	int binned_ncols,binned_nrows,accumulation,series,exposure_status,acquisition_counter,done;
 
 	Exposure_Error_Number = 0;
 #if LOGGING > 1
@@ -247,6 +290,9 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 			buffer_length,pixel_count);
 		return FALSE;
 	}
+	/* calculate binned ncols / binned nrows for image flipping */
+	binned_ncols = CCD_Setup_Get_NCols() / CCD_Setup_Get_Bin_X();
+	binned_nrows = CCD_Setup_Get_NRows() / CCD_Setup_Get_Bin_Y();
 	/* reset abort */
 	Exposure_Data.Abort = FALSE;
 	/* wait for start_time, if applicable */
@@ -431,6 +477,11 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 			buffer,andor_pixel_count,CCD_General_Andor_ErrorCode_To_String(andor_retval),andor_retval);
 		return FALSE;
 	}
+	/* if required, flip the data */
+	if(CCD_Setup_Get_Flip_X())
+		Exposure_Flip_X(binned_ncols,binned_nrows,(unsigned short*)buffer);
+	if(CCD_Setup_Get_Flip_Y())
+		Exposure_Flip_Y(binned_ncols,binned_nrows,(unsigned short*)buffer);
 	Exposure_Data.Exposure_Status = CCD_EXPOSURE_STATUS_NONE;
 	Exposure_Data.Exposure_Index++;
 	andor_retval = GetAcquisitionProgress(&(accumulation),&(series));
@@ -845,6 +896,64 @@ static void Exposure_Debug_Buffer(char *description,unsigned short *buffer,size_
 #if LOGGING > 9
 	CCD_General_Log("ccd","ccd_exposure.c","Exposure_Debug_Buffer",LOG_VERBOSITY_INTERMEDIATE,"FITS",buff);
 #endif	
+}
+
+/**
+ * Flip the image data in the X direction.
+ * @param ncols The number of columns on the CCD.
+ * @param nrows The number of rows on the CCD.
+ * @param exposure_data The image data received from the CCD. The data in this array is flipped in the X direction.
+ */
+static void Exposure_Flip_X(int ncols,int nrows,unsigned short *exposure_data)
+{
+	int x,y;
+	unsigned short int tempval;
+
+	/* for each row */
+	for(y=0;y<nrows;y++)
+	{
+		/* for the first half of the columns.
+		** Note the middle column will be missed, this is OK as it
+		** does not need to be flipped if it is in the middle */
+		for(x=0;x<(ncols/2);x++)
+		{
+			/* Copy exposure_data[x,y] to tempval */
+			tempval = *(exposure_data+(y*ncols)+x);
+			/* Copy exposure_data[ncols-(x+1),y] to exposure_data[x,y] */
+			*(exposure_data+(y*ncols)+x) = *(exposure_data+(y*ncols)+(ncols-(x+1)));
+			/* Copy tempval = exposure_data[ncols-(x+1),y] */
+			*(exposure_data+(y*ncols)+(ncols-(x+1))) = tempval;
+		}
+	}
+}
+
+/**
+ * Flip the image data in the Y direction.
+ * @param ncols The number of columns on the CCD.
+ * @param nrows The number of rows on the CCD.
+ * @param exposure_data The image data received from the CCD. The data in this array is flipped in the Y direction.
+ */
+static void Exposure_Flip_Y(int ncols,int nrows,unsigned short *exposure_data)
+{
+	int x,y;
+	unsigned short int tempval;
+
+	/* for the first half of the rows.
+	** Note the middle row will be missed, this is OK as it
+	** does not need to be flipped if it is in the middle */
+	for(y=0;y<(nrows/2);y++)
+	{
+		/* for each column */
+		for(x=0;x<ncols;x++)
+		{
+			/* Copy exposure_data[x,y] to tempval */
+			tempval = *(exposure_data+(y*ncols)+x);
+			/* Copy exposure_data[x,nrows-(y+1)] to exposure_data[x,y] */
+			*(exposure_data+(y*ncols)+x) = *(exposure_data+(((nrows-(y+1))*ncols)+x));
+			/* Copy tempval = exposure_data[x,nrows-(y+1)] */
+			*(exposure_data+(((nrows-(y+1))*ncols)+x)) = tempval;
+		}
+	}
 }
 
 /**
