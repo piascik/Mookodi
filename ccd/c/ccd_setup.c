@@ -494,12 +494,13 @@ int CCD_Setup_Shutdown(void)
 
 /**
  * Set up which part of the CCD to readout. Calls Andor library <b>SetImage</b>.
- * @param ncols Number of unbinned image columns (X).
- * @param nrows Number of unbinned image rows (Y).
- * @param hbin Binning in X.
- * @param vbin Binning in Y.
+ * @param ncols Number of unbinned image columns (X). Should be at least 1.
+ * @param nrows Number of unbinned image rows (Y). Should be at least 1.
+ * @param hbin Binning in X. Should be at least 1.
+ * @param vbin Binning in Y. Should be at least 1.
  * @param window_flags Whether to use the specified window or not.
- * @param window A structure containing window data.
+ * @param window A structure containing window data. If the window flags are true, the window must be on the CCD. The
+ *        start and end position are in unbinned pixels.
  * @return The routine returns TRUE on success, and FALSE if an error occurs.
  * @see #Setup_Error_Number
  * @see #Setup_Error_String
@@ -524,8 +525,63 @@ int CCD_Setup_Dimensions(int ncols,int nrows,int hbin,int vbin,int window_flags,
 			       "{xstart=%d,ystart=%d,xend=%d,yend=%d}).",ncols,nrows,hbin,vbin,window_flags,
 			       window.X_Start,window.Y_Start,window.X_End,window.Y_End);
 #endif /* LOGGING */
+	/* check ncols / nrows are legal */
+	if(ncols < 1)
+	{
+		Setup_Error_Number = 40;
+		sprintf(Setup_Error_String,"CCD_Setup_Dimensions:ncols too small (%d).",ncols);
+		return FALSE;
+	}		
+	if(nrows < 1)
+	{
+		Setup_Error_Number = 41;
+		sprintf(Setup_Error_String,"CCD_Setup_Dimensions:nrows too small (%d).",nrows);
+		return FALSE;
+	}		
+	/* check binning is legal */
+	if(hbin < 1)
+	{
+		Setup_Error_Number = 42;
+		sprintf(Setup_Error_String,"CCD_Setup_Dimensions:Horizontal binning too small (%d).",hbin);
+		return FALSE;
+	}
+	if(vbin < 1)
+	{
+		Setup_Error_Number = 43;
+		sprintf(Setup_Error_String,"CCD_Setup_Dimensions:Vertical binning too small (%d).",vbin);
+		return FALSE;
+	}
+	/* setup window dimensions - check sub-window if used */
 	if(window_flags > 0)
 	{
+		if((window.X_Start < 1)||(window.X_Start > ncols))
+		{
+			Setup_Error_Number = 44;
+			sprintf(Setup_Error_String,"CCD_Setup_Dimensions:Window X Start %d out of range (1-%d).",
+				window.X_Start,ncols);
+			return FALSE;
+		}
+		if((window.X_End < 1)||(window.X_End < window.X_Start)||(window.X_End > ncols))
+		{
+			Setup_Error_Number = 45;
+			sprintf(Setup_Error_String,"CCD_Setup_Dimensions:Window X End %d out of range (1|%d-%d).",
+				window.X_End,window.X_Start,ncols);
+			return FALSE;
+		}
+		if((window.Y_Start < 1)||(window.Y_Start > nrows))
+		{
+			Setup_Error_Number = 46;
+			sprintf(Setup_Error_String,"CCD_Setup_Dimensions:Window Y Start %d out of range (1-%d).",
+				window.Y_Start,nrows);
+			return FALSE;
+		}
+		if((window.Y_End < 1)||(window.Y_End < window.Y_Start)||(window.Y_End > nrows))
+		{
+			Setup_Error_Number = 47;
+			sprintf(Setup_Error_String,"CCD_Setup_Dimensions:Window Y End %d out of range (1|%d-%d).",
+				window.Y_End,window.Y_Start,nrows);
+			return FALSE;
+		}
 		Setup_Data.Is_Window = TRUE;
 		Setup_Data.Horizontal_Bin = hbin;
 		Setup_Data.Vertical_Bin = vbin;
