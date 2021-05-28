@@ -95,8 +95,11 @@ void Camera::set_config(CameraConfig & config)
  *     CCD_Fits_Filename_Initialise.
  * <li>We initialise the FITS headers (stored in mFitsHeader) using CCD_Fits_Header_Initialise.
  * <li>We setup the cached image data (used to configure the CCD windowing/binning). Some of the
- *     values are read from the config object.
+ *     values are read from the config object ("ccd.ncols" / "ccd.nrows").
  * <li>We configure the detector readout dimensions to the cached ones using CCD_Setup_Dimensions.
+ * <li>We configure how the read out images are flipped after readout, by retrieving from config the 
+ *     "ccd.image.flip.x" / "ccd.image.flip.y" booleans and using CCD_Setup_Set_Flip_X / CCD_Setup_Set_Flip_Y 
+ *     to configure the CCD library appropriately.
  * <li>We initialise mExposureCount and mExposureIndex to zero.
  * <li>We initialise mImageBufNCols / mImageBufNRows to zero.
  * <li>We initialise mLastImageFilename and mImageFilenameList to empty strings/vectors.
@@ -120,6 +123,9 @@ void Camera::set_config(CameraConfig & config)
  * @see Camera::set_readout_speed
  * @see Camera::set_gain
  * @see Camera::create_ccd_library_exception
+ * @see CameraConfig::get_config_string
+ * @see CameraConfig::get_config_int
+ * @see CameraConfig::get_config_boolean
  * @see ReadoutSpeed
  * @see Gain
  * @see logger
@@ -129,6 +135,8 @@ void Camera::set_config(CameraConfig & config)
  * @see CCD_Setup_Config_Directory_Set
  * @see CCD_Setup_Startup
  * @see CCD_Setup_Dimensions
+ * @see CCD_Setup_Set_Flip_X
+ * @see CCD_Setup_Set_Flip_Y
  * @see CCD_Fits_Filename_Initialise
  * @see CCD_Fits_Header_Initialise
  * @see log_to_log4cxx
@@ -141,7 +149,7 @@ void Camera::initialize()
 	char fits_data_dir_telescope[32];
 	char fits_data_dir_instrument[32];
 	char instrument_code[32];
-	int retval;
+	int retval,flip_x,flip_y;
 	
 	cout << "Initialising Camera." << endl;
 	LOG4CXX_INFO(logger,"Initialising Camera.");
@@ -212,6 +220,22 @@ void Camera::initialize()
 		ce = create_ccd_library_exception();
 		throw ce;
 	}
+	/* configure read out image flipping code from the config file */
+	mCameraConfig.get_config_boolean(CONFIG_CAMERA_SECTION,"ccd.image.flip.x",&flip_x);
+	mCameraConfig.get_config_boolean(CONFIG_CAMERA_SECTION,"ccd.image.flip.y",&flip_y);
+	retval = CCD_Setup_Set_Flip_X(flip_x);
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	retval = CCD_Setup_Set_Flip_Y(flip_y);
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	/* initialise camera status variables */
 	mExposureCount = 0;
 	mExposureIndex = 0;
 	mImageBufNCols = 0;
