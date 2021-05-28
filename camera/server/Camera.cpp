@@ -1584,6 +1584,10 @@ void Camera::multrun_thread(int32_t exposure_count,int32_t exposure_length)
  *                 CCD_Setup_Get_Camera_Head_Model_Name.
  * <li><b>SERNO</b> The camera head serial number, retrieved from the CCD library using 
  *                  CCD_Setup_Get_Camera_Serial_Number.
+ * <li><b>FLIPX</b> A boolean, whether we have flipped the readout in the Horizontal / X direction, 
+ *                  retrieved from the CCD library using CCD_Setup_Get_Flip_X.
+ * <li><b>FLIPY</b> A boolean, whether we have flipped the readout in the Vertical / Y direction, 
+ *                  retrieved from the CCD library using CCD_Setup_Get_Flip_Y.
  * <li><b>IMGRECT / SUBRECT</b> We figure out the active image area. If we are windowing (mCachedWindowFlags is true), 
  *        we use the image dimensions in mCachedWindow. If we are not windowing (mCachedWindowFlags is false), 
  *        we use mCachedNCols,mCachedNRows. We construct a string "sx, sy, ex, ey" 
@@ -1609,11 +1613,14 @@ void Camera::multrun_thread(int32_t exposure_count,int32_t exposure_length)
  * @see CCD_Fits_Header_Add_String
  * @see CCD_Fits_Header_Add_Float
  * @see CCD_Fits_Header_Add_Int
+ * @see CCD_Fits_Header_Add_Logical
  * @see CCD_Fits_Header_Add_Units
  * @see CCD_Fits_Header_TimeSpec_To_UtStart_String
  * @see CCD_Fits_Header_TimeSpec_To_Date_Obs_String
  * @see CCD_Setup_Get_Bin_X
  * @see CCD_Setup_Get_Bin_Y
+ * @see CCD_Setup_Get_Flip_X
+ * @see CCD_Setup_Get_Flip_Y
  * @see CCD_Setup_Get_Camera_Head_Model_Name
  * @see CCD_Setup_Get_Camera_Serial_Number
  * @see CCD_TEMPERATURE_STATUS
@@ -1745,7 +1752,24 @@ void Camera::add_camera_fits_headers(int image_index,int32_t exposure_count,int3
 	{
 		ce = create_ccd_library_exception();
 		throw ce;
-	}		
+	}
+	/* FLIPX */
+	retval = CCD_Fits_Header_Add_Logical(&mFitsHeader,"FLIPX",CCD_Setup_Get_Flip_X(),
+					     "Camera readout flipped horizontally");
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	/* FLIPY */
+	retval = CCD_Fits_Header_Add_Logical(&mFitsHeader,"FLIPY",CCD_Setup_Get_Flip_Y(),
+					     "Camera readout flipped vertically");
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	/* Note IMGRECT / SUBRECT may need to be modified to account for read out flipping */
 	/* IMGRECT 1, 1024, 1024, 1 */
 	/* SUBRECT 1, 1024, 1024, 1 */
 	if(mCachedWindowFlags)
