@@ -76,11 +76,12 @@ struct FilterConfig {
 }
 
 service InstSrv {
-    DeployState  CtrlSlit   (1: DeployState state )
-    DeployState  CtrlGrism  (1: DeployState state )
-    DeployState  CtrlMirror (1: DeployState state )
+    DeployState  CtrlSlit   (1: DeployState state, 2: i32 timeout )
+    DeployState  CtrlGrism  (1: DeployState state, 2: i32 timeout )
+    DeployState  CtrlMirror (1: DeployState state, 2: i32 timeout )
     DeployState  CtrlLamp   (1: DeployState state )
     DeployState  CtrlArc    (1: DeployState state )
-    FilterState  CtrlFilter (1: FilterID filter, 2: FilterState state )
+    DeployState  CtrlPIO    (1: i8 out, 2: i8 inp, 3: i32 timeout )
+    FilterState  CtrlFilter (1: FilterID filter, 2: FilterState state   )
     FilterConfig CtrlFilters(1: FilterConfig config, 2: i32 timeout_ms )
 }
