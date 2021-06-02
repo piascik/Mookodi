@@ -81,6 +81,84 @@ FilterState::type CheckFilter( int lac, FilterState::type state )
 }
 
 
+/* @brief Wait for a single mechanism to reach deployment state
+ *
+ * @param[inp] bit = output bit for controlling state
+ * @param[inp] ena = input bit for deployed state
+ * @param[inp] dis = input bit for stowed state
+ * @param[inp] tmo = timeout in ms 
+ *
+ * @return ERR=Fail, ENA=Enabled (deployed), DIS=Disabled (stowed), UNK=Unknown
+ */
+DeployState::type WaitDeploy( unsigned char bit, unsigned char ena, unsigned char dis, int tmo ) {
+    int tick  = TIM_TICK;                     // Timer ticks [ms]
+    int count = TIM_MICROSECOND * tmo / tick; // Timer count [ms]
+
+    unsigned char out;
+    unsigned char inp;
+
+//  Get the PIO output demand bit and input state bits
+    if ( MKD_OK != pio_get_output( &out ))
+        return DeployState::ERR;
+
+//  Wait for input state 
+    do {
+        if ( MKD_OK != pio_get_input( &inp ))                   // Get current state
+            return DeployState::ERR;
+        else if (  (out & bit) && (inp & ena) && !(inp & dis) ) // Enable state reached 
+            return DeployState::ENA;        
+        else if ( !(out & bit) && (inp & dis) && !(inp & ena) ) // Disable state reached 
+            return DeployState::DIS;        
+
+     fprintf( stderr, "count=%i inp=%i out=%i\n", count, inp, out );
+//   std::cerr << "count=" << count << " inp=" << inp << " out=" << out << "\n";
+
+    } while( count-- );
+
+//  Time-out
+    return DeployState::UNK;
+}
+
+
+/* @brief Wait for PIO state 
+ *
+ * @param[inp] out = output control bits to be set
+ * @param[inp] ena = input bit mask final state
+ * @param[inp] dis = input bit for stowed state
+ * @param[inp] tmo = timeout in ms
+ *
+ * @return ERR=Fail, ENA=Enabled (deployed)
+ */
+DeployState::type WaitPIO( unsigned char bits, unsigned char msk, unsigned char dis, int tmo ) {
+    int tick  = TIM_TICK;                     // Timer ticks [ms]
+    int count = TIM_MICROSECOND * tmo / tick; // Timer count [ms]
+
+    unsigned char out;
+    unsigned char inp;
+
+//  Get the PIO output demand bit and input state bits
+    if ( (MKD_OK != pio_get_output( &out ))||
+         ( out   != bits                  )  )
+        return DeployState::ERR;
+
+//  Wait for input mask to reach expected state
+    do {
+        if ( MKD_OK != pio_get_input( &inp ))                   // Get current state
+            return DeployState::ERR;
+        else if (  inp == msk ) //  state reached
+            return DeployState::ENA;
+
+     fprintf( stderr, "count=%i inp=%i out=%i\n", count, inp, out );
+
+    } while( count-- );
+
+//  Time-out
+    return DeployState::ERR;
+}
+
+
+
+
 /* @brief Check mechanism deployment state
  *
  * @param[inp] bit = output bit for controlling state
@@ -98,12 +176,12 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
         ( MKD_OK != pio_get_input ( &inp ))  )
         return DeployState::ERR;
 
-//  Check if the mechanism is deployed, stowed, intermediate or error
+//  Check if the mechanism is deployed, stowed or intermediate 
     if      ( (inp & ena) && !(inp & dis) )  // Deploy=set and Stow=clear
         return out & bit ? DeployState::ENA : DeployState::DIS;
     else if ( (inp & dis) && !(inp & ena ) ) // Stow=set and Deploy=clear
         return out & bit ? DeployState::DIS : DeployState::ENA;
-    else if (!(inp & ena) && !(inp & dis ) ) // Stow=clear and Deploy=clear. Moving
+    else if (!(inp & ena) && !(inp & dis ) ) // Stow=clear and Deploy=clear. Moving?
        return DeployState::UNK;
 
 //  Invalid input bit states
@@ -112,7 +190,7 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
 
 
 //Set/get slit deployment output state
-  DeployState::type CtrlSlit(const DeployState::type state) {
+  DeployState::type CtrlSlit(const DeployState::type state, const int32_t tmo ) {
     unsigned char     out; 
     DeployState::type ret = DeployState::ERR;
 
@@ -132,16 +210,22 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
              ( MKD_OK == pio_set_output( out |=  PIO_OUT_SLIT_DEPLOY))&&   
              ( MKD_OK == pio_get_output(&out                        ))&&
              ( out & PIO_OUT_SLIT_DEPLOY                              )  ) {   
-       ret = CheckDeploy( PIO_OUT_SLIT_DEPLOY, PIO_INP_SLIT_DEPLOY, PIO_INP_SLIT_STOW);  
+       if ( tmo )
+           ret = WaitDeploy ( PIO_OUT_SLIT_DEPLOY, PIO_INP_SLIT_DEPLOY, PIO_INP_SLIT_STOW, tmo );  
+       else        
+           ret = CheckDeploy( PIO_OUT_SLIT_DEPLOY, PIO_INP_SLIT_DEPLOY, PIO_INP_SLIT_STOW);  
     }
     else if (( state  == DeployState::DIS                            )&& 
              ( MKD_OK == pio_set_output( out &= ~PIO_OUT_SLIT_DEPLOY))&&   
              ( MKD_OK == pio_get_output(&out                        ))&&   
              ( ~out & PIO_OUT_SLIT_DEPLOY                            )  ) {   
-       ret = CheckDeploy( PIO_OUT_SLIT_DEPLOY, PIO_INP_SLIT_DEPLOY, PIO_INP_SLIT_STOW);  
+       if ( tmo )
+           ret = WaitDeploy ( PIO_OUT_SLIT_DEPLOY, PIO_INP_SLIT_DEPLOY, PIO_INP_SLIT_STOW, tmo );  
+       else        
+           ret = CheckDeploy( PIO_OUT_SLIT_DEPLOY, PIO_INP_SLIT_DEPLOY, PIO_INP_SLIT_STOW);  
     }
     else {
-      ret = ret;
+      ret = DeployState::INV;
     }
 
     return ret;
@@ -149,7 +233,7 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
 
 
 //Set/get grism deployment output state
-  DeployState::type CtrlGrism(const DeployState::type state) {
+  DeployState::type CtrlGrism(const DeployState::type state, const int32_t tmo ) {
     unsigned char     out;
     DeployState::type ret = DeployState::ERR;
 
@@ -167,13 +251,19 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
              ( MKD_OK == pio_set_output( out |=  PIO_OUT_GRISM_DEPLOY))&&
              ( MKD_OK == pio_get_output(&out                         ))&&
              ( out & PIO_OUT_GRISM_DEPLOY                             )  ) {   
-      ret = CheckDeploy( PIO_OUT_GRISM_DEPLOY, PIO_INP_GRISM_DEPLOY, PIO_INP_GRISM_STOW);  
+       if ( tmo )
+           ret = WaitDeploy(  PIO_OUT_GRISM_DEPLOY, PIO_INP_GRISM_DEPLOY, PIO_INP_GRISM_STOW, tmo);  
+       else
+           ret = CheckDeploy( PIO_OUT_GRISM_DEPLOY, PIO_INP_GRISM_DEPLOY, PIO_INP_GRISM_STOW);  
     }
     else if (( state  == DeployState::DIS                             )&&
              ( MKD_OK == pio_set_output( out &= ~PIO_OUT_GRISM_DEPLOY))&&
              ( MKD_OK == pio_get_output(&out                         ))&&
              ( ~out & PIO_OUT_GRISM_DEPLOY                            )  ) {   
-      ret = CheckDeploy( PIO_OUT_GRISM_DEPLOY, PIO_INP_GRISM_DEPLOY, PIO_INP_GRISM_STOW);  
+       if ( tmo )
+           ret = WaitDeploy(  PIO_OUT_GRISM_DEPLOY, PIO_INP_GRISM_DEPLOY, PIO_INP_GRISM_STOW, tmo);  
+       else
+           ret = CheckDeploy( PIO_OUT_GRISM_DEPLOY, PIO_INP_GRISM_DEPLOY, PIO_INP_GRISM_STOW);  
     }
     else {
       ret = DeployState::INV;
@@ -184,7 +274,7 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
 
 
 //Set/get mirror deployment output state
-  DeployState::type CtrlMirror(const DeployState::type state) {
+  DeployState::type CtrlMirror(const DeployState::type state, const int32_t tmo ) {
     unsigned char     out;
     DeployState::type ret = DeployState::ERR;
 
@@ -202,13 +292,19 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
              ( MKD_OK == pio_set_output( out |=  PIO_OUT_MIRROR_DEPLOY))&&
              ( MKD_OK == pio_get_output(&out                          ))&&
              ( out & PIO_OUT_MIRROR_DEPLOY                             )  ) {   
-      ret = CheckDeploy( PIO_OUT_MIRROR_DEPLOY, PIO_INP_MIRROR_DEPLOY, PIO_INP_MIRROR_STOW);  
+       if ( tmo )
+           ret = WaitDeploy(  PIO_OUT_MIRROR_DEPLOY, PIO_INP_MIRROR_DEPLOY, PIO_INP_MIRROR_STOW, tmo);  
+       else
+           ret = CheckDeploy( PIO_OUT_MIRROR_DEPLOY, PIO_INP_MIRROR_DEPLOY, PIO_INP_MIRROR_STOW);  
     }
     else if (( state  == DeployState::DIS                              )&&
              ( MKD_OK == pio_set_output( out &= ~PIO_OUT_MIRROR_DEPLOY))&&
              ( MKD_OK == pio_get_output(&out                          ))&&
              ( ~out & PIO_OUT_MIRROR_DEPLOY                            )  ) {   
-      ret = CheckDeploy( PIO_OUT_MIRROR_DEPLOY, PIO_INP_MIRROR_DEPLOY, PIO_INP_MIRROR_STOW);  
+       if ( tmo )
+           ret = WaitDeploy(  PIO_OUT_MIRROR_DEPLOY, PIO_INP_MIRROR_DEPLOY, PIO_INP_MIRROR_STOW, tmo);  
+       else
+           ret = CheckDeploy( PIO_OUT_MIRROR_DEPLOY, PIO_INP_MIRROR_DEPLOY, PIO_INP_MIRROR_STOW);  
     }
     else {
       ret = DeployState::INV;
@@ -219,7 +315,7 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
 
 
 //Set/get tungsten lamp output state
-  DeployState::type CtrlLamp(const DeployState::type state) {
+  DeployState::type CtrlLamp(const DeployState::type state ) {
     unsigned char     out;
     DeployState::type ret = DeployState::ERR;
 
@@ -286,6 +382,18 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
 
     return ret;
   }
+
+//Set output state
+  DeployState::type CtrlPIO(const int8_t out, const int8_t set, const int8_t clr,  const int32_t tmo) {
+    DeployState::type ret = DeployState::ERR;
+
+    if ( MKD_OK == pio_set_output( out ) ) {
+      ret = WaitPIO(  out, set, clr, tmo);  
+    }
+    
+    return ret;
+  }
+
 
 
   FilterState::type CtrlFilter( FilterID::type filter, const FilterState::type state ) {
