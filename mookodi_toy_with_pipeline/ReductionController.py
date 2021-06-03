@@ -5,7 +5,8 @@ from astropy.io import fits
 class ReductionController(object):
 
     def __init__(self):
-        '''Read the config file and load the calibrations into memory'''
+        '''Read the config file and load the calibrations into memory.
+        Reads in bias,dark,flat for both the imaging anD spectral modes and holds them separately.'''
 
         self.erstat = 0
 
@@ -18,7 +19,7 @@ class ReductionController(object):
 	# Read bias, dark, flat, filenames.  Hold in memory for immediate use
         # For Bias and Flat we should never need the header. For Dark we do need the header.
 	# We do not care what detector and instrument configs were used. That is the operator's 
-        # responsibility. We use whatever they give us.
+        # responsibility. We use whatever they give us in mkd.cfg.
 
         # image relates to reducing acquisition images
         print(f"Initialise image pipeline. Read bias frame {self.config['Reduction']['reduction.image.bias']}")
@@ -58,7 +59,7 @@ class ReductionController(object):
 
 
 
-    def reduce_spectrum(self, raw_filename, reduced_filename):
+    def reduce_ccd_spectrum(self, raw_filename, reduced_filename):
         '''Basic CCD reductions for spectral images.
 
         Applies a simple bias, dark, flat using calibration files that the user has to provide 
@@ -116,13 +117,11 @@ class ReductionController(object):
         headdata['L1FLAT'] = self.config['Reduction']['reduction.image.flat']
         fits.writeto(reduced_filename, reduced_data, header=headdata, overwrite=True)
 
-        self.erstat = 3
-
         return self.erstat
 
 
 
-    def reduce_image(self, raw_filename, reduced_filename):
+    def reduce_ccd_image(self, raw_filename, reduced_filename):
         '''Basic CCD reductions for acquisition images.
 
         Applies a simple bias, dark, flat using calibration files that the user has to provide 
@@ -175,6 +174,23 @@ class ReductionController(object):
         headdata['L1FLAT'] = self.config['Reduction']['reduction.image.flat']
         fits.writeto(reduced_filename, reduced_data, header=headdata, overwrite=True)
 
+        return self.erstat
+
+
+
+    def extract_spectrum(self, spec_filename, acq_filename, magic_pix_x, magic_pix_y):
+        '''Uses ASPIRED to create an extracted, calibrated spectrum.
+        I anticipate this can be designed so that nearly everything it needs comes from the FITS header, not passed
+        in a function call. It will need all the normal things that you would expect to be in a FITS header.
+
+        Parameters
+          spec_filename: The spectrum.
+          acq_filename: The acquisition image to be used for flux calibration.
+          magic_pix_x, magic_pix_y: X,Y pixel coordinates of target in ac_filename.
+        [Alternatively acq_filename could be in the FITS header of spec_filename and magic_pix_x, magic_pix_y could
+        be in the FITS header of acq_filename.]          
+        '''
+        self.erstat = 0
         return self.erstat
 
 

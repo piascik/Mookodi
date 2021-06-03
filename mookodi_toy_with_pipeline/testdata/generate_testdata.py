@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import numpy as np
 from astropy.io import fits
 
@@ -5,27 +7,28 @@ from astropy.io import fits
 # I can make them way smaller using astype=
 
 # Random noise, 100 ± 10 
-nrand = np.random.normal(100, 10, size=(1024, 1024))       
+nrand = np.array(np.random.normal(100, 10, size=(1024, 1024)), dtype=np.int16)
 hdu = fits.PrimaryHDU(nrand)
 hdu.header['EXPOSURE'] = 10
 hdu.writeto('image_random.fits',overwrite='True')
+hdu.header['EXPOSURE'] = 1000
 hdu.writeto('spec_random.fits',overwrite='True')
 
 # normal 10 ± 1
-nbias = np.random.normal(0, 1, size=(1024, 1024)) + 10     
+nbias = np.array(np.random.normal(0, 3, size=(1024, 1024)) + 10 , dtype=np.int16)   
 hdu = fits.PrimaryHDU(nbias)
 hdu.writeto('image_zero.fits',overwrite='True')
 hdu.writeto('spec_zero.fits',overwrite='True')
 
 # random between 0 and 10. Never -ve
-ndark = np.random.uniform(0, 10, size=(1024, 1024))         
+ndark = np.array(np.random.uniform(0, 10, size=(1024, 1024)) , dtype=np.int16)        
 hdu = fits.PrimaryHDU(ndark)
 hdu.header['EXPOSURE'] = 100
 hdu.writeto('image_dark.fits',overwrite='True')
 hdu.writeto('spec_dark.fits',overwrite='True')
 
 # normal 1 ± 0.01
-nflat = np.random.normal(0, 0.01, size=(1024, 1024)) + 1   
+nflat = np.array(np.random.normal(0, 0.01, size=(1024, 1024)) + 1, dtype=np.float32) 
 hdu = fits.PrimaryHDU(nflat)
 hdu.writeto('image_flat.fits',overwrite='True')
 hdu.writeto('spec_flat.fits',overwrite='True')
