@@ -9,18 +9,24 @@ class ReductionController(object):
         Reads in bias,dark,flat for both the imaging anD spectral modes and holds them separately.'''
 
         self.erstat = 0
-
+        
+        # Read config file.
+        # Should read_cfg be a new method so it can be re-read without creating a new controller object?
         self.config = configparser.ConfigParser()
         self.config.read('../config/mkd.cfg')
 
         #for key in self.config['Reduction']:
         #  print(key," is ",self.config['Reduction'][key])
 
-	# Read bias, dark, flat, filenames.  Hold in memory for immediate use
-        # For Bias and Flat we should never need the header. For Dark we do need the header.
-	# We do not care what detector and instrument configs were used. That is the operator's 
-        # responsibility. We use whatever they give us in mkd.cfg.
 
+    def read_cal_images(self):
+        '''Read bias, dark, flat, filenames that are specified in the config file.
+        Hold in memory for immediate use.
+        For Bias and Flat we should never need the header. For Dark we do need EXPOSURE from the header.
+	We do not care what detector and instrument configs were used. That is the operator's 
+        responsibility. We use whatever they give us in mkd.cfg.
+        '''
+        
         # image relates to reducing acquisition images
         print(f"Initialise image pipeline. Read bias frame {self.config['Reduction']['reduction.image.bias']}")
         hdu = fits.open(self.config['Reduction']['reduction.image.bias'])
@@ -178,15 +184,16 @@ class ReductionController(object):
 
 
 
-    def extract_spectrum(self, spec_filename, acq_filename, magic_pix_x, magic_pix_y):
+    def extract_spectrum(self, in_filename, acq_filename, magic_pix_x, magic_pix_y, out_filename):
         '''Uses ASPIRED to create an extracted, calibrated spectrum.
         I anticipate this can be designed so that nearly everything it needs comes from the FITS header, not passed
         in a function call. It will need all the normal things that you would expect to be in a FITS header.
 
         Parameters
-          spec_filename: The spectrum.
+          in_filename: The spectrum to process.
           acq_filename: The acquisition image to be used for flux calibration.
-          magic_pix_x, magic_pix_y: X,Y pixel coordinates of target in ac_filename.
+          magic_pix_x, magic_pix_y: X,Y pixel coordinates of target in acq_filename.
+          out_filename: File to wriote results to. Will be overwritten if it exists.
         [Alternatively acq_filename could be in the FITS header of spec_filename and magic_pix_x, magic_pix_y could
         be in the FITS header of acq_filename.]          
         '''

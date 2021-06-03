@@ -5,8 +5,12 @@ class AcquisitionController(object):
 
     def __init__(self):
         '''Read the config file and set variables'''
+
+        # Initialise the variables
         self.clear()
-        # Read config file. 
+        
+        # Read config file.
+        # Should read_cfg be a new method so it can be re-read without creating a new controller object?
         self.config = configparser.ConfigParser()
         self.config.read('../config/mkd.cfg')
         #for key in self.config['Acquisition']:

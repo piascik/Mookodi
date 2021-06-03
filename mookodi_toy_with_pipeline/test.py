@@ -6,11 +6,20 @@ logger = log.getLogger(__name__)
 
 from TopLevelController import TopLevelController
 
-tlc = TopLevelController()
-
-# Assume that magic pixels come from an MKD config
+# Assume that magic pixel comes from an MKD config
 magicX = 400
 magicY = 300
+
+tlc = TopLevelController()
+# TopLevelController calls MookodiController which creates the
+#   tlc.mookodi.reduction
+#   tlc.mookodi.acquistion
+# objects for us.
+
+# We still need to read the bias, dark, flat frames into tlc.mookodi.reduction.
+# This could equally well go in MookodiController when tlc.mookodi.reduction is first initialised,
+# but I put it here just so all the methods are demonstrated in one place.
+tlc.mookodi.reduction.read_cal_images()
 
 print(f"MKD will take an exposure.")
 print(f"MKD will define the names and pass both to reduce_ccd_image().")
@@ -52,8 +61,10 @@ tlc.mookodi.reduction.reduce_ccd_spectrum(raw_filename,reduced_filename)
 print(f"After spectral CCD reduction, erstat = {tlc.mookodi.reduction.erstat}")
 
 last_acq_filename = "acq_image_3.fits"
-print(f"Run ASPIRED on {reduced_filename} using star at {magicX},{magicY} in {last_acq_filename} for the flux calibration")
-tlc.mookodi.reduction.extract_spectrum(reduced_filename,last_acq_filename, magicX, magicY)
+print(f"MKD will define the filenames and pass both to extract_spectrum().")
+extracted_filename = "final_calibrated_1dspec.fits"
+print(f"Run ASPIRED on {reduced_filename} to create {extracted_filename}, using star at {magicX},{magicY} in {last_acq_filename} for the flux calibration")
+tlc.mookodi.reduction.extract_spectrum(reduced_filename,last_acq_filename, magicX, magicY, extracted_filename)
 
 
 print("Done")
