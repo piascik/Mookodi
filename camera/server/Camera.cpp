@@ -271,8 +271,8 @@ void Camera::set_binning(const int8_t xbin, const int8_t ybin)
 	CameraException ce;
 	int retval;
 	
-	cout << "Set binning to " << xbin << ", " << ybin << endl;
-	LOG4CXX_INFO(logger,"Set binning to " << xbin << ", " << ybin);
+	cout << "Set binning to " << int(xbin) << ", " << int(ybin) << endl;
+	LOG4CXX_INFO(logger,"Set binning to " << int(xbin) << ", " << int(ybin));
 	mCachedHBin = xbin;
 	mCachedVBin = ybin;
 	cout << "Configure CCD using ncols " << mCachedNCols << ", nrows " << mCachedNRows <<
