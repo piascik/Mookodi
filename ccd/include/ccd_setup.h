@@ -38,6 +38,10 @@ extern int CCD_Setup_Config_Directory_Set(char *directory);
 extern int CCD_Setup_Dimensions(int ncols,int nrows,int hbin,int vbin,int window_flags,
 				struct CCD_Setup_Window_Struct window);
 extern void CCD_Setup_Abort(void);
+extern int CCD_Setup_Set_Flip_X(int flip_x);
+extern int CCD_Setup_Set_Flip_Y(int flip_y);
+extern int CCD_Setup_Get_Flip_X(void);
+extern int CCD_Setup_Get_Flip_Y(void);
 extern int CCD_Setup_Get_NCols(void);
 extern int CCD_Setup_Get_NRows(void);
 extern int CCD_Setup_Get_Bin_X(void);

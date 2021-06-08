@@ -75,12 +75,12 @@ class Camera : virtual public CameraServiceIf
      */
     struct Fits_Header_Struct mFitsHeader;
     /**
-     * A cached copy of the number of imaging columns on the detector. Used for setting the camera readout area
+     * A cached copy of the number of unbinned imaging columns on the detector. Used for setting the camera readout area
      * dimension configuration.
      */
     int mCachedNCols;
     /**
-     * A cached copy of the number of imaging rows on the detector. Used for setting the camera readout area
+     * A cached copy of the number of unbinned imaging rows on the detector. Used for setting the camera readout area
      * dimension configuration.
      */
     int mCachedNRows;
@@ -132,11 +132,11 @@ class Camera : virtual public CameraServiceIf
      */
     std::vector<int16_t> mImageBuf;
     /**
-     * A cached copy of the number of columns (x dimension) of data in the image buffer.
+     * A cached copy of the number of binned columns (x dimension) of data in the image buffer.
      */
     int mImageBufNCols;
     /**
-     * A cached copy of the number of rows (y dimension) of data in the image buffer.
+     * A cached copy of the number of binned rows (y dimension) of data in the image buffer.
      */
     int mImageBufNRows;
     /**

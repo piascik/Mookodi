@@ -95,8 +95,11 @@ void Camera::set_config(CameraConfig & config)
  *     CCD_Fits_Filename_Initialise.
  * <li>We initialise the FITS headers (stored in mFitsHeader) using CCD_Fits_Header_Initialise.
  * <li>We setup the cached image data (used to configure the CCD windowing/binning). Some of the
- *     values are read from the config object.
+ *     values are read from the config object ("ccd.ncols" / "ccd.nrows").
  * <li>We configure the detector readout dimensions to the cached ones using CCD_Setup_Dimensions.
+ * <li>We configure how the read out images are flipped after readout, by retrieving from config the 
+ *     "ccd.image.flip.x" / "ccd.image.flip.y" booleans and using CCD_Setup_Set_Flip_X / CCD_Setup_Set_Flip_Y 
+ *     to configure the CCD library appropriately.
  * <li>We initialise mExposureCount and mExposureIndex to zero.
  * <li>We initialise mImageBufNCols / mImageBufNRows to zero.
  * <li>We initialise mLastImageFilename and mImageFilenameList to empty strings/vectors.
@@ -120,6 +123,9 @@ void Camera::set_config(CameraConfig & config)
  * @see Camera::set_readout_speed
  * @see Camera::set_gain
  * @see Camera::create_ccd_library_exception
+ * @see CameraConfig::get_config_string
+ * @see CameraConfig::get_config_int
+ * @see CameraConfig::get_config_boolean
  * @see ReadoutSpeed
  * @see Gain
  * @see logger
@@ -129,6 +135,8 @@ void Camera::set_config(CameraConfig & config)
  * @see CCD_Setup_Config_Directory_Set
  * @see CCD_Setup_Startup
  * @see CCD_Setup_Dimensions
+ * @see CCD_Setup_Set_Flip_X
+ * @see CCD_Setup_Set_Flip_Y
  * @see CCD_Fits_Filename_Initialise
  * @see CCD_Fits_Header_Initialise
  * @see log_to_log4cxx
@@ -141,7 +149,7 @@ void Camera::initialize()
 	char fits_data_dir_telescope[32];
 	char fits_data_dir_instrument[32];
 	char instrument_code[32];
-	int retval;
+	int retval,flip_x,flip_y;
 	
 	cout << "Initialising Camera." << endl;
 	LOG4CXX_INFO(logger,"Initialising Camera.");
@@ -212,6 +220,22 @@ void Camera::initialize()
 		ce = create_ccd_library_exception();
 		throw ce;
 	}
+	/* configure read out image flipping code from the config file */
+	mCameraConfig.get_config_boolean(CONFIG_CAMERA_SECTION,"ccd.image.flip.x",&flip_x);
+	mCameraConfig.get_config_boolean(CONFIG_CAMERA_SECTION,"ccd.image.flip.y",&flip_y);
+	retval = CCD_Setup_Set_Flip_X(flip_x);
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	retval = CCD_Setup_Set_Flip_Y(flip_y);
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	/* initialise camera status variables */
 	mExposureCount = 0;
 	mExposureIndex = 0;
 	mImageBufNCols = 0;
@@ -223,7 +247,7 @@ void Camera::initialize()
 /**
  * Set the binning to use when reading out the CCD.
  * <ul>
- * <li>We set the cached binning variables mCachedNCols and mCachedNRows to the input parameters.
+ * <li>We set the cached binning variables mCachedHBin and mCachedVBin to the input parameters.
  * <li>We call CCD_Setup_Dimensions with the cached detector binning/window dimensions to configure
  *     the detector to the new dimensions.
  * </ul>
@@ -247,8 +271,8 @@ void Camera::set_binning(const int8_t xbin, const int8_t ybin)
 	CameraException ce;
 	int retval;
 	
-	cout << "Set binning to " << unsigned(xbin) << ", " << unsigned(ybin) << endl;
-	LOG4CXX_INFO(logger,"Set binning to " << unsigned(xbin) << ", " << unsigned(ybin));
+	cout << "Set binning to " << int(xbin) << ", " << int(ybin) << endl;
+	LOG4CXX_INFO(logger,"Set binning to " << int(xbin) << ", " << int(ybin));
 	mCachedHBin = xbin;
 	mCachedVBin = ybin;
 	cout << "Configure CCD using ncols " << mCachedNCols << ", nrows " << mCachedNRows <<
@@ -1442,6 +1466,8 @@ void Camera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
  * @see Camera::create_ccd_library_exception
  * @see logger
  * @see LOG4CXX_INFO
+ * @see LOG4CXX_ERROR
+ * @see LOG4CXX_FATAL
  * @see CCD_Exposure_Expose
  * @see CCD_Exposure_Save
  * @see CCD_Fits_Filename_Next_Run
@@ -1560,6 +1586,10 @@ void Camera::multrun_thread(int32_t exposure_count,int32_t exposure_length)
  *                 CCD_Setup_Get_Camera_Head_Model_Name.
  * <li><b>SERNO</b> The camera head serial number, retrieved from the CCD library using 
  *                  CCD_Setup_Get_Camera_Serial_Number.
+ * <li><b>FLIPX</b> A boolean, whether we have flipped the readout in the Horizontal / X direction, 
+ *                  retrieved from the CCD library using CCD_Setup_Get_Flip_X.
+ * <li><b>FLIPY</b> A boolean, whether we have flipped the readout in the Vertical / Y direction, 
+ *                  retrieved from the CCD library using CCD_Setup_Get_Flip_Y.
  * <li><b>IMGRECT / SUBRECT</b> We figure out the active image area. If we are windowing (mCachedWindowFlags is true), 
  *        we use the image dimensions in mCachedWindow. If we are not windowing (mCachedWindowFlags is false), 
  *        we use mCachedNCols,mCachedNRows. We construct a string "sx, sy, ex, ey" 
@@ -1585,11 +1615,14 @@ void Camera::multrun_thread(int32_t exposure_count,int32_t exposure_length)
  * @see CCD_Fits_Header_Add_String
  * @see CCD_Fits_Header_Add_Float
  * @see CCD_Fits_Header_Add_Int
+ * @see CCD_Fits_Header_Add_Logical
  * @see CCD_Fits_Header_Add_Units
  * @see CCD_Fits_Header_TimeSpec_To_UtStart_String
  * @see CCD_Fits_Header_TimeSpec_To_Date_Obs_String
  * @see CCD_Setup_Get_Bin_X
  * @see CCD_Setup_Get_Bin_Y
+ * @see CCD_Setup_Get_Flip_X
+ * @see CCD_Setup_Get_Flip_Y
  * @see CCD_Setup_Get_Camera_Head_Model_Name
  * @see CCD_Setup_Get_Camera_Serial_Number
  * @see CCD_TEMPERATURE_STATUS
@@ -1721,7 +1754,24 @@ void Camera::add_camera_fits_headers(int image_index,int32_t exposure_count,int3
 	{
 		ce = create_ccd_library_exception();
 		throw ce;
-	}		
+	}
+	/* FLIPX */
+	retval = CCD_Fits_Header_Add_Logical(&mFitsHeader,"FLIPX",CCD_Setup_Get_Flip_X(),
+					     "Camera readout flipped horizontally");
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	/* FLIPY */
+	retval = CCD_Fits_Header_Add_Logical(&mFitsHeader,"FLIPY",CCD_Setup_Get_Flip_Y(),
+					     "Camera readout flipped vertically");
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	/* Note IMGRECT / SUBRECT may need to be modified to account for read out flipping */
 	/* IMGRECT 1, 1024, 1024, 1 */
 	/* SUBRECT 1, 1024, 1024, 1 */
 	if(mCachedWindowFlags)
@@ -1791,11 +1841,13 @@ void Camera::add_camera_fits_headers(int image_index,int32_t exposure_count,int3
 
 /**
  * This method creates a camera exception, and populates the message with an aggregation of error messasges found
- * in the CCD library.
+ * in the CCD library. We also log the created error to the log file.
  * @return The created camera exception. The message is generated by CCD_General_Error_To_String.
  * @see #ERROR_BUFFER_LENGTH
+ * @see #logger
  * @see CameraException
  * @see CCD_General_Error_To_String
+ * @see LOG4CXX_ERROR
  */
 CameraException Camera::create_ccd_library_exception()
 {
@@ -1805,6 +1857,7 @@ CameraException Camera::create_ccd_library_exception()
 	CCD_General_Error_To_String(error_buffer);
 	std::string str(error_buffer);
 	ce.message = str;
+	LOG4CXX_ERROR(logger,"Creating CCD library exception:" + str);
 	return ce;
 }
 

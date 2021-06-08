@@ -47,7 +47,7 @@
 
 /* data types */
 /**
- * Data type holding local data to andor_setup. 
+ * Data type holding local data to ccd_setup. 
  * @see #CAMERA_HEAD_MODEL_NAME_LENGTH
  */
 struct Setup_Struct
@@ -93,6 +93,10 @@ struct Setup_Struct
 	int Pre_Amp_Gain_Index;
 	/** The actual pre-amp gain for the specified Pre_Amp_Gain_Index. */
 	float Pre_Amp_Gain;
+	/** A boolean - if true the exposure code will flip the image in the horizontal/X direction. */
+	int Flip_X;
+	/** A boolean - if true the exposure code wil flip the image in the vertical/Y direction. */
+	int Flip_Y;
 };
 
 
@@ -119,7 +123,7 @@ static char Setup_Error_String[CCD_GENERAL_ERROR_STRING_LENGTH] = "";
  */
 static struct Setup_Struct Setup_Data = 
 {
-	NULL,0,0,"",0,0,0,0,0,FALSE,0,0,0,0,0,0.0,0,0.0,0
+	NULL,0,0,"",0,0,0,0,0,FALSE,0,0,0,0,0,0.0,0,0.0,0,FALSE,FALSE
 };
 
 /* ----------------------------------------------------------------------------
@@ -490,12 +494,13 @@ int CCD_Setup_Shutdown(void)
 
 /**
  * Set up which part of the CCD to readout. Calls Andor library <b>SetImage</b>.
- * @param ncols Number of image columns (X).
- * @param nrows Number of image rows (Y).
- * @param hbin Binning in X.
- * @param vbin Binning in Y.
+ * @param ncols Number of unbinned image columns (X). Should be at least 1.
+ * @param nrows Number of unbinned image rows (Y). Should be at least 1.
+ * @param hbin Binning in X. Should be at least 1.
+ * @param vbin Binning in Y. Should be at least 1.
  * @param window_flags Whether to use the specified window or not.
- * @param window A structure containing window data.
+ * @param window A structure containing window data. If the window flags are true, the window must be on the CCD. The
+ *        start and end position are in unbinned pixels.
  * @return The routine returns TRUE on success, and FALSE if an error occurs.
  * @see #Setup_Error_Number
  * @see #Setup_Error_String
@@ -520,8 +525,63 @@ int CCD_Setup_Dimensions(int ncols,int nrows,int hbin,int vbin,int window_flags,
 			       "{xstart=%d,ystart=%d,xend=%d,yend=%d}).",ncols,nrows,hbin,vbin,window_flags,
 			       window.X_Start,window.Y_Start,window.X_End,window.Y_End);
 #endif /* LOGGING */
+	/* check ncols / nrows are legal */
+	if(ncols < 1)
+	{
+		Setup_Error_Number = 40;
+		sprintf(Setup_Error_String,"CCD_Setup_Dimensions:ncols too small (%d).",ncols);
+		return FALSE;
+	}		
+	if(nrows < 1)
+	{
+		Setup_Error_Number = 41;
+		sprintf(Setup_Error_String,"CCD_Setup_Dimensions:nrows too small (%d).",nrows);
+		return FALSE;
+	}		
+	/* check binning is legal */
+	if(hbin < 1)
+	{
+		Setup_Error_Number = 42;
+		sprintf(Setup_Error_String,"CCD_Setup_Dimensions:Horizontal binning too small (%d).",hbin);
+		return FALSE;
+	}
+	if(vbin < 1)
+	{
+		Setup_Error_Number = 43;
+		sprintf(Setup_Error_String,"CCD_Setup_Dimensions:Vertical binning too small (%d).",vbin);
+		return FALSE;
+	}
+	/* setup window dimensions - check sub-window if used */
 	if(window_flags > 0)
 	{
+		if((window.X_Start < 1)||(window.X_Start > ncols))
+		{
+			Setup_Error_Number = 44;
+			sprintf(Setup_Error_String,"CCD_Setup_Dimensions:Window X Start %d out of range (1-%d).",
+				window.X_Start,ncols);
+			return FALSE;
+		}
+		if((window.X_End < 1)||(window.X_End < window.X_Start)||(window.X_End > ncols))
+		{
+			Setup_Error_Number = 45;
+			sprintf(Setup_Error_String,"CCD_Setup_Dimensions:Window X End %d out of range (1|%d-%d).",
+				window.X_End,window.X_Start,ncols);
+			return FALSE;
+		}
+		if((window.Y_Start < 1)||(window.Y_Start > nrows))
+		{
+			Setup_Error_Number = 46;
+			sprintf(Setup_Error_String,"CCD_Setup_Dimensions:Window Y Start %d out of range (1-%d).",
+				window.Y_Start,nrows);
+			return FALSE;
+		}
+		if((window.Y_End < 1)||(window.Y_End < window.Y_Start)||(window.Y_End > nrows))
+		{
+			Setup_Error_Number = 47;
+			sprintf(Setup_Error_String,"CCD_Setup_Dimensions:Window Y End %d out of range (1|%d-%d).",
+				window.Y_End,window.Y_Start,nrows);
+			return FALSE;
+		}
 		Setup_Data.Is_Window = TRUE;
 		Setup_Data.Horizontal_Bin = hbin;
 		Setup_Data.Vertical_Bin = vbin;
@@ -785,6 +845,44 @@ int CCD_Setup_Set_Pre_Amp_Gain(int pre_amp_gain_index)
 }
 
 /**
+ * Routine to set whether the exposure code will flip the read out image in the horizontal/X direction.
+ * This just sets a flag in Setup_Data which is retrieved by the exposure code.
+ * @param flip_x Whether to flip the readout data in the horizontal/X direction - a boolean.
+ * @see #Setup_Data
+ * @see CCD_GENERAL_IS_BOOLEAN
+ */
+int CCD_Setup_Set_Flip_X(int flip_x)
+{
+	if(!CCD_GENERAL_IS_BOOLEAN(flip_x))
+	{
+		Setup_Error_Number = 27;
+		sprintf(Setup_Error_String,"CCD_Setup_Set_Flip_X: Argument flip_x (%d) was not a boolean.",flip_x);
+		return FALSE;
+	}
+	Setup_Data.Flip_X = flip_x;
+	return TRUE;
+}
+
+/**
+ * Routine to set whether the exposure code will flip the read out image in the vertical/Y direction.
+ * This just sets a flag in Setup_Data which is retrieved by the exposure code.
+ * @param flip_y Whether to flip the readout data in the vertical/Y direction - a boolean.
+ * @see #Setup_Data
+ * @see CCD_GENERAL_IS_BOOLEAN
+ */
+int CCD_Setup_Set_Flip_Y(int flip_y)
+{
+	if(!CCD_GENERAL_IS_BOOLEAN(flip_y))
+	{
+		Setup_Error_Number = 37;
+		sprintf(Setup_Error_String,"CCD_Setup_Set_Flip_Y: Argument flip_y (%d) was not a boolean.",flip_y);
+		return FALSE;
+	}
+	Setup_Data.Flip_Y = flip_y;
+	return TRUE;
+}
+
+/**
  * Get the number of columns setup to be read out from the last CCD_Setup_Dimensions.
  * Currently, (Setup_Data.Horizontal_End - Setup_Data.Horizontal_Start)+1.
  * Plus 1 as dimensions are inclusive. This number is unbinned.
@@ -902,6 +1000,26 @@ int CCD_Setup_Get_Detector_Pixel_Count_X(void)
 int CCD_Setup_Get_Detector_Pixel_Count_Y(void)
 {
 	return Setup_Data.Detector_Y_Pixel_Count;
+}
+
+/**
+ * Return whether or not to flip the read out image in the horizontal/X direction.
+ * @return A boolean, if TRUE flip the read out image in the horizontal/X direction, otherwise don't.
+ * @see #Setup_Data
+ */
+int CCD_Setup_Get_Flip_X(void)
+{
+	return Setup_Data.Flip_X;
+}
+
+/**
+ * Return whether or not to flip the read out image in the vertical/Y direction.
+ * @return A boolean, if TRUE flip the read out image in the vertical/Y direction, otherwise don't.
+ * @see #Setup_Data
+ */
+int CCD_Setup_Get_Flip_Y(void)
+{
+	return Setup_Data.Flip_Y;
 }
 
 /**
