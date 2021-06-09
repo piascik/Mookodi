@@ -79,7 +79,7 @@ void CameraConfig::load_config()
 		ce = create_config_exception(error);
 		throw ce;
 	}
-	
+	LOG4CXX_INFO(logger,"CameraConfig::load_config finished.");	
 }
 
 /**
@@ -98,6 +98,8 @@ void CameraConfig::get_config_string(const char* section,const char* keyword, ch
 	CameraException ce;
 	char * value_p_string = NULL;
 	
+	LOG4CXX_INFO(logger,"CameraConfig::get_config_string(section = " << section << ",keyword = " << keyword <<
+		     ",value_length = " << value_length << ") started.");
 	if(p_ini_file_is_key_exists(mCameraConfigFile,section,keyword) == FALSE)
 	{
 		ce = create_config_exception_string("get_config_string:Keyword " + std::string(keyword) +
@@ -118,6 +120,8 @@ void CameraConfig::get_config_string(const char* section,const char* keyword, ch
 	strcpy(value,value_p_string);
 	if(value_p_string != NULL)
 		p_free(value_p_string);
+	LOG4CXX_INFO(logger,"CameraConfig::get_config_string(section = " << section << ",keyword = " << keyword <<
+		     ",value_length = " << value_length << ") returned '" << value << "'.");
 }
 
 /**
@@ -133,6 +137,8 @@ void CameraConfig::get_config_int(const char* section,const char* keyword, int* 
 {
 	CameraException ce;
 
+	LOG4CXX_INFO(logger,"CameraConfig::get_config_int(section = " << section << ",keyword = " << keyword <<
+		     ") started.");
 	if(value == NULL)
 	{
 		ce = create_config_exception_string("get_config_int:value is NULL.");
@@ -145,6 +151,8 @@ void CameraConfig::get_config_int(const char* section,const char* keyword, int* 
 		throw ce;
 	}
 	(*value) =  p_ini_file_parameter_int(mCameraConfigFile,section,keyword,0);
+	LOG4CXX_INFO(logger,"CameraConfig::get_config_int(section = " << section << ",keyword = " << keyword <<
+		     ") returned " << (*value) << ".");
 }
 
 /**
@@ -160,6 +168,8 @@ void CameraConfig::get_config_double(const char* section,const char* keyword, do
 {
 	CameraException ce;
 
+	LOG4CXX_INFO(logger,"CameraConfig::get_config_double(section = " << section << ",keyword = " << keyword <<
+		     ") started.");
 	if(value == NULL)
 	{
 		ce = create_config_exception_string("get_config_double:value is NULL.");
@@ -172,6 +182,8 @@ void CameraConfig::get_config_double(const char* section,const char* keyword, do
 		throw ce;
 	}
 	(*value) =  p_ini_file_parameter_double(mCameraConfigFile,section,keyword,0.0);
+	LOG4CXX_INFO(logger,"CameraConfig::get_config_double(section = " << section << ",keyword = " << keyword <<
+		     ") returned " << (*value) << ".");
 }
 
 /**
@@ -187,6 +199,8 @@ void CameraConfig::get_config_boolean(const char* section,const char* keyword, i
 {
 	CameraException ce;
 
+	LOG4CXX_INFO(logger,"CameraConfig::get_config_boolean(section = " << section << ",keyword = " << keyword <<
+		     ") started.");
 	if(value == NULL)
 	{
 		ce = create_config_exception_string("get_config_boolean:value is NULL.");
@@ -199,6 +213,8 @@ void CameraConfig::get_config_boolean(const char* section,const char* keyword, i
 		throw ce;
 	}
 	(*value) =  p_ini_file_parameter_boolean(mCameraConfigFile,section,keyword,FALSE);
+	LOG4CXX_INFO(logger,"CameraConfig::get_config_boolean(section = " << section << ",keyword = " << keyword <<
+		     ") returned " << (*value) << ".");
 }
 
 /**
