@@ -1154,7 +1154,7 @@ int CCD_Setup_Get_VS_Speed_Index(void)
  * @see #Setup_Data
  * @see CCD_Setup_Set_VS_Amplitude
  */
-int CCD_Setup_Get_VS_Speed_Amplitude(void)
+int CCD_Setup_Get_VS_Amplitude(void)
 {
 	return Setup_Data.VS_Amplitude;
 }
