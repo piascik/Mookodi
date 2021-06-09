@@ -409,8 +409,11 @@ void Camera::clear_window()
  *     "ccd.readout_speed.hs_speed_index.SLOW|FAST".
  * <li>We retrieve the vertical shift speed index from the config (mCameraConfig), using the camera section key
  *     "ccd.readout_speed.vs_speed_index.SLOW|FAST".
+ * <li>We retrieve the vertical clock voltage amplitude from the config (mCameraConfig), using the camera section key
+ *     "ccd.readout_speed.vs_amplitude.SLOW|FAST".
  * <li>We configure the camera's horizontal shift speed by calling. CCD_Setup_Set_HS_Speed.
  * <li>We configure the camera's vertical shift speed by calling. CCD_Setup_Set_VS_Speed.
+ * <li>We configure the camera's vertical clock speed amplitude by calling. CCD_Setup_Set_VS_Amplitude.
  * <li>We update mCachedReadoutSpeed to reflect the newly configured readout speed.
  * </ul>
  * If an error occurs configuring the camera or retrieving the config, a CameraException is thrown.
@@ -425,13 +428,14 @@ void Camera::clear_window()
  * @see ReadoutSpeed
  * @see CCD_Setup_Set_HS_Speed
  * @see CCD_Setup_Set_VS_Speed
+ * @see CCD_Setup_Set_VS_Amplitude
  */
 void Camera::set_readout_speed(const ReadoutSpeed::type speed)
 {
 	CameraException ce;
 	std::string keyword;
 	int retval;
-	int hs_speed_index,vs_speed_index;
+	int hs_speed_index,vs_speed_index,vs_amplitude;
 	
 	cout << "Set readout speed to " << to_string(speed) << "." << endl;
 	LOG4CXX_INFO(logger,"Set readout speed to " << to_string(speed) << ".");
@@ -440,6 +444,8 @@ void Camera::set_readout_speed(const ReadoutSpeed::type speed)
 	mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,keyword.c_str(),&hs_speed_index);
 	keyword = "ccd.readout_speed.vs_speed_index."+to_string(speed);
 	mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,keyword.c_str(),&vs_speed_index);
+	keyword = "ccd.readout_speed.vs_amplitude."+to_string(speed);
+	mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,keyword.c_str(),&vs_amplitude);
 	/* configure the camera appropriately */
 	LOG4CXX_DEBUG(logger,"Using horizontal shift speed index " << std::to_string(hs_speed_index) << ".");
 	retval = CCD_Setup_Set_HS_Speed(hs_speed_index);
@@ -450,6 +456,13 @@ void Camera::set_readout_speed(const ReadoutSpeed::type speed)
 	}
 	LOG4CXX_DEBUG(logger,"Using vertical shift speed index " << std::to_string(vs_speed_index) << ".");
 	retval = CCD_Setup_Set_VS_Speed(vs_speed_index);
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	LOG4CXX_DEBUG(logger,"Using vertical clock amplitude " << std::to_string(vs_amplitude) << ".");
+	retval = CCD_Setup_Set_VS_Amplitude(vs_amplitude);
 	if(retval == FALSE)
 	{
 		ce = create_ccd_library_exception();
@@ -1598,8 +1611,16 @@ void Camera::multrun_thread(int32_t exposure_count,int32_t exposure_length)
  *                   CCD_Fits_Header_TimeSpec_To_UtStart_String to format the string.
  * <li><b>DATE-OBS</b> We retrieve the start exposure timestamp using CCD_Exposure_Start_Time_Get. We use 
  *                   CCD_Fits_Header_TimeSpec_To_Date_Obs_String to format the string.
- * <li><b>VSHIFT</b> The vertical shift speed in microseconds/pixel, retrieved from the CCD library using CCD_Setup_Get_VS_Speed.
- * <li><b>HSHIFT</b> The horizontal shift speed im MHz, retrieved from the CCD library using CCD_Setup_Get_HS_Speed.
+ * <li><b>VSHIFT</b> The vertical shift speed in microseconds/pixel, retrieved from the CCD library using 
+ *                   CCD_Setup_Get_VS_Speed.
+ * <li><b>VSHIFTI</b> The vertical shift speed index used to configure the vertical shift speed, 
+ *                    retrieved from the CCD library using CCD_Setup_Get_VS_Speed_Index.
+ * <li><b>VSAMP</b> The vertical clock voltage amplitude, retrieved from the CCD library using 
+ *                  CCD_Setup_Get_VS_Amplitude, where '0' is normal and '1'-'4' indicates an increased clock
+ *                  voltage. 
+ * <li><b>HSHIFT</b> The horizontal shift speed in MHz, retrieved from the CCD library using CCD_Setup_Get_HS_Speed.
+ * <li><b>HSHIFTI</b> The horizontal shift speed index used to configure the horizontal shift speed, 
+ *                    retrieved from the CCD library using CCD_Setup_Get_HS_Speed_Index.
  * </ul>
  * @param image_index Which image out of the exposure_count number of images we are currently doing.
  * @param exposure_count The number of images in the Multrun/Multbias/MultDark.
@@ -1628,7 +1649,10 @@ void Camera::multrun_thread(int32_t exposure_count,int32_t exposure_length)
  * @see CCD_TEMPERATURE_STATUS
  * @see CCD_Temperature_Get
  * @see CCD_Setup_Get_VS_Speed
+ * @see CCD_Setup_Get_VS_Speed_Index
  * @see CCD_Setup_Get_HS_Speed
+ * @see CCD_Setup_Get_HS_Speed_Index
+ * @see CCD_Setup_Get_VS_Amplitude
  */
 void Camera::add_camera_fits_headers(int image_index,int32_t exposure_count,int32_t exposure_length)
 {
@@ -1640,7 +1664,7 @@ void Camera::add_camera_fits_headers(int image_index,int32_t exposure_count,int3
 	char time_string[32];
 	double temperature;
 	float vs_speed,hs_speed,pre_amp_gain;
-	int retval,xs,ys,xe,ye;
+	int retval,xs,ys,xe,ye,vs_speed_index,hs_speed_index,vs_amplitude;
 	
 	/* EXPTIME  double in secs */
 	retval = CCD_Fits_Header_Add_Float(&mFitsHeader,"EXPTIME",
@@ -1815,6 +1839,22 @@ void Camera::add_camera_fits_headers(int image_index,int32_t exposure_count,int3
 		ce = create_ccd_library_exception();
 		throw ce;
 	}
+	/* VSHIFTI */
+	vs_speed_index = CCD_Setup_Get_VS_Speed_Index();
+	retval = CCD_Fits_Header_Add_Int(&mFitsHeader,"VSHIFTI",vs_speed_index,"vertical shift speed index");
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	/* VSAMP */
+	vs_amplitude = CCD_Setup_Get_VS_Amplitude();
+	retval = CCD_Fits_Header_Add_Int(&mFitsHeader,"VSAMP",vs_amplitude,"vertical clock voltage amplitude");
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
 	/* HSHIFT */
 	hs_speed = CCD_Setup_Get_HS_Speed();
 	retval = CCD_Fits_Header_Add_Float(&mFitsHeader,"HSHIFT",(double)hs_speed,"horizontal shift speed");
@@ -1824,6 +1864,14 @@ void Camera::add_camera_fits_headers(int image_index,int32_t exposure_count,int3
 		throw ce;
 	}
 	retval = CCD_Fits_Header_Add_Units(&mFitsHeader,"HSHIFT","MHz");
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	/* HSHIFTI */
+	hs_speed_index = CCD_Setup_Get_HS_Speed_Index();
+	retval = CCD_Fits_Header_Add_Int(&mFitsHeader,"HSHIFTI",hs_speed_index,"horizontal shift speed index");
 	if(retval == FALSE)
 	{
 		ce = create_ccd_library_exception();
