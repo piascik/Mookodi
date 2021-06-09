@@ -909,6 +909,10 @@ static void Exposure_Flip_X(int ncols,int nrows,unsigned short *exposure_data)
 	int x,y;
 	unsigned short int tempval;
 
+#if LOGGING > 5
+	CCD_General_Log("ccd","ccd_exposure.c","Exposure_Flip_X",LOG_VERBOSITY_INTERMEDIATE,"FITS",
+			"Flipping image data in the X (horizontal) direction.");
+#endif
 	/* for each row */
 	for(y=0;y<nrows;y++)
 	{
@@ -938,6 +942,10 @@ static void Exposure_Flip_Y(int ncols,int nrows,unsigned short *exposure_data)
 	int x,y;
 	unsigned short int tempval;
 
+#if LOGGING > 5
+	CCD_General_Log("ccd","ccd_exposure.c","Exposure_Flip_Y",LOG_VERBOSITY_INTERMEDIATE,"FITS",
+			"Flipping image data in the Y (vertical) direction.");
+#endif
 	/* for the first half of the rows.
 	** Note the middle row will be missed, this is OK as it
 	** does not need to be flipped if it is in the middle */

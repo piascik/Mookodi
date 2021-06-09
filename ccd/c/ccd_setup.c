@@ -859,6 +859,10 @@ int CCD_Setup_Set_Flip_X(int flip_x)
 		sprintf(Setup_Error_String,"CCD_Setup_Set_Flip_X: Argument flip_x (%d) was not a boolean.",flip_x);
 		return FALSE;
 	}
+#if LOGGING > 1
+	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Set_Flip_X",LOG_VERBOSITY_TERSE,"CCD",
+			       "Setting flipping of the image in the X direction to %d.",flip_x);
+#endif /* LOGGING */
 	Setup_Data.Flip_X = flip_x;
 	return TRUE;
 }
@@ -878,6 +882,10 @@ int CCD_Setup_Set_Flip_Y(int flip_y)
 		sprintf(Setup_Error_String,"CCD_Setup_Set_Flip_Y: Argument flip_y (%d) was not a boolean.",flip_y);
 		return FALSE;
 	}
+#if LOGGING > 1
+	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Set_Flip_Y",LOG_VERBOSITY_TERSE,"CCD",
+			       "Setting flipping of the image in the Y direction to %d.",flip_y);
+#endif /* LOGGING */
 	Setup_Data.Flip_Y = flip_y;
 	return TRUE;
 }
