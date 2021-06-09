@@ -89,6 +89,9 @@ struct Setup_Struct
 	int VS_Speed_Index;
 	/** The vertical speed for the specified VS_Speed_Index, in microseconds/pixel. */
 	float VS_Speed;
+	/** The amplitude of the vertical clock voltage to use. Nominally 0, 
+	 ** this should be increased (valid values 1..4) for high speed vertical clock speeds. */
+	int VS_Amplitude;
 	/** The pre-amp gain index to use when setting the pre-amp gain. */
 	int Pre_Amp_Gain_Index;
 	/** The actual pre-amp gain for the specified Pre_Amp_Gain_Index. */
@@ -123,7 +126,7 @@ static char Setup_Error_String[CCD_GENERAL_ERROR_STRING_LENGTH] = "";
  */
 static struct Setup_Struct Setup_Data = 
 {
-	NULL,0,0,"",0,0,0,0,0,FALSE,0,0,0,0,0,0.0,0,0.0,0,FALSE,FALSE
+	NULL,0,0,"",0,0,0,0,0,FALSE,0,0,0,0,0,0.0,0,0.0,0,0,0.0,FALSE,FALSE
 };
 
 /* ----------------------------------------------------------------------------
@@ -344,7 +347,7 @@ int CCD_Setup_Startup(void)
 		CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
 				       "GetVSSpeed(index=%d) returned %.2f microseconds/pixel shift.",i,speed);
 #endif /* LOGGING */
-	}
+	}/* end for on speed_count */
 	/* log horizontal readout speed data */
 	andor_retval = GetNumberHSSpeeds(0,0,&speed_count);
 	if(andor_retval != DRV_SUCCESS)
@@ -374,12 +377,7 @@ int CCD_Setup_Startup(void)
 				      "GetHSSpeed(channel=0,type=0,index=%d) returned %.2f.",
 				       i,speed);
 #endif /* LOGGING */
-		/* see below, we select index 0 */
-		/*
-		if(i == 0) 
-			Setup_Data.HSSpeed = speed;
-		*/
-	}
+	}/* end for on speed_count */
 	/* get A/D channel count */
 	andor_retval = GetNumberADChannels(&speed_count);
 	if(andor_retval != DRV_SUCCESS)
@@ -791,6 +789,44 @@ int CCD_Setup_Set_VS_Speed(int vs_speed_index)
 }
 
 /**
+ * Set the vertical clock voltage amplitude. This should be increased from normal (0) when the vertical clock speed
+ * is fast.
+ * @param vs_amplitude The vertical clock voltage amplitude. 0 is normal , 
+ *                     and 1-4 represent increased vertical clock voltage amplitude.
+ * @return The routine returns TRUE on success, and FALSE if an error occurs.
+ * @see #Setup_Error_Number
+ * @see #Setup_Error_String
+ * @see #Setup_Data
+ * @see CCD_General_Log
+ * @see CCD_General_Andor_ErrorCode_To_String
+ */
+int CCD_Setup_Set_VS_Amplitude(int vs_amplitude)
+{
+	unsigned int andor_retval;
+
+	Setup_Error_Number = 0;
+#if LOGGING > 1
+	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Set_VS_Amplitude",LOG_VERBOSITY_TERSE,"CCD",
+			       "CCD_Setup_Set_VS_Amplitude(vs_amplitude = %d) Started.",vs_amplitude);
+#endif /* LOGGING */
+	andor_retval = SetVSAmplitude(vs_amplitude);
+	if(andor_retval != DRV_SUCCESS)
+	{
+		Setup_Error_Number = 48;
+		sprintf(Setup_Error_String,"CCD_Setup_Set_VS_Amplitude: SetVSAmplitude(vs_amplitude=%d) "
+			"failed %s(%u).",vs_amplitude,CCD_General_Andor_ErrorCode_To_String(andor_retval),
+			andor_retval);
+		return FALSE;
+	}
+	Setup_Data.VS_Amplitude = vs_amplitude;
+#if LOGGING > 1
+	CCD_General_Log("setup","ccd_setup.c","CCD_Setup_Set_VS_Amplitude",LOG_VERBOSITY_TERSE,"CCD",
+			"CCD_Setup_Set_VS_Amplitude Finished.");
+#endif /* LOGGING */
+	return TRUE;
+}
+
+/**
  * Set the pre amp gain to the setting represented by the specified index in a list of pre amp gains.
  * After setting the pre-amp gain to the specified index we retrieve the actual gain factor 
  * and store it in Setup_Data.Pre_Amp_Gain.
@@ -1109,6 +1145,18 @@ float CCD_Setup_Get_VS_Speed(void)
 int CCD_Setup_Get_VS_Speed_Index(void)
 {
 	return Setup_Data.VS_Speed_Index;
+}
+
+/**
+ * Return the current vertical clock amplitude, which was used to configure the camera in CCD_Setup_Set_VS_Amplitude.
+ * CCD_Setup_Set_VS_Amplitude stores this value in Setup_Data, and it is this that is returned.
+ * @return The current vertical clock amplitude, either '0' (normal) or an increased vertical clock voltage (1..4).
+ * @see #Setup_Data
+ * @see CCD_Setup_Set_VS_Amplitude
+ */
+int CCD_Setup_Get_VS_Speed_Amplitude(void)
+{
+	return Setup_Data.VS_Amplitude;
 }
 
 /**
