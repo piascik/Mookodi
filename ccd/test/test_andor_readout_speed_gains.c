@@ -166,6 +166,14 @@ int main(int argc, char *argv[])
 		}
 		fprintf(stdout,"GetVSSpeed returned %.6f microseconds/pixel shift VS Speed index %d.\n",vs_speed,vs_speed_index);
 	}/* end for on vs_speed_index */
+	/* whats the fastest recommended vertical readout speed? */
+	andor_retval = GetFastestRecommendedVSSpeed(&vs_speed_index,&vs_speed);
+	if(andor_retval!=DRV_SUCCESS)
+	{
+		fprintf(stderr,"GetFastestRecommendedVSSpeed failed %lu.\n",andor_retval);
+		return 2;
+	}
+	fprintf(stdout,"GetFastestRecommendedVSSpeed returned %.6f microseconds/pixel shift VS Speed index %d.\n",vs_speed,vs_speed_index);
 	/* loop over possible a/d channel, amplifier, hsspeed, pre-amp settings */
 	for(channel_index=0;channel_index<channel_count;channel_index++)
 	{
