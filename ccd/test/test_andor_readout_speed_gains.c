@@ -74,6 +74,17 @@ static int Set_VS_Speed = FALSE;
  * @see #Set_VS_Speed
  */
 static int Selected_VS_Speed_Index = -1;
+/**
+ * A boolean, if set to TRUE try setting the vertical clock voltage amplitude using Selected_VS_Amplitude.
+ * @see #Selected_VS_Amplitude
+ */
+static int Set_VS_Amplitude = FALSE;
+/**
+ * The vertical clock voltage amplitude value to use when setting the vertical clock voltage amplitude.
+ * Only used when Set_VS_Amplitude is TRUE.
+ * @see #Set_VS_Amplitude
+ */
+static int Selected_VS_Amplitude = 0;
 
 /* internal routines */
 static int Parse_Arguments(int argc, char *argv[]);
@@ -92,6 +103,8 @@ static void Help(void);
  * @see #Selected_Pre_Amp_Gain_Index
  * @see #Set_VS_Speed
  * @see #Selected_VS_Speed_Index
+ * @see #Set_VS_Amplitude
+ * @see #Selected_VS_Amplitude
  */
 int main(int argc, char *argv[])
 {
@@ -276,6 +289,26 @@ int main(int argc, char *argv[])
 		fprintf(stdout,"Vertical readout speed set to index %d (%.3f microseconds/pixel shift).\n",
 			Selected_VS_Speed_Index,vs_speed);
 	}
+	if(Set_VS_Amplitude)
+	{
+		andor_retval = SetVSAmplitude(Selected_VS_Amplitude);
+		if(andor_retval!=DRV_SUCCESS)
+		{
+			fprintf(stderr,"SetVSAmplitude(%d) failed %lu.\n",Selected_VS_Amplitude,andor_retval);
+			return 2;
+		}
+		
+		/* get new fastest recommended vertical speed */
+		andor_retval = GetFastestRecommendedVSSpeed(&vs_speed_index,&vs_speed);
+		if(andor_retval!=DRV_SUCCESS)
+		{
+			fprintf(stderr,"GetFastestRecommendedVSSpeed failed %lu.\n",andor_retval);
+			return 2;
+		}
+		fprintf(stdout,"GetFastestRecommendedVSSpeed now returned %.6f microseconds/pixel shift "
+			"VS Speed index %d after setting VS Amplitude to %d.\n",vs_speed,vs_speed_index,
+			Selected_VS_Amplitude);
+	}
 	if(Set_Pre_Amp_Gain)
 	{
 		andor_retval = SetPreAmpGain(Selected_Pre_Amp_Gain_Index);
@@ -293,7 +326,7 @@ int main(int argc, char *argv[])
 		}
 		fprintf(stdout,"Pre-Amp Gain set to index %d (gain factor %.2f).\n",Selected_Pre_Amp_Gain_Index,pre_amp_gain);
 	}
-/* close  */
+	/* close  */
 	fprintf(stdout,"ShutDown()\n");
 	ShutDown();
 	return 0;
@@ -317,6 +350,7 @@ static void Help(void)
 	fprintf(stdout,"\t[-hs_speed_index <0..3>]\n");
 	fprintf(stdout,"\t[-pre_amp_gain_index <0..2>]\n");
 	fprintf(stdout,"\t[-vs_speed_index <0..5>]\n");
+	fprintf(stdout,"\t[-vs_amplitude <0..4>]\n");
 	fprintf(stdout,"\t[-h[elp]]\n");
 	fprintf(stdout,"\n");
 	fprintf(stdout,"\t-help prints out this message and stops the program.\n");
@@ -336,6 +370,8 @@ static void Help(void)
  * @see #Selected_Pre_Amp_Gain_Index
  * @see #Set_VS_Speed
  * @see #Selected_VS_Speed_Index
+ * @see #Set_VS_Amplitude
+ * @see #Selected_VS_Amplitude
  */
 static int Parse_Arguments(int argc, char *argv[])
 {
@@ -344,6 +380,7 @@ static int Parse_Arguments(int argc, char *argv[])
 	Set_HS_Speed = FALSE;
 	Set_Pre_Amp_Gain = FALSE;
 	Set_VS_Speed = FALSE;
+	Set_VS_Amplitude = FALSE;
 	for(i=1;i<argc;i++)
 	{
 		if((strcmp(argv[i],"-camera")==0))
@@ -443,6 +480,26 @@ static int Parse_Arguments(int argc, char *argv[])
 			else
 			{
 				fprintf(stderr,"Parse_Arguments:vs_speed_index requires an vertical speed index number.\n");
+				return FALSE;
+			}
+		}
+		else if((strcmp(argv[i],"-vs_amplitude")==0))
+		{
+			if((i+1)<argc)
+			{
+				retval = sscanf(argv[i+1],"%d",&Selected_VS_Amplitude);
+				if(retval != 1)
+				{
+					fprintf(stderr,"Parse_Arguments:Parsing selected vertical voltage "
+						"amplitude %s failed.\n",argv[i+1]);
+					return FALSE;
+				}
+				i++;
+				Set_VS_Speed = TRUE;
+			}
+			else
+			{
+				fprintf(stderr,"Parse_Arguments:vs_amplitude requires an amplitude number.\n");
 				return FALSE;
 			}
 		}
