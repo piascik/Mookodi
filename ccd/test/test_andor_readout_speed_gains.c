@@ -297,7 +297,7 @@ int main(int argc, char *argv[])
 			fprintf(stderr,"SetVSAmplitude(%d) failed %lu.\n",Selected_VS_Amplitude,andor_retval);
 			return 2;
 		}
-		
+		fprintf(stdout,"Vertical clock voltage amplitude set to %d .\n",Selected_VS_Amplitude);
 		/* get new fastest recommended vertical speed */
 		andor_retval = GetFastestRecommendedVSSpeed(&vs_speed_index,&vs_speed);
 		if(andor_retval!=DRV_SUCCESS)
