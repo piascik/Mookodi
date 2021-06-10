@@ -113,6 +113,7 @@ int main(int argc, char *argv[])
 	int retval,value;
 	int channel_count,amplifier_count,pre_amp_gain_count,bit_depth,vs_speed_count,hs_speed_count;
 	int channel_index,amplifier_index,pre_amp_gain_index,vs_speed_index,hs_speed_index,is_pre_amp_gain_available;
+	int vs_amplitude_count;
 	float vs_speed,hs_speed,pre_amp_gain;
 	at_32 Camera_Handle;
 
@@ -188,6 +189,14 @@ int main(int argc, char *argv[])
 		return 2;
 	}
 	fprintf(stdout,"GetFastestRecommendedVSSpeed returned %.6f microseconds/pixel shift VS Speed index %d.\n",vs_speed,vs_speed_index);
+	/* how many VS Amplitudes are supported ? */
+	andor_retval = GetNumberVSAmplitudes(&vs_amplitude_count);
+	if(andor_retval!=DRV_SUCCESS)
+	{
+		fprintf(stderr,"GetNumberVSAmplitudes failed %lu.\n",andor_retval);
+		return 2;
+	}
+	fprintf(stdout,"GetNumberVSAmplitudes returned %d VS amplitudes.\n",vs_amplitude_count);
 	/* loop over possible a/d channel, amplifier, hsspeed, pre-amp settings */
 	for(channel_index=0;channel_index<channel_count;channel_index++)
 	{
