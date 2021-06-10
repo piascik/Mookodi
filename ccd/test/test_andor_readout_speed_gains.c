@@ -108,6 +108,7 @@ static void Help(void);
  */
 int main(int argc, char *argv[])
 {
+	AndorCapabilities andor_capabilities;
 	unsigned long andor_retval;
 	int retval,value;
 	int channel_count,amplifier_count,pre_amp_gain_count,bit_depth,vs_speed_count,hs_speed_count;
@@ -251,6 +252,21 @@ int main(int argc, char *argv[])
 			}/* end for on hs_speed_index */
 		}/* end for on amplifier_index */
 	}/* end for on channel_index */
+	/* what capabilities does the camera support */
+	andor_capabilities.ulSize = sizeof(AndorCapabilities);
+	andor_retval = GetCapabilities(&andor_capabilities);
+	if(andor_retval!=DRV_SUCCESS)
+	{
+		fprintf(stderr,"GetCapabilities() failed %lu.\n",andor_retval);
+		return 2;
+	}
+	/* does the camera support SetVSAmplitude? See the Software\ Development\ Kit.pdf manual P135. 
+	** AC_SETFUNCTION_VSAMPLITUDE (0x40) */
+	fprintf(stdout,"Andor capabilities: ulSetFunctions = %d.\n",andor_capabilities.ulSetFunctions);
+	if((andor_capabilities.ulSetFunctions & AC_SETFUNCTION_VSAMPLITUDE) == AC_SETFUNCTION_VSAMPLITUDE)
+		fprintf(stdout,"This camera supports SetVSAmplitude.\n");
+	else
+		fprintf(stdout,"This camera does NOT support SetVSAmplitude.\n");
 	/* do we want to try and set some of these parameters */
 	if(Set_HS_Speed)
 	{
