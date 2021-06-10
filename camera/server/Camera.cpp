@@ -799,14 +799,20 @@ void Camera::get_state(CameraState &state)
 	LOG4CXX_INFO(logger,"Get camera state.");
 	state.xbin = CCD_Setup_Get_Bin_X();
 	state.ybin = CCD_Setup_Get_Bin_Y();
+	LOG4CXX_DEBUG(logger,"get_state: X bin:" << state.xbin << ":Y Bin:" << state.ybin);
 	state.use_window = CCD_Setup_Is_Window();
 	state.window.x_start = CCD_Setup_Get_Horizontal_Start();
 	state.window.y_start = CCD_Setup_Get_Vertical_Start();
 	state.window.x_end = CCD_Setup_Get_Horizontal_End();
 	state.window.y_end = CCD_Setup_Get_Vertical_End();
+	LOG4CXX_DEBUG(logger,"get_state: use_window:" << state.use_window <<
+		      ":x start:" << state.window.x_start << ":y start:" << state.window.y_start <<
+		      ":x end:" << state.window.x_end << ":y end:" << state.window.y_end);
 	state.exposure_length = CCD_Exposure_Length_Get();
 	state.exposure_count = mExposureCount;
 	state.exposure_index = mExposureIndex;
+	LOG4CXX_DEBUG(logger,"get_state: exposure_length:" << state.exposure_length <<
+		      ":exposure count:" << state.exposure_count << ":exposure index:" << state.exposure_index);
 	CCD_Exposure_Start_Time_Get(&start_time);
 	clock_gettime(CLOCK_REALTIME,&current_time);
 	ccd_library_exposure_status = CCD_Exposure_Status_Get();
@@ -846,6 +852,9 @@ void Camera::get_state(CameraState &state)
 			/* we could throw an exception here */
 			break;
 	}/* end switch */
+	LOG4CXX_DEBUG(logger,"get_state: exposure_state:" << to_string(state.exposure_state) <<
+		      ":elapsed exposure length:" << state.elapsed_exposure_length <<
+		      ":remaining exposure length:" << state.remaining_exposure_length);
 	/* we can only get the current temperature when the detector is not exposing or reading out 
 	** The temperature is in degrees centigrade. */
 	switch(ccd_library_exposure_status)
@@ -873,9 +882,12 @@ void Camera::get_state(CameraState &state)
 			/* we could throw an exception here */
 			break;	
 	}/* end switch */
+	LOG4CXX_DEBUG(logger,"get_state: ccd temperature:" << state.ccd_temperature << " C");
 	/* Set readout speed and gain from cached values */
 	state.readout_speed = mCachedReadoutSpeed;
 	state.gain = mCachedGain;
+	LOG4CXX_DEBUG(logger,"get_state: readout speed:" << to_string(state.readout_speed) <<
+		      ":gain:" << to_string(state.gain));
 }
 
 /**
