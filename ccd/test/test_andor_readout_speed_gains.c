@@ -495,7 +495,7 @@ static int Parse_Arguments(int argc, char *argv[])
 					return FALSE;
 				}
 				i++;
-				Set_VS_Speed = TRUE;
+				Set_VS_Amplitude = TRUE;
 			}
 			else
 			{
