@@ -1612,6 +1612,8 @@ void Camera::multrun_thread(int32_t exposure_count,int32_t exposure_length)
  *                   CCD_Fits_Header_TimeSpec_To_Date_Obs_String to format the string.
  * <li><b>VSHIFT</b> The vertical shift speed in microseconds/pixel, retrieved from the CCD library using CCD_Setup_Get_VS_Speed.
  * <li><b>HSHIFT</b> The horizontal shift speed im MHz, retrieved from the CCD library using CCD_Setup_Get_HS_Speed.
+ * <li><b>HSHIFTI</b> The horizontal shift speed index used to configure the horizontal shift speed, 
+ *                    retrieved from the CCD library using CCD_Setup_Get_HS_Speed_Index.
  * </ul>
  * @param image_index Which image out of the exposure_count number of images we are currently doing.
  * @param exposure_count The number of images in the Multrun/Multbias/MultDark.
@@ -1640,7 +1642,9 @@ void Camera::multrun_thread(int32_t exposure_count,int32_t exposure_length)
  * @see CCD_TEMPERATURE_STATUS
  * @see CCD_Temperature_Get
  * @see CCD_Setup_Get_VS_Speed
+ * @see CCD_Setup_Get_VS_Speed_Index
  * @see CCD_Setup_Get_HS_Speed
+ * @see CCD_Setup_Get_HS_Speed_Index
  */
 void Camera::add_camera_fits_headers(int image_index,int32_t exposure_count,int32_t exposure_length)
 {
@@ -1652,7 +1656,7 @@ void Camera::add_camera_fits_headers(int image_index,int32_t exposure_count,int3
 	char time_string[32];
 	double temperature;
 	float vs_speed,hs_speed,pre_amp_gain;
-	int retval,xs,ys,xe,ye;
+	int retval,xs,ys,xe,ye,vs_speed_index,hs_speed_index;
 	
 	/* EXPTIME  double in secs */
 	retval = CCD_Fits_Header_Add_Float(&mFitsHeader,"EXPTIME",
@@ -1827,6 +1831,14 @@ void Camera::add_camera_fits_headers(int image_index,int32_t exposure_count,int3
 		ce = create_ccd_library_exception();
 		throw ce;
 	}
+	/* VSHIFTI */
+	vs_speed_index = CCD_Setup_Get_VS_Speed_Index();
+	retval = CCD_Fits_Header_Add_Int(&mFitsHeader,"VSHIFTI",vs_speed_index,"vertical shift speed index");
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
 	/* HSHIFT */
 	hs_speed = CCD_Setup_Get_HS_Speed();
 	retval = CCD_Fits_Header_Add_Float(&mFitsHeader,"HSHIFT",(double)hs_speed,"horizontal shift speed");
@@ -1836,6 +1848,14 @@ void Camera::add_camera_fits_headers(int image_index,int32_t exposure_count,int3
 		throw ce;
 	}
 	retval = CCD_Fits_Header_Add_Units(&mFitsHeader,"HSHIFT","MHz");
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	/* HSHIFTI */
+	hs_speed_index = CCD_Setup_Get_HS_Speed_Index();
+	retval = CCD_Fits_Header_Add_Int(&mFitsHeader,"HSHIFTI",hs_speed_index,"horizontal shift speed index");
 	if(retval == FALSE)
 	{
 		ce = create_ccd_library_exception();
