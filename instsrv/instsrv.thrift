@@ -22,8 +22,8 @@ enum DetectorState {
 }
 
 enum FilterID {
-    Filter0 = 0,
-    Filter1 = 1,
+    FILTER0 = 0,
+    FILTER1 = 1,
 }
 
 enum FilterState {
@@ -36,7 +36,6 @@ enum FilterState {
     POS2 =  2,
     POS3 =  3,
     POS4 =  4,
-    POS5 =  5,
 }
 
 enum FlatType {
@@ -81,7 +80,7 @@ service InstSrv {
     DeployState  CtrlMirror (1: DeployState state, 2: i32 timeout )
     DeployState  CtrlLamp   (1: DeployState state )
     DeployState  CtrlArc    (1: DeployState state )
-    DeployState  CtrlPIO    (1: i8 out, 2: i8 inp, 3: i32 timeout )
-    FilterState  CtrlFilter (1: FilterID filter, 2: FilterState state   )
-    FilterConfig CtrlFilters(1: FilterConfig config, 2: i32 timeout_ms )
+    DeployState  CtrlPIO    (1: i8 out, 2: i8 inp, 3: i8 clr, 4: i32 timeout )
+    FilterState  CtrlFilter (1: FilterID filter,    2: FilterState state, 3: i32 timeout )
+    FilterConfig CtrlFilters(1: FilterState state0, 2:FilterState state1, 3: i32 timeout )
 }
