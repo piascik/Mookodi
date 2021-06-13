@@ -284,7 +284,8 @@ void lac_close( void  );
 int  lac_conf ( void  );
 int  lac_info ( int n );
 void lac_debug( int n );
-int  lac_set_pos( int pos1, int pos2, int tmo );
+int  lac_set_pos ( int lac,  int pos,  int tmo );
+int  lac_set_both( int pos1, int pos2, int tmo );
 int  lac_xfer( int act, int addr, int val );
 
 // 
