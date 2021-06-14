@@ -18,3 +18,9 @@ mkdir ${MOOKODI_SRC_HOME}/bin/mookodi/ccd/c
 mkdir ${MOOKODI_SRC_HOME}/bin/mookodi/ccd/test
 mkdir ${MOOKODI_SRC_HOME}/bin/mookodi/ccd/c/x86_64-linux
 mkdir ${MOOKODI_SRC_HOME}/bin/mookodi/ccd/test/x86_64-linux
+# ngatastro
+mkdir ${MOOKODI_SRC_HOME}/bin/mookodi/ngatastro/
+mkdir ${MOOKODI_SRC_HOME}/bin/mookodi/ngatastro/c/
+mkdir ${MOOKODI_SRC_HOME}/bin/mookodi/ngatastro/c/x86_64-linux/
+mkdir ${MOOKODI_SRC_HOME}/bin/mookodi/ngatastro/test/
+mkdir ${MOOKODI_SRC_HOME}/bin/mookodi/ngatastro/test/x86_64-linux/
