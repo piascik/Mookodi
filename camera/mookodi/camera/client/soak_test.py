@@ -12,6 +12,8 @@ def do_multrun(exposure_count = 1, exposure_length=1000):
     done = False
     while done == False:
         state = c.get_state()
+        print ("Exposure In Progress:" + repr(state.exposure_in_progress)+ ".")
+        print ("Exposure State:" + repr(state.exposure_state)+ ".")
         print ("Exposure Count:" + repr(state.exposure_count)+ ".")
         print ("Exposure Index:" + repr(state.exposure_index)+ ".")
         print ("Elapsed Exposure Length:" + repr(state.elapsed_exposure_length)+ " ms.")
@@ -20,7 +22,7 @@ def do_multrun(exposure_count = 1, exposure_length=1000):
         last_exposure = ( state.exposure_index == ( state.exposure_count - 1 ) )
         finished_exposure = ( state.remaining_exposure_length <= 0 )
         is_idle = ( state.exposure_state == ExposureState.IDLE )
-        done = last_exposure and finished_exposure and is_idle
+        done = state.exposure_in_progress == false
     filename_list = c.get_image_filenames()
     filename_count = len(filename_list)
     print ("There are " + repr(filename_count) + " Image Filenames:")
