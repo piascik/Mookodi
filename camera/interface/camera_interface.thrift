@@ -119,6 +119,7 @@ struct CameraWindow
  * <li><b>exposure_length</b> In milliseconds.
  * <li><b>elapsed_exposure_length</b> In milliseconds.
  * <li><b>remaining_exposure_length</b> In milliseconds.
+ * <li><b>exposure_in_progress</b> True if an exposure/bias/dar/multrun is starting or in progress.
  * <li><b>exposure_state</b>
  * <li><b>exposure_count</b>
  * <li><b>exposure_index</b>
@@ -140,12 +141,13 @@ struct CameraState
 	5: i32 exposure_length;
 	6: i32 elapsed_exposure_length;
 	7: i32 remaining_exposure_length;
-	8: ExposureState exposure_state;
-	9: i32 exposure_count;
-	10: i32 exposure_index;
-	11: double ccd_temperature;
-	12: ReadoutSpeed readout_speed;
-	13: Gain gain;
+	8: bool exposure_in_progress;
+	9: ExposureState exposure_state;
+	10: i32 exposure_count;
+	11: i32 exposure_index;
+	12: double ccd_temperature;
+	13: ReadoutSpeed readout_speed;
+	14: Gain gain;
 }
 
 /**
