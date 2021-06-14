@@ -15,6 +15,7 @@ if(s.use_window):
 print ("Exposure Length:" + repr(s.exposure_length)+ " ms.")
 print ("Elapsed Exposure Length:" + repr(s.elapsed_exposure_length)+ " ms.")
 print ("Remaining Exposure Length:" + repr(s.remaining_exposure_length)+ " ms.")
+print ("Exposure In Progress:" +repr(s.exposure_in_progress)+".")
 print ("Exposure State:"+ ExposureState._VALUES_TO_NAMES[s.exposure_state])
 print ("Exposure State:"+ repr(s.exposure_state))
 print ("Exposure Count:" + repr(s.exposure_count)+ ".")
