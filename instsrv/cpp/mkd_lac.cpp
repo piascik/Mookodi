@@ -13,6 +13,12 @@
 #include "mkd.h"
 #include "InstSrv.h"
 
+#include <iostream>
+
+using namespace log4cxx;
+using namespace log4cxx::helpers;
+extern LoggerPtr logger;
+
 // Local static data
 static int                    usb_if;             // USB interface
 static struct libusb_context *usb_ctx;            // USB context
@@ -142,6 +148,43 @@ int lac_open( void )
         return mkd_log(MKD_FAIL, LOG_ERR, FAC, "Found %i LAC devices, must be %i", lac, LAC_COUNT );
 }
 
+/* @brief Set a LAC destinations positions and optionally wait to be within tolerance
+ *
+ * @param[in] lac = LAC to be controlled 
+ * @param[in] pos = Destination position
+ * @param[in] tmo = Timeout. 0 = No wait
+ *
+ * @return    MKD_OK = Success, MKD_FAIL = Failure
+ */
+int lac_set_pos( int lac, int pos, int tmo )
+{
+    int tick  = TIM_TICK;                     // Timer ticks [ms]
+    int count = TIM_MICROSECOND * tmo / tick; // Timer count [ms]
+    int now;  // Current LAC #0 position
+
+    fprintf( stderr, "lac=%i pos=%i, tmp=%i",lac, pos, tmo );
+
+//  Set positions
+    if ( MKD_FAIL == lac_xfer( lac, LAC_SET_POSITION, pos ))
+        return mkd_log( MKD_FAIL, LOG_ERR, FAC, "lac_xfer() fail" );
+
+//  If timeout supplied, wait for requested positions to be reached
+    if ( tmo )
+    {
+        do
+        {
+            if ( MKD_FAIL == ( now = lac_xfer( lac, LAC_GET_FEEDBACK, 0 )))
+                return mkd_log( MKD_FAIL, LOG_ERR, FAC, "lac_xfer() fail" );
+            usleep(tick);
+            if ( abs( now - pos ) <= lac_Accuracy )  // Position is within tolerance
+                return mkd_log( MKD_OK, LOG_DBG, FAC, "LAC Position Request=%i, Actual=%i", pos, now );
+        } while( count-- );
+        return mkd_log( MKD_FAIL, LOG_ERR, FAC, "lac_set_pos() timeout" );
+    }
+
+    return mkd_log( MKD_OK, LOG_DBG, FAC, "No Wait LAC Position Request=%i", pos );
+}
+
 
 /* @brief Simultaneous set two LAC destinations positions and optionally wait to be within tolerance
  * 
@@ -151,7 +194,7 @@ int lac_open( void )
  *
  * @return    MKD_OK = Success, MKD_FAIL = Failure
  */
-int lac_set_pos( int pos0, int pos1, int tmo )
+int lac_set_both( int pos0, int pos1, int tmo )
 {
     int tick  = TIM_TICK;                     // Timer ticks [ms] 
     int count = TIM_MICROSECOND * tmo / tick; // Timer count [ms] 
@@ -173,7 +216,7 @@ int lac_set_pos( int pos0, int pos1, int tmo )
                 return mkd_log( MKD_FAIL, LOG_ERR, FAC, "lac_xfer(LAC_1) fail" );
             usleep(tick);
             if ( MKD_FAIL == ( now1 = lac_xfer( LAC_1, LAC_GET_FEEDBACK, 0 )))
-                return mkd_log( MKD_FAIL, LOG_ERR, FAC, "lac_xfer(LAC_1) fail" );
+                return mkd_log( MKD_FAIL, LOG_ERR, FAC, "lac_xfer(LAC_0) fail" );
 
             if (( abs( now0 - pos0 ) <= lac_Accuracy )&&  // Position is within tolerance
                 ( abs( now1 - pos1 ) <= lac_Accuracy )  )
@@ -182,7 +225,7 @@ int lac_set_pos( int pos0, int pos1, int tmo )
         return mkd_log( MKD_FAIL, LOG_ERR, FAC, "lac_set_pos() timeout" );
     }
 
-    return mkd_log( MKD_OK, LOG_DBG, FAC, "No Wait LAC Position Request: 0=%i 1=%i", pos0, pos1 );
+    return mkd_log( MKD_OK, LOG_DBG, FAC, "No Wait LAC Position Requests: 0=%i 1=%i", pos0, pos1 );
 }
 
 

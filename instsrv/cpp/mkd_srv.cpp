@@ -55,7 +55,7 @@ class InstSrvHandler : virtual public InstSrvIf {
   }
 
 
-/* @brief Check if LAC is within tolerance
+/* @brief Check if LAC position is within tolerance
  *
  * @param[in] lac   = LAC ID 
  * @param[in] state = Filter position
@@ -74,7 +74,8 @@ FilterState::type CheckFilter( int lac, FilterState::type state )
     if ( MKD_FAIL == ( now = lac_xfer( lac, LAC_GET_FEEDBACK, 0 )))
         return FilterState::ERR;
 
-    if ( abs( now - pos ) <= lac_Accuracy )  // Position within tolerance
+//  Check if position is within tolerance
+    if ( abs( now - pos ) <= lac_Accuracy ) 
         return state;
     else
         return FilterState::BAD;
@@ -388,7 +389,7 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
     DeployState::type ret = DeployState::ERR;
 
     if ( MKD_OK == pio_set_output( out ) ) {
-      ret = WaitPIO(  out, set, clr, tmo);  
+      ret = WaitPIO( out, set, clr, tmo );  
     }
     
     return ret;
@@ -396,46 +397,52 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
 
 
 
-  FilterState::type CtrlFilter( FilterID::type filter, const FilterState::type state ) {
+  FilterState::type CtrlFilter( FilterID::type filter, const FilterState::type state, int tmo ) {
 
 //  Check if filter is in  position
     if ( state == FilterState::GET )
       return CheckFilter( filter, state );
 
 //  Check position is within valid range
-    if ( state < FilterState::POS0 || state > FilterState::POS5 )
+    if ( state < FilterState::POS0 || state > FilterState::POS4 )
       return FilterState::INV;
 
     LOG4CXX_INFO(logger, "CtrlFilter");
-    return CtrlFilter( filter, state );
+    if ( MKD_OK == lac_set_pos( filter, lac_Actuator[filter].pos[state], tmo ) )  
+        return CheckFilter( filter, state );
+    else 
+        return FilterState::ERR;
   }
 
 
-  void CtrlFilters(FilterConfig& _return, const FilterConfig& config, const int32_t timeout_ms) {
+  void CtrlFilters( FilterConfig& _return, const FilterState::type state0, const FilterState::type state1, const int32_t timeout_ms) {
+
+    LOG4CXX_INFO(logger, "CtrlFilters");
 
 //  If get state, ensure state requests are same before checking filter position is within limits
-    if ( config.Filter0 == FilterState::GET || config.Filter1 == FilterState::GET ) {
-      if ( config.Filter0 != config.Filter1 ) {
+    if ( state0 == FilterState::GET || state1 == FilterState::GET ) {
+      if ( state0 != state1 ) {
          _return.Filter0 = _return.Filter1 = FilterState::INV;
          return; 
        }
        else {
-         _return.Filter0 = CheckFilter( FilterID::Filter0, config.Filter0 );
-         _return.Filter1 = CheckFilter( FilterID::Filter1, config.Filter1 );
+         _return.Filter0 = CheckFilter( FilterID::FILTER0, state0 );
+         _return.Filter1 = CheckFilter( FilterID::FILTER1, state1 );
          return; 
       }
     }
 
-    if ( config.Filter0 < FilterState::POS0 || config.Filter0 > FilterState::POS5 ||
-         config.Filter1 < FilterState::POS0 || config.Filter1 > FilterState::POS5   ) {
+//  Check requested state is within range
+    if ( state0 < FilterState::POS0 || state0 > FilterState::POS4 ||
+         state1 < FilterState::POS0 || state1 > FilterState::POS4   ) {
       _return.Filter0 = _return.Filter1 = FilterState::INV;
     }
 
-    if ( MKD_OK == lac_set_pos( lac_Actuator[LAC_0].pos[config.Filter0], 
-                                lac_Actuator[LAC_1].pos[config.Filter1],
-                                timeout_ms )) {
-      _return.Filter0 = config.Filter0;
-      _return.Filter1 = config.Filter1;
+    if ( MKD_OK == lac_set_both( lac_Actuator[LAC_0].pos[state0], 
+                                 lac_Actuator[LAC_1].pos[state1],
+                                 timeout_ms )) {
+      _return.Filter0 = state0;
+      _return.Filter1 = state1;
     }
     else {
       _return.Filter0 = _return.Filter1 = FilterState::ERR;
