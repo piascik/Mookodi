@@ -799,7 +799,7 @@ void Camera::get_state(CameraState &state)
 	LOG4CXX_INFO(logger,"Get camera state.");
 	state.xbin = CCD_Setup_Get_Bin_X();
 	state.ybin = CCD_Setup_Get_Bin_Y();
-	LOG4CXX_DEBUG(logger,"get_state: X bin:" << state.xbin << ":Y Bin:" << state.ybin);
+	LOG4CXX_DEBUG(logger,"get_state: X bin:" << int(state.xbin) << ":Y Bin:" << int(state.ybin));
 	state.use_window = CCD_Setup_Is_Window();
 	state.window.x_start = CCD_Setup_Get_Horizontal_Start();
 	state.window.y_start = CCD_Setup_Get_Vertical_Start();
