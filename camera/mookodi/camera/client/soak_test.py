@@ -41,9 +41,9 @@ print ("Cooling Down the camera.")
 c.cool_down()
 c.clear_fits_headers()
 c.clear_window()
-bin_list = [1, 2, 3, 4]
-bin_x_list = [1, 2, 3, 4]
-bin_y_list = [1, 2, 3, 4]
+bin_list = [1, 2, 4]
+bin_x_list = [1, 2, 4]
+bin_y_list = [1, 2, 4]
 readout_speed_list = [ ReadoutSpeed.SLOW, ReadoutSpeed.FAST ]
 gain_list = [ Gain.ONE, Gain.TWO, Gain.FOUR ]
 
