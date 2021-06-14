@@ -68,7 +68,7 @@ void EmulatedCamera::set_config(CameraConfig & config)
  * <li>We set mAbort to false.
  * <li>We initialise mImageBufNCols/mImageBufNRows to 0.
  * </ul>
- * @see Camera::mState
+ * @see EmulatedCamera::mState
  */
 void EmulatedCamera::initialize()
 {
@@ -82,6 +82,7 @@ void EmulatedCamera::initialize()
 	mState.exposure_length = 0;
 	mState.elapsed_exposure_length = 0;
 	mState.remaining_exposure_length = 0;
+	mState.exposure_in_progress = FALSE;
 	mState.exposure_state = ExposureState::IDLE;
 	mState.exposure_count = 0;
 	mState.exposure_index = 0;
@@ -283,13 +284,15 @@ void EmulatedCamera::clear_fits_headers()
 }
 
 /**
- * thrift entry point to take an exposure with the camera. 
+ * thrift entry point to take an exposure with the camera. We set mState's exposure_in_progress to TRUE to show
+ * an exposure is in progress.
  * A new thread running an instance of expose_thread is started.
  * @param exposure_length The exposure length of each frame in milliseconds. Must be at least 1 ms.
  * @param save_image A boolean, if true save the image in a FITS filename, otherwise don't 
  *        (the image data can be retrieved using the get_image_data method).
- * @see Camera::expose_thread
- * @see Camera::get_image_data
+ * @see EmulatedCamera::mState
+ * @see EmulatedCamera::expose_thread
+ * @see EmulatedCamera::get_image_data
  * @see logger
  * @see LOG4CXX_INFO
  */
@@ -301,13 +304,16 @@ void EmulatedCamera::start_expose(const int32_t exposure_length, const bool save
 		"ms and save_image " << save_image << "." << endl;
 	LOG4CXX_INFO(logger,"Starting expose thread with exposure length " << exposure_length <<
 		     "ms and save_image " << save_image << ".");
+	mState.exposure_in_progress = TRUE;
 	std::thread thrd(&EmulatedCamera::expose_thread, this, exposure_length, save_image);
 	thrd.detach();
 }
 
 /**
- * thrift entry point to start taking multiple biases. A new thread running an instance of multbias_thread is started.
+ * thrift entry point to start taking multiple biases. We set mState's exposure_in_progress to TRUE to show
+ * a bias is in progress. A new thread running an instance of multbias_thread is started.
  * @param exposure_count The number of biases to take. Must be at least one.
+ * @see EmulatedCamera::mState
  * @see EmulatedCamera::multbias_thread
  * @see CameraException
  */
@@ -322,16 +328,18 @@ void EmulatedCamera::start_multbias(const int32_t exposure_count)
 	}
 	cout << "Starting multbias thread with exposure count " << exposure_count << "." << endl;
 	LOG4CXX_INFO(logger,"Starting multbias thread with exposure count " << exposure_count << ".");
+	mState.exposure_in_progress = TRUE;
 	std::thread thrd(&EmulatedCamera::multbias_thread, this, exposure_count);
 	thrd.detach();
 }
 
 /**
- * thrift entry point to start taking multiple dark frames. 
- * A new thread running an instance of multdark_thread is started.
+ * thrift entry point to start taking multiple dark frames. We set mState's exposure_in_progress to TRUE to show
+ * a dark is in progress. A new thread running an instance of multdark_thread is started.
  * @param exposure_count The number of dark frames to take. Must be at least one.
  * @param exposure_length The exposure length of each dark in milliseconds. Must be at least 1 ms.
- * @see Camera::multdark_thread
+ * @see EmulatedCamera::mState
+ * @see EmulatedCamera::multdark_thread
  * @see CameraException
  */
 void EmulatedCamera::start_multdark(const int32_t exposure_count,const int32_t exposure_length)
@@ -352,16 +360,18 @@ void EmulatedCamera::start_multdark(const int32_t exposure_count,const int32_t e
 		", exposure length " << exposure_length << "ms." << endl;
 	LOG4CXX_INFO(logger,"Starting multdark thread with exposure count " << exposure_count <<
 		     ", exposure length " << exposure_length << "ms.");
+	mState.exposure_in_progress = TRUE;
 	std::thread thrd(&EmulatedCamera::multdark_thread, this, exposure_count, exposure_length);
 	thrd.detach();
 }
 
 /**
- * thrift entry point to start taking multiple science frames. 
- * A new thread running an instance of multrun_thread is started.
+ * thrift entry point to start taking multiple science frames.  We set mState's exposure_in_progress to TRUE to show
+ * an exposure is in progress. A new thread running an instance of multrun_thread is started.
  * @param exposure_count The number of frames to take. Must be at least one.
  * @param exposure_length The exposure length of each frame in milliseconds. Must be at least 1 ms.
- * @see Camera::multrun_thread
+ * @see EmulatedCamera::mState
+ * @see EmulatedCamera::multrun_thread
  * @see CameraException
  */
 void EmulatedCamera::start_multrun(const int32_t exposure_count,const int32_t  exposure_length)
@@ -382,6 +392,7 @@ void EmulatedCamera::start_multrun(const int32_t exposure_count,const int32_t  e
 		", exposure length " << exposure_length << "ms." << endl;
 	LOG4CXX_INFO(logger,"Starting multrun thread with exposure count " << exposure_count <<
 		     ", exposure length " << exposure_length << "ms.");
+	mState.exposure_in_progress = TRUE;
 	std::thread thrd(&EmulatedCamera::multrun_thread, this, exposure_count, exposure_length);
 	thrd.detach();
 }
@@ -529,6 +540,7 @@ void EmulatedCamera::expose_thread(int32_t exposure_length, bool save_image)
 	int reg_height;
 	int total_pixels;
 
+	mState.exposure_in_progress = TRUE;
 	// setup image dimensions
 	if(mState.use_window)
 	{
@@ -566,6 +578,7 @@ void EmulatedCamera::expose_thread(int32_t exposure_length, bool save_image)
 	}
 	if(mAbort)
 	{
+		mState.exposure_in_progress = FALSE;
 		mState.exposure_state = ExposureState::IDLE;
 		return;
 	}
@@ -588,9 +601,11 @@ void EmulatedCamera::expose_thread(int32_t exposure_length, bool save_image)
 	LOG4CXX_INFO(logger,"Exposure complete.");
 	if(mAbort)
 	{
+		mState.exposure_in_progress = FALSE;
 		mState.exposure_state = ExposureState::IDLE;
 		return;
 	}
+	mState.exposure_in_progress = FALSE;
 	mState.exposure_state = ExposureState::IDLE;
 	cout << "Expose complete" << endl;
 	LOG4CXX_INFO(logger,"Expose complete");
@@ -633,6 +648,7 @@ void EmulatedCamera::multbias_thread(int32_t exposure_count)
 	int reg_height;
 	int total_pixels;
 
+	mState.exposure_in_progress = TRUE;
 	// setup image dimensions
 	if(mState.use_window)
 	{
@@ -663,6 +679,7 @@ void EmulatedCamera::multbias_thread(int32_t exposure_count)
 		LOG4CXX_INFO(logger,"Starting bias " << image_index << " of " << mState.exposure_count);
 		if(mAbort)
 		{
+			mState.exposure_in_progress = FALSE;
 			mState.exposure_state = ExposureState::IDLE;
 			return;
 		}
@@ -685,10 +702,12 @@ void EmulatedCamera::multbias_thread(int32_t exposure_count)
 		LOG4CXX_INFO(logger,"Bias " << image_index << " complete.");
 		if(mAbort)
 		{
+			mState.exposure_in_progress = FALSE;
 			mState.exposure_state = ExposureState::IDLE;
 			return;
 		}
 	}// end for on i (mState.exposure_count)
+	mState.exposure_in_progress = FALSE;
 	mState.exposure_state = ExposureState::IDLE;
 	cout << "Multbias complete" << endl;
 	LOG4CXX_INFO(logger,"Multbias complete");
@@ -738,6 +757,7 @@ void EmulatedCamera::multdark_thread(int32_t exposure_count,int32_t exposure_len
 	int reg_height;
 	int total_pixels;
 
+	mState.exposure_in_progress = TRUE;
 	// setup image dimensions
 	if(mState.use_window)
 	{
@@ -782,6 +802,7 @@ void EmulatedCamera::multdark_thread(int32_t exposure_count,int32_t exposure_len
 		}
 		if(mAbort)
 		{
+			mState.exposure_in_progress = FALSE;
 			mState.exposure_state = ExposureState::IDLE;
 			return;
 		}
@@ -804,10 +825,12 @@ void EmulatedCamera::multdark_thread(int32_t exposure_count,int32_t exposure_len
 		LOG4CXX_INFO(logger,"Dark exposure " << image_index << " complete.");
 		if(mAbort)
 		{
+			mState.exposure_in_progress = FALSE;
 			mState.exposure_state = ExposureState::IDLE;
 			return;
 		}
 	}// end for on i (mState.exposure_count)
+	mState.exposure_in_progress = FALSE;
 	mState.exposure_state = ExposureState::IDLE;
 	cout << "Multdark complete" << endl;
 	LOG4CXX_INFO(logger,"Multdark complete");
@@ -857,6 +880,7 @@ void EmulatedCamera::multrun_thread(int32_t exposure_count,int32_t exposure_leng
 	int reg_height;
 	int total_pixels;
 
+	mState.exposure_in_progress = TRUE;
 	// setup image dimensions
 	if(mState.use_window)
 	{
@@ -901,6 +925,7 @@ void EmulatedCamera::multrun_thread(int32_t exposure_count,int32_t exposure_leng
 		}
 		if(mAbort)
 		{
+			mState.exposure_in_progress = FALSE;
 			mState.exposure_state = ExposureState::IDLE;
 			return;
 		}
@@ -923,10 +948,12 @@ void EmulatedCamera::multrun_thread(int32_t exposure_count,int32_t exposure_leng
 		LOG4CXX_INFO(logger,"Exposure " << image_index << " complete.");
 		if(mAbort)
 		{
+			mState.exposure_in_progress = FALSE;
 			mState.exposure_state = ExposureState::IDLE;
 			return;
 		}
 	}// end for on i (mState.exposure_count)
+	mState.exposure_in_progress = FALSE;
 	mState.exposure_state = ExposureState::IDLE;
 	cout << "Multrun complete" << endl;
 	LOG4CXX_INFO(logger,"Multrun complete");
