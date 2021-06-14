@@ -22,7 +22,7 @@ def do_multrun(exposure_count = 1, exposure_length=1000):
         last_exposure = ( state.exposure_index == ( state.exposure_count - 1 ) )
         finished_exposure = ( state.remaining_exposure_length <= 0 )
         is_idle = ( state.exposure_state == ExposureState.IDLE )
-        done = state.exposure_in_progress == false
+        done = state.exposure_in_progress == False
     filename_list = c.get_image_filenames()
     filename_count = len(filename_list)
     print ("There are " + repr(filename_count) + " Image Filenames:")
