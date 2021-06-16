@@ -44,7 +44,7 @@ struct General_Struct
 	void (*Log_Handler)(char *sub_system,char *source_filename,char *function,
 			    int level,char *category,char *string);
 	/** Function pointer to the routine that will filter log messages passed to it.
-	 * 		The funtion will return TRUE if the message should be logged, and FALSE if it shouldn't. */
+	 *  The funtion will return TRUE if the message should be logged, and FALSE if it shouldn't. */
 	int (*Log_Filter)(char *sub_system,char *source_filename,char *function,
 			  int level,char *category,char *string);
 	/** A globally maintained log filter level.  This is set using CCD_General_Set_Log_Filter_Level.
