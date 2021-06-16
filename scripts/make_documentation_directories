@@ -4,7 +4,9 @@ if ( ! $?SRC_HOME ) then
    exit 1
 endif
 setenv MOOKODI_SRC_HOME	${SRC_HOME}/Mookodi
-mkdir ${MOOKODI_SRC_HOME}/public_html
+mkdir -p ${MOOKODI_SRC_HOME}/public_html
 mkdir -p ${MOOKODI_SRC_HOME}/public_html/mookodi/camera/server
 mkdir -p ${MOOKODI_SRC_HOME}/public_html/mookodi/ccd/c/
 mkdir -p ${MOOKODI_SRC_HOME}/public_html/mookodi/ccd/test/
+mkdir -p ${MOOKODI_SRC_HOME}/public_html/mookodi/ngatastro/c/
+mkdir -p ${MOOKODI_SRC_HOME}/public_html/mookodi/ngatastro/test/
