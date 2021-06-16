@@ -26,6 +26,9 @@
 #include "ccd_setup.h"
 #include "ccd_temperature.h"
 
+#include "ngat_astro.h"
+#include "ngat_astro_mjd.h"
+
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -52,8 +55,9 @@ using namespace log4cxx;
 static LoggerPtr logger(Logger::getLogger("mookodi.camera.server.Camera"));
 
 /* internal C functions */
-static void log_to_log4cxx(char *sub_system,char *source_filename,char *function,
+static void ccd_log_to_log4cxx(char *sub_system,char *source_filename,char *function,
 			   int level,char *category,char *string);
+static void ngatastro_log_to_log4cxx(int level,char *string);
 
 /**
  * Constructor for the Camera object.
@@ -82,7 +86,8 @@ void Camera::set_config(CameraConfig & config)
 /**
  * Initialisation method for the camera object. This does the following:
  * <ul>
- * <li>We set the CCD library log handler function to log to stdout.
+ * <li>We set the CCD library log handler function to log to log4cxx (ccd_log_to_log4cxx).
+ * <li>We set the NGATAStro library log handler function to log to log4cxx (ngatastro_log_to_log4cxx).
  * <li>We retrieve the "andor.config_dir" configuration value and use it to set the Andor config directory in the
  *     CCD library using CCD_Setup_Config_Directory_Set.
  * <li>We connect to and initialise the camera using CCD_Setup_Startup.
@@ -140,7 +145,9 @@ void Camera::set_config(CameraConfig & config)
  * @see CCD_Setup_Set_Flip_Y
  * @see CCD_Fits_Filename_Initialise
  * @see CCD_Fits_Header_Initialise
- * @see log_to_log4cxx
+ * @see NGAT_Astro_Set_Log_Handler_Function
+ * @see ccd_log_to_log4cxx
+ * @see ngatastro_log_to_log4cxx
  */
 void Camera::initialize()
 {
@@ -155,7 +162,8 @@ void Camera::initialize()
 	cout << "Initialising Camera." << endl;
 	LOG4CXX_INFO(logger,"Initialising Camera.");
 	/* setup loggers */
-	CCD_General_Set_Log_Handler_Function(log_to_log4cxx);
+	CCD_General_Set_Log_Handler_Function(ccd_log_to_log4cxx);
+	NGAT_Astro_Set_Log_Handler_Function(ngatastro_log_to_log4cxx);
 	/* setup andor config directory */
 	mCameraConfig.get_config_string(CONFIG_CAMERA_SECTION,"andor.config_dir",config_dir,256);
 	retval = CCD_Setup_Config_Directory_Set(config_dir);
@@ -1677,7 +1685,10 @@ void Camera::multrun_thread(int32_t exposure_count,int32_t exposure_length)
  *                   CCD_Fits_Header_TimeSpec_To_UtStart_String to format the string.
  * <li><b>DATE-OBS</b> We retrieve the start exposure timestamp using CCD_Exposure_Start_Time_Get. We use 
  *                   CCD_Fits_Header_TimeSpec_To_Date_Obs_String to format the string.
- * <li><b>VSHIFT</b> The vertical shift speed in microseconds/pixel, retrieved from the CCD library using CCD_Setup_Get_VS_Speed.
+ * <li><b>MJD</b> We retrieve the modified julian date from the start exposure timestamp using 
+ *                NGAT_Astro_Timespec_To_MJD, and add it as a float.
+ * <li><b>VSHIFT</b> The vertical shift speed in microseconds/pixel, retrieved from the CCD library using 
+ *                   CCD_Setup_Get_VS_Speed.
  * <li><b>HSHIFT</b> The horizontal shift speed im MHz, retrieved from the CCD library using CCD_Setup_Get_HS_Speed.
  * <li><b>HSHIFTI</b> The horizontal shift speed index used to configure the horizontal shift speed, 
  *                    retrieved from the CCD library using CCD_Setup_Get_HS_Speed_Index.
@@ -1686,6 +1697,7 @@ void Camera::multrun_thread(int32_t exposure_count,int32_t exposure_length)
  * @param exposure_count The number of images in the Multrun/Multbias/MultDark.
  * @param exposure_length The exposure length, in milliseconds, of this image.
  * @see Camera::create_ccd_library_exception
+ * @see Camera::create_ngatastro_library_exception
  * @see mFitsHeader
  * @see Camera::mCachedNCols
  * @see Camera::mCachedNRows
@@ -1712,6 +1724,7 @@ void Camera::multrun_thread(int32_t exposure_count,int32_t exposure_length)
  * @see CCD_Setup_Get_VS_Speed_Index
  * @see CCD_Setup_Get_HS_Speed
  * @see CCD_Setup_Get_HS_Speed_Index
+ * @see NGAT_Astro_Timespec_To_MJD
  */
 void Camera::add_camera_fits_headers(int image_index,int32_t exposure_count,int32_t exposure_length)
 {
@@ -1721,7 +1734,7 @@ void Camera::add_camera_fits_headers(int image_index,int32_t exposure_count,int3
 	char camera_head_model_name[128];
 	char img_rect_buff[128];
 	char time_string[32];
-	double temperature;
+	double temperature,mjd;
 	float vs_speed,hs_speed,pre_amp_gain;
 	int retval,xs,ys,xe,ye,vs_speed_index,hs_speed_index;
 	
@@ -1775,7 +1788,20 @@ void Camera::add_camera_fits_headers(int image_index,int32_t exposure_count,int3
 		ce = create_ccd_library_exception();
 		throw ce;
 	}
-	/* HJD-OBS double (Heliocentric Julian Date of start) */
+	/* MJD */
+	retval = NGAT_Astro_Timespec_To_MJD(start_time,FALSE,&mjd);
+	if(retval == FALSE)
+	{
+		ce = create_ngatastro_library_exception();
+		throw ce;
+	}
+	retval = CCD_Fits_Header_Add_Float(&mFitsHeader,"MJD",mjd,"Modified Julian Date");
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	
 	/* HBIN */
 	retval = CCD_Fits_Header_Add_Int(&mFitsHeader,"HBIN",CCD_Setup_Get_Bin_X(),"Horizontal/X binning");
 	if(retval == FALSE)
@@ -1961,6 +1987,28 @@ CameraException Camera::create_ccd_library_exception()
 }
 
 /**
+ * This method creates a camera exception, and populates the message with the error messasge found
+ * in the NGATAstro library. We also log the created error to the log file.
+ * @return The created camera exception. The message is generated by NGAT_Astro_Error_String.
+ * @see #ERROR_BUFFER_LENGTH
+ * @see #logger
+ * @see CameraException
+ * @see NGAT_Astro_Error_String
+ * @see LOG4CXX_ERROR
+ */
+CameraException Camera::create_ngatastro_library_exception()
+{
+	CameraException ce;
+	char error_buffer[ERROR_BUFFER_LENGTH];
+	
+	NGAT_Astro_Error_String(error_buffer);
+	std::string str(error_buffer);
+	ce.message = str;
+	LOG4CXX_ERROR(logger,"Creating NGATAstro library exception:" + str);
+	return ce;	
+}
+
+/**
  * A C function conforming to the CCD library logging interface. This causes messages to be logged to log4cxx logger ,
  * in the form:
  * category << ":" << sub_system << ":" << source_filename << ":" << "function : string".
@@ -1984,7 +2032,7 @@ CameraException Camera::create_ccd_library_exception()
  * @see LOG_VERBOSITY_VERBOSE
  * @see LOG_VERBOSITY_VERY_VERBOSE
  */
-static void log_to_log4cxx(char *sub_system,char *source_filename,char *function,
+static void ccd_log_to_log4cxx(char *sub_system,char *source_filename,char *function,
 			   int level,char *category,char *string)
 {
 	switch(level)
@@ -2006,6 +2054,46 @@ static void log_to_log4cxx(char *sub_system,char *source_filename,char *function
 		default:
 			LOG4CXX_TRACE(logger,category << ":" << sub_system << ":" << source_filename <<
 				     ":" << function << ":" << string);
+			break;
+	}
+}
+	
+/**
+ * A C function conforming to the NGATAStro library logging interface. 
+ * This causes the string message to be logged to log4cxx logger.
+ * Log levels LOG_VERBOSITY_VERY_TERSE,LOG_VERBOSITY_TERSE and  
+ * LOG_VERBOSITY_INTERMEDIATE are logged using LOG4CXX_INFO,
+ * log level LOG_VERBOSITY_VERBOSE is logged as LOG4CXX_DEBUG and LOG_VERBOSITY_VERY_VERBOSE is logged as LOG4CXX_TRACE.
+ * @param level At what level is the log message (TERSE/high level or VERBOSE/low level), 
+ *         a valid member of LOG_VERBOSITY.
+ * @param string The log message to be logged. 
+ * @see logger
+ * @see LOG4CXX_INFO
+ * @see LOG4CXX_DEBUG
+ * @see LOG4CXX_TRACE
+ * @see LOG_VERBOSITY_VERY_TERSE
+ * @see LOG_VERBOSITY_TERSE
+ * @see LOG_VERBOSITY_INTERMEDIATE
+ * @see LOG_VERBOSITY_VERBOSE
+ * @see LOG_VERBOSITY_VERY_VERBOSE
+ */
+static void ngatastro_log_to_log4cxx(int level,char *string)
+{
+	switch(level)
+	{
+		case LOG_VERBOSITY_VERY_TERSE:
+		case LOG_VERBOSITY_TERSE:
+		case LOG_VERBOSITY_INTERMEDIATE:
+			LOG4CXX_INFO(logger,string);
+			break;
+		case LOG_VERBOSITY_VERBOSE:
+			LOG4CXX_DEBUG(logger,string);
+			break;
+		case LOG_VERBOSITY_VERY_VERBOSE:
+			LOG4CXX_TRACE(logger,string);
+			break;
+		default:
+			LOG4CXX_TRACE(logger,string);
 			break;
 	}
 }

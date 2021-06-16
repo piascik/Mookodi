@@ -64,6 +64,7 @@ class Camera : virtual public CameraServiceIf
     void multrun_thread(int32_t exposure_count,int32_t exposure_length);
     void add_camera_fits_headers(int image_index,int32_t exposure_count,int32_t exposure_length);
     CameraException create_ccd_library_exception();
+    CameraException create_ngatastro_library_exception();
     /**
      * The configuration object to load configuration data from.
      */
