@@ -11,6 +11,11 @@
  * @author Chris Mottram
  * @version $Id$
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* hash defines */
 /**
  * TRUE is the value usually returned from routines to indicate success.
@@ -53,6 +58,10 @@
 #define NGAT_ASTRO_ONE_MICROSECOND_NS	(1000)
 
 /* enums */
+/* enum LOG_VERBOSITY is defined in both ccd_general.h and ngat_astro.h,
+** so we protect it against multiple declaration in the client software */
+#ifndef ENUM_LOG_VERBOSITY_H
+#define ENUM_LOG_VERBOSITY_H
 /**
  * This enum describes a verbosity filtering level of a log message. The idea is that the high priority/
  * terse level messages are always displayed, whilst the detail/very verbose messages can be filtered out.
@@ -73,6 +82,8 @@ enum LOG_VERBOSITY
 	LOG_VERBOSITY_VERBOSE=4,
 	LOG_VERBOSITY_VERY_VERBOSE=5
 };
+/* end of ENUM_LOG_VERBOSITY_H */
+#endif
 
 /* external functions */
 
@@ -91,5 +102,8 @@ extern void NGAT_Astro_Log_Handler_Stdout(int level,char *string);
 extern void NGAT_Astro_Set_Log_Filter_Level(int level);
 extern int NGAT_Astro_Log_Filter_Level_Absolute(int level,char *string);
 extern int NGAT_Astro_Log_Filter_Level_Bitwise(int level,char *string);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

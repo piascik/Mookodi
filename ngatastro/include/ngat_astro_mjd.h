@@ -12,6 +12,10 @@
  * @version $Id$
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* hash defines */
 
 /* external functions */
@@ -19,5 +23,9 @@ extern int NGAT_Astro_Timespec_To_MJD(struct timespec time,int leap_second_corre
 extern int NGAT_Astro_Year_Month_Day_To_MJD(int year,int month,int day,double *mjd);
 extern int NGAT_Astro_Hour_Minute_Second_To_Day_Fraction(int hours,int minutes,int seconds,int nano_seconds,
 						  int leap_second_correction, double *day_fraction);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
