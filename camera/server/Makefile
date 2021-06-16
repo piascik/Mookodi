@@ -1,17 +1,18 @@
 include ../../Makefile.common
 include ../Makefile.common
 include ../../ccd/Makefile.common
+include ../../ngatastro/Makefile.common
 
 BINDIR		= $(MOOKODI_CAMERA_BIN_HOME)/server/$(HOSTTYPE)
 INTERFACE_BINDIR= $(MOOKODI_CAMERA_BIN_HOME)/server/interface/$(HOSTTYPE)
 
 CC=g++
-INCLUDE=-I ./interface/ -I /usr/local/include/ -I /usr/local/include/plibsys -I $(MOOKODI_CCD_SRC_HOME)/include $(CFITSIO_CFLAGS)
+INCLUDE=-I ./interface/ -I /usr/local/include/ -I /usr/local/include/plibsys -I $(MOOKODI_CCD_SRC_HOME)/include -I $(NGATASTRO_SRC_HOME)/include $(CFITSIO_CFLAGS)
 #CFLAGS=-Wall -std=c++17 -g -O3
 CFLAGS=-Wall -std=c++17 -g
 LDFLAGS=-L/usr/local/lib -L$(MOOKODI_LIB_HOME) -L$(CFITSIOLIBDIR) $(ANDOR_LDFLAGS)
 
-LIBS=-lthriftnb -lthrift -levent -lboost_program_options -lboost_filesystem -lboost_system -lboost_iostreams -lplibsys -llog4cxx -lpthread -lm -lmookodi_ccd $(ANDOR_LIBS) $(CFITSIO_LIBS)
+LIBS=-lthriftnb -lthrift -levent -lboost_program_options -lboost_filesystem -lboost_system -lboost_iostreams -lplibsys -llog4cxx -lpthread -lm -lmookodi_ccd -lngatastro $(ANDOR_LIBS) $(CFITSIO_LIBS)
 #-lIDSAC -largtable2 -lopts -lCCfits 
 
 SOURCES=Camera.cpp EmulatedCamera.cpp CameraServer.cpp CameraConfig.cpp
