@@ -1,7 +1,7 @@
 # Makefile
 include Makefile.common
 
-DIRS 	= ccd camera
+DIRS 	= ccd ngatastro camera
 
 top:
 	@for i in $(DIRS); \
