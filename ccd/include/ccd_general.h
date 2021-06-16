@@ -63,6 +63,10 @@ extern "C" {
 #define CCD_GENERAL_ONE_MICROSECOND_NS	(1000)
 
 /* enums */
+/* enum LOG_VERBOSITY is defined in both ccd_general.h and ngat_astro.h,
+** so we protect it against multiple declaration in the client software */
+#ifndef ENUM_LOG_VERBOSITY_H
+#define ENUM_LOG_VERBOSITY_H
 /**
  * This enum describes a verbosity filtering level of a log message. The idea is that the high priority/
  * terse level messages are always displayed, whilst the detail/very verbose messages can be filtered out.
@@ -83,6 +87,8 @@ enum LOG_VERBOSITY
 	LOG_VERBOSITY_VERBOSE=4,
 	LOG_VERBOSITY_VERY_VERBOSE=5
 };
+/* end of ENUM_LOG_VERBOSITY_H */
+#endif
 
 #ifndef fdifftime
 /**
