@@ -3,6 +3,12 @@
 
 #ifndef PARSE_TIME_H
 #define PARSE_TIME_H
+/**
+ * @file
+ * @brief Header file containing the external API for common routines for the ngat astrometry library test programs. 
+ * @author Chris Mottram
+ * @version $Revision$
+ */
 
 #include <time.h>
 

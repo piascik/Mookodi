@@ -4,7 +4,13 @@
 
 #ifndef NGAT_ASTRO_H
 #define NGAT_ASTRO_H
-
+/**
+ * @file
+ * @brief ngat_astro.h contains the externally declared API for general routines in the NGATAstro library 
+ *        (logging/error handling etc).
+ * @author Chris Mottram
+ * @version $Id$
+ */
 /* hash defines */
 /**
  * TRUE is the value usually returned from routines to indicate success.

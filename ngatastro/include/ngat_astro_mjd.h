@@ -4,6 +4,13 @@
 
 #ifndef NGAT_ASTRO_MJD_H
 #define NGAT_ASTRO_MJD_H
+/**
+ * @file
+ * @brief ngat_astro_mjd.h contains the externally declared API for the MJD (Modified Julian Date) 
+ *        routines in the NGATAstro library.
+ * @author Chris Mottram
+ * @version $Id$
+ */
 
 /* hash defines */
 

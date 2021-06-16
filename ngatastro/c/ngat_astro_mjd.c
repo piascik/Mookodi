@@ -2,7 +2,8 @@
 ** Next Generation Astronomical Telescope Astrometric library. Modified Julian Date routines.
 */
 /**
- * ngat_astro_mjd.c contains Modified Julian Date routine for the NGAT astrometry library.
+ * @file
+ * @brief ngat_astro_mjd.c contains the Modified Julian Date routines for the NGAT astrometry library.
  * @author Chris Mottram
  * @version $Revision: 1.4 $
  */
@@ -63,8 +64,8 @@
  *         error string are set if an error occurs.
  * @see #NGAT_Astro_Year_Month_Day_To_MJD
  * @see #NGAT_Astro_Hour_Minute_Second_To_Day_Fraction
- * @see ngat_astro.html#Astro_Error_Number
- * @see ngat_astro.html#Astro_Error_String
+ * @see Astro_Error_Number
+ * @see Astro_Error_String
  */
 int NGAT_Astro_Timespec_To_MJD(struct timespec time,int leap_second_correction,double *mjd)
 {
@@ -139,8 +140,8 @@ int NGAT_Astro_Timespec_To_MJD(struct timespec time,int leap_second_correction,d
  * @param mjd The address of a double, to store the modified Julian date (JD-2400000.5).
  * @return The routine returns TRUE if it succeeds, FALSE if it fails. The library error code and
  *         error string are set if an error occurs.
- * @see ngat_astro.html#Astro_Error_Number
- * @see ngat_astro.html#Astro_Error_String
+ * @see Astro_Error_Number
+ * @see Astro_Error_String
  */
 int NGAT_Astro_Year_Month_Day_To_MJD(int year,int month,int day,double *mjd)
 {
@@ -258,8 +259,8 @@ int NGAT_Astro_Year_Month_Day_To_MJD(int year,int month,int day,double *mjd)
  *        (0..1).
  * @return The routine returns TRUE if it succeeds, FALSE if it fails. The library error code and
  *         error string are set if an error occurs.
- * @see ngat_astro.html#Astro_Error_Number
- * @see ngat_astro.html#Astro_Error_String
+ * @see Astro_Error_Number
+ * @see Astro_Error_String
  */
 int NGAT_Astro_Hour_Minute_Second_To_Day_Fraction(int hours,int minutes,int seconds,int nano_seconds,
 						  int leap_second_correction,double *day_fraction)

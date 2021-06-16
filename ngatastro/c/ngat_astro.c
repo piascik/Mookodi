@@ -2,9 +2,10 @@
 ** Next Generation Astronomical Telescope Astrometric library.
 */
 /**
- * ngat_astro.c contains general routines for the NGAT astrometry library.
+ * @file
+ * @brief ngat_astro.c contains general routines for the NGAT astrometry library.
  * @author Chris Mottram
- * @version $Revision: 1.3 $
+ * @version $Id$
  */
 /**
  * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes.
@@ -54,16 +55,7 @@ char Astro_Error_String[NGAT_ASTRO_ERROR_STRING_LENGTH] = "";
 
 /* internal data types */
 /**
- * Data type holding local data to ngat_astro. This consists of the following:
- * <dl>
- * <dt>Astro_Log_Handler</dt> <dd>Function pointer to the routine that will log messages passed to it.</dd>
- * <dt>Astro_Log_Filter</dt> <dd>Function pointer to the routine that will filter log messages passed to it.
- * 		The funtion will return TRUE if the message should be logged, and FALSE if it shouldn't.</dd>
- * <dt>Astro_Log_Filter_Level</dt> <dd>A globally maintained log filter level. 
- * 		This is set using NGAT_Astro_Set_Log_Filter_Level.
- * 		NGAT_Astro_Log_Filter_Level_Absolute and NGAT_Astro_Log_Filter_Level_Bitwise test it against
- * 		message levels to determine whether to log messages.</dd>
- * </dl>
+ * Data type holding local data to ngat_astro.
  * @see #NGAT_Astro_Log
  * @see #NGAT_Astro_Set_Log_Filter_Level
  * @see #NGAT_Astro_Log_Filter_Level_Absolute
@@ -71,8 +63,15 @@ char Astro_Error_String[NGAT_ASTRO_ERROR_STRING_LENGTH] = "";
  */
 struct Astro_Struct
 {
+	/** Function pointer to the routine that will log messages passed to it. */
 	void (*Astro_Log_Handler)(int level,char *string);
+	/** Function pointer to the routine that will filter log messages passed to it.
+	 *  The funtion will return TRUE if the message should be logged, and FALSE if it shouldn't. */
 	int (*Astro_Log_Filter)(int level,char *string);
+	/** A globally maintained log filter level. 
+	 * This is set using NGAT_Astro_Set_Log_Filter_Level.
+	 * NGAT_Astro_Log_Filter_Level_Absolute and NGAT_Astro_Log_Filter_Level_Bitwise test it against
+	 * message levels to determine whether to log messages. */
 	int Astro_Log_Filter_Level;
 };
 
@@ -241,7 +240,7 @@ void NGAT_Astro_Set_Log_Handler_Function(void (*log_fn)(int level,char *string))
 
 /**
  * Routine to set the Astro_Data.Astro_Log_Filter used by NGAT_Astro_Log.
- * @param log_fn A function pointer to a suitable filter function.
+ * @param filter_fn A function pointer to a suitable filter function.
  * @see #Astro_Data
  * @see #NGAT_Astro_Log
  */

@@ -1,15 +1,16 @@
 /* date_to_mjd_ngatastro.c
 */
 /**
- * Test program, that uses libngatastro to convert an input date into a modified Julian Date
+ * @file
+ * @brief Test program, that uses libngatastro to convert an input date into a modified Julian Date
  * <pre>
- * date_to_mjd_ngatastro <date>
+ * date_to_mjd_ngatastro &lt;date&gt;
  * </pre>
  * The input date is in the format : YYYY-MM-DDThh:mm:ss.sss
  * i.e. 2003-02-13T19:33:12.661
  * The special keyword "now" uses the current system time.
  * @author Chris Mottram
- * @version $Revision: 1.2 $
+ * @version $Revision$
  */
 /**
  * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes
@@ -39,8 +40,8 @@
  * @param argc The number of arguments, should be 2.
  * @param argv The string array of arguments.
  * @return The program returns zero on success, and non-zero to indicate a failure.
- * @see parse_time.html#Parse_Time
- * @see ../cdocs/ngat_astro_mjd.html#NGAT_Astro_Timespec_To_MJD
+ * @see Parse_Time
+ * @see NGAT_Astro_Timespec_To_MJD
  */
 int main(int argc,char *argv[])
 {

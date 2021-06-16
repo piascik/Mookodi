@@ -1,9 +1,10 @@
 /* parse_time.c
 */
 /**
- * Common routines for the ngat astrometry library test programs. 
+ * @file
+ * @brief Common routines for the ngat astrometry library test programs. 
  * @author Chris Mottram
- * @version $Revision: 1.2 $
+ * @version $Revision$
  */
 /**
  * This hash define is needed before including source files give us POSIX.4/IEEE1003.1b-1993 prototypes
@@ -70,4 +71,3 @@ int Parse_Time(char *date_string,struct timespec *time)
 	/*fprintf(stdout,"Time parsed as:%s.%3d\n",ctime(&(time->tv_sec)),(time->tv_nsec/NGAT_ASTRO_ONE_MILLISECOND_NS));*/
 	return TRUE;
 }
-

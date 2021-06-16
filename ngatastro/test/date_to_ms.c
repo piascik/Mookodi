@@ -1,9 +1,10 @@
 /* date_to_ms.c
 */
 /**
- * Test program, that converts an input date into a the number of milliseconds since the epoch.
+ * @file
+ * @brief Test program, that converts an input date into a the number of milliseconds since the epoch.
  * <pre>
- * date_to_ms <date>
+ * date_to_ms &lt;date&gt;
  * </pre>
  * The input date is in the format : YYYY-MM-DDThh:mm:ss.sss
  * i.e. 2003-02-13T19:33:12.661
@@ -23,6 +24,7 @@
 #define _POSIX_C_SOURCE 199309L
 #include <stdio.h>
 #include <errno.h>
+#include <string.h>
 #include <time.h>
 #include "ngat_astro.h"
 #include "parse_time.h"
@@ -38,9 +40,9 @@
  * @param argc The number of arguments, should be 2.
  * @param argv The string array of arguments.
  * @return The program returns zero on success, and non-zero to indicate a failure.
- * @see parse_time.html#Parse_Time
- * @see ../cdocs/ngat_astro.html#NGAT_ASTRO_ONE_SECOND_MS
- * @see ../cdocs/ngat_astro.html#NGAT_ASTRO_ONE_MILLISECOND_NS
+ * @see Parse_Time
+ * @see NGAT_ASTRO_ONE_SECOND_MS
+ * @see NGAT_ASTRO_ONE_MILLISECOND_NS
  */
 int main(int argc,char *argv[])
 {
@@ -59,7 +61,7 @@ int main(int argc,char *argv[])
 	{
 		clock_gettime(CLOCK_REALTIME,&time);
 		fprintf(stdout,"Time parsed as:%s.%3d\n",ctime(&(time.tv_sec)),
-			(time.tv_nsec/NGAT_ASTRO_ONE_MILLISECOND_NS));
+			(int)(time.tv_nsec/NGAT_ASTRO_ONE_MILLISECOND_NS));
 	}
 	else
 	{
@@ -78,4 +80,3 @@ int main(int argc,char *argv[])
 	fprintf(stdout,"%.0lf\n",msd);
 	return 0;
 }
-
