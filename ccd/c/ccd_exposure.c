@@ -128,8 +128,10 @@ void CCD_Exposure_Initialise(void)
  * Do an exposure.
  * <ul>
  * <li>We call <b>SetAcquisitionMode(1)</b> to set the Andor library to do a single scan (rather than a kinetic series).
- * <li>If we want to open the shutter, we call <b>SetShutter(1,0,0,0)</b> else we call <b>SetShutter(1,2,0,0)</b> to
- *     keep the shutter closed (for biases and darks).
+ * <li>If we want to open the shutter, we call <b>SetShutter(1,0,shutter close time,shutter open time)</b> 
+ *     else we call <b>SetShutter(1,2,0,0)</b> to
+ *     keep the shutter closed (for biases and darks). The open and close shutter times are retrieved from the
+ *     previously configured setup (CCD_Setup_Get_Open_Shutter_Time / CCD_Setup_Get_Close_Shutter_Time).
  * <li>We setup Exposure_Data's Exposure_Length, Exposure_Index and Exposure_Count for status reporting.
  * <li>We call <b>SetExposureTime</b> to set the camera's exposure length.
  * <li>We check the image buffer is not NULL, call CCD_Setup_Get_Buffer_Length to get it's allocated length, and 
@@ -174,6 +176,8 @@ void CCD_Exposure_Initialise(void)
  * @see #Exposure_Debug_Buffer
  * @see CCD_General_Log
  * @see CCD_General_Andor_ErrorCode_To_String
+ * @see CCD_Setup_Get_Close_Shutter_Time
+ * @see CCD_Setup_Get_Open_Shutter_Time
  * @see CCD_Setup_Get_Buffer_Length
  * @see CCD_Setup_Get_Flip_X
  * @see CCD_Setup_Get_Flip_Y
@@ -222,14 +226,18 @@ int CCD_Exposure_Expose(int open_shutter,struct timespec start_time,int exposure
 	if(open_shutter)
 	{
 #if LOGGING > 5
-		CCD_General_Log("ccd","ccd_exposure.c","CCD_Exposure_Expose",LOG_VERBOSITY_INTERMEDIATE,"ANDOR",
-				"SetShutter(1,0,0,0).");
+		CCD_General_Log_Format("ccd","ccd_exposure.c","CCD_Exposure_Expose",LOG_VERBOSITY_INTERMEDIATE,"ANDOR",
+				       "SetShutter(1,0,shutter close time = %d,shutter open time = %d).",
+				       CCD_Setup_Get_Shutter_Close_Time(),CCD_Setup_Get_Shutter_Open_Time());
 #endif
-		andor_retval = SetShutter(1,0,0,0);
+		andor_retval = SetShutter(1,0,CCD_Setup_Get_Shutter_Close_Time(),CCD_Setup_Get_Shutter_Open_Time());
 		if(andor_retval != DRV_SUCCESS)
 		{
 			Exposure_Error_Number = 6;
-			sprintf(Exposure_Error_String,"CCD_Exposure_Expose: SetShutter() failed %s(%u).",
+			sprintf(Exposure_Error_String,
+				"CCD_Exposure_Expose: SetShutter(1,0,shutter close time = %d,shutter open time = %d) "
+				"failed %s(%u).",
+				CCD_Setup_Get_Shutter_Close_Time(),CCD_Setup_Get_Shutter_Open_Time(),
 				CCD_General_Andor_ErrorCode_To_String(andor_retval),andor_retval);
 			return FALSE;
 		}

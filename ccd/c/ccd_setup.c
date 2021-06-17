@@ -97,8 +97,11 @@ struct Setup_Struct
 	int Flip_X;
 	/** A boolean - if true the exposure code wil flip the image in the vertical/Y direction. */
 	int Flip_Y;
+	/** The length of time, in milliseconds, to allow for the shutter opening. Used as a parameter to SetShutter */
+	int Shutter_Open_Time;
+	/** The length of time, in milliseconds, to allow for the shutter closing. Used as a parameter to SetShutter */
+	int Shutter_Close_Time;
 };
-
 
 /* external variables */
 
@@ -123,7 +126,7 @@ static char Setup_Error_String[CCD_GENERAL_ERROR_STRING_LENGTH] = "";
  */
 static struct Setup_Struct Setup_Data = 
 {
-	NULL,0,0,"",0,0,0,0,0,FALSE,0,0,0,0,0,0.0,0,0.0,0,FALSE,FALSE
+	NULL,0,0,"",0,0,0,0,0,FALSE,0,0,0,0,0,0.0,0,0.0,0,FALSE,FALSE,0,0
 };
 
 /* ----------------------------------------------------------------------------
@@ -185,7 +188,7 @@ int CCD_Setup_Config_Directory_Set(char *directory)
  * <li>We call <b>GetNumberADChannels</b> to log the A/D channels available.
  * <li>Calls <b>SetBaselineClamp(1)</b> to set the baseline clamp on.
  * <li>Calls <b>GetDetector</b> to get the detector dimensions and save then to <b>Setup_Data</b>.
- * <li>Calls <b>SetShutter</b> to set the Andor library shutter settings to auto with no shutter delay.
+ * <li>Calls <b>SetShutter</b> to set the Andor library shutter settings to auto with the configured shutter delay.
  * </ul>
  * @return The routine returns TRUE on success, and FALSE if an error occurs.
  * @see #Setup_Data
@@ -449,10 +452,11 @@ int CCD_Setup_Startup(void)
 	}
 	/* initialise the shutter  - is this needed? See ccd_exposure.c */
 #if LOGGING > 3
-	CCD_General_Log("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
-			"Calling SetShutter(1,0,0,0).");
+	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Startup",LOG_VERBOSITY_VERBOSE,"CCD",
+			       "Calling SetShutter(1,0,shutter close time=%d,shutter open time=%d).",
+			       Setup_Data.Shutter_Close_Time,Setup_Data.Shutter_Open_Time);
 #endif /* LOGGING */
-	andor_retval = SetShutter(1,0,0,0);
+	andor_retval = SetShutter(1,0,Setup_Data.Shutter_Close_Time,Setup_Data.Shutter_Open_Time);
 	if(andor_retval != DRV_SUCCESS)
 	{
 		Setup_Error_Number = 11;
@@ -891,6 +895,52 @@ int CCD_Setup_Set_Flip_Y(int flip_y)
 }
 
 /**
+ * Routine to set whether the length of time (in milliseconds) the shutter takes to open.
+ * This is stored in Setup_Data.Shutter_Open_Time and later used to configure SetShutter.
+ * @param opening_time_ms The length of time (in milliseconds) the shutter takes to open. Should not be less than 0.
+ * @see #Setup_Data
+ */
+int CCD_Setup_Set_Shutter_Open_Time(int opening_time_ms)
+{
+	if(opening_time_ms < 0)
+	{
+		Setup_Error_Number = 48;
+		sprintf(Setup_Error_String,"CCD_Setup_Set_Shutter_Open_Time: Argument opening_time_ms (%d) was too small.",
+			opening_time_ms);
+		return FALSE;
+	}
+#if LOGGING > 1
+	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Set_Shutter_Open_Time",LOG_VERBOSITY_TERSE,"CCD",
+			       "Setting open shutter time to %d ms.",opening_time_ms);
+#endif /* LOGGING */
+	Setup_Data.Shutter_Open_Time = opening_time_ms;
+	return TRUE;
+}
+
+/**
+ * Routine to set whether the length of time (in milliseconds) the shutter takes to close.
+ * This is stored in Setup_Data.Shutter_Close_Time and later used to configure SetShutter.
+ * @param closing_time_ms The length of time (in milliseconds) the shutter takes to close. Should not be less than 0.
+ * @see #Setup_Data
+ */
+int CCD_Setup_Set_Shutter_Close_Time(int closing_time_ms)
+{
+	if(closing_time_ms < 0)
+	{
+		Setup_Error_Number = 49;
+		sprintf(Setup_Error_String,"CCD_Setup_Set_Shutter_Close_Time: Argument closing_time_ms (%d) was too small.",
+			closing_time_ms);
+		return FALSE;
+	}
+#if LOGGING > 1
+	CCD_General_Log_Format("setup","ccd_setup.c","CCD_Setup_Set_Shutter_Close_Time",LOG_VERBOSITY_TERSE,"CCD",
+			       "Setting close shutter time to %d ms.",closing_time_ms);
+#endif /* LOGGING */
+	Setup_Data.Shutter_Close_Time = closing_time_ms;
+	return TRUE;
+}
+
+/**
  * Get the number of columns setup to be read out from the last CCD_Setup_Dimensions.
  * Currently, (Setup_Data.Horizontal_End - Setup_Data.Horizontal_Start)+1.
  * Plus 1 as dimensions are inclusive. This number is unbinned.
@@ -1028,6 +1078,26 @@ int CCD_Setup_Get_Flip_X(void)
 int CCD_Setup_Get_Flip_Y(void)
 {
 	return Setup_Data.Flip_Y;
+}
+
+/**
+ * Return the number of milliseconds configured to open the shutter.
+ * @return The length of time configured to allow for the opening of the shutter, in milliseconds.
+ * @see #Setup_Data
+ */
+int CCD_Setup_Get_Shutter_Open_Time(void)
+{
+	return Setup_Data.Shutter_Open_Time;
+}
+
+/**
+ * Return the number of milliseconds configured to close the shutter.
+ * @return The length of time configured to allow for the closing of the shutter, in milliseconds.
+ * @see #Setup_Data
+ */
+int CCD_Setup_Get_Shutter_Close_Time(void)
+{
+	return Setup_Data.Shutter_Close_Time;
 }
 
 /**
