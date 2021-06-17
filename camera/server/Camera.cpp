@@ -1057,7 +1057,7 @@ void Camera::warm_up()
  *     <li>We update mLastImageFilename with the newly saved FITS filename, 
  *         and add the filename to the mImageFilenameList list.
  *     </ul>
- * <li>We set mExposureInProgress to FALSE to show the exposure code has finished.
+ * <li>We set mExposureInProgress to FALSE, and mExposureIndex to 1 to show the exposure code has finished.
  * </ul>
  * If any of the CCD library calls fail, we use create_ccd_library_exception to create a 
  * CameraException with a suitable error message, and then throw the exception. mExposureInProgress is reset to FALSE.
@@ -1174,6 +1174,7 @@ void Camera::expose_thread(int32_t exposure_length, bool save_image)
 			mLastImageFilename = filename;
 			mImageFilenameList.push_back(std::string(filename));
 		}/* end if save_image */
+		mExposureIndex = 1;
 		mExposureInProgress = FALSE;
 	}
 	catch(TException&e)
@@ -1215,7 +1216,8 @@ void Camera::expose_thread(int32_t exposure_length, bool save_image)
  *     <li>We update mLastImageFilename with the newly saved FITS filename, 
  *         and add the filename to the mImageFilenameList list.
  *     </ul>
- * <li>We set mExposureInProgress to FALSE to show we have finished taking biases.
+ * <li>We set mExposureInProgress to FALSE, and mExposureIndex to mExposureCount,
+ *     to show we have finished taking biases.
  * </ul>
  * If any of the CCD library calls fail, we use create_ccd_library_exception to create a 
  * CameraException with a suitable error message, and then throw the exception. mExposureInProgress is reset to FALSE.
@@ -1324,6 +1326,7 @@ void Camera::multbias_thread(int32_t exposure_count)
 			mLastImageFilename = filename;
 			mImageFilenameList.push_back(std::string(filename));
 		}/* end for on exposure_count */
+		mExposureIndex = mExposureCount;
 		mExposureInProgress = FALSE;
 	}
 	catch(TException&e)
@@ -1365,7 +1368,7 @@ void Camera::multbias_thread(int32_t exposure_count)
  *     <li>We update mLastImageFilename with the newly saved FITS filename, 
  *         and add the filename to the mImageFilenameList list.
  *     </ul>
- * <li>We set mExposureInProgress to FALSE to show we have finished taking darks.
+ * <li>We set mExposureInProgress to FALSE, and mExposureIndex to mExposureCount to show we have finished taking darks.
  * </ul>
  * If any of the CCD library calls fail, we use create_ccd_library_exception to create a 
  * CameraException with a suitable error message, and then throw the exception. mExposureInProgress is reset to FALSE.
@@ -1482,6 +1485,7 @@ void Camera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
 			mLastImageFilename = filename;
 			mImageFilenameList.push_back(std::string(filename));
 		}/* end for on exposure_count */
+		mExposureIndex = mExposureCount;
 		mExposureInProgress = FALSE;
 	}
 	catch(TException&e)
@@ -1524,7 +1528,7 @@ void Camera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
  *     <li>We update mLastImageFilename with the newly saved FITS filename, 
  *         and add the filename to the mImageFilenameList list.
  *     </ul>
- * <li>We set mExposureInProgress to FALSE to show the multrun has finished.
+ * <li>We set mExposureInProgress to FALSE, and mExposureIndex to mExposureCount, to show the multrun has finished.
  * </ul>
  * If any of the CCD library calls fail, we use create_ccd_library_exception to create a 
  * CameraException with a suitable error message, and then throw the exception. mExposureInProgress is reset to FALSE.
@@ -1643,6 +1647,7 @@ void Camera::multrun_thread(int32_t exposure_count,int32_t exposure_length)
 			mLastImageFilename = filename;
 			mImageFilenameList.push_back(std::string(filename));
 		}/* end for on exposure_count */
+		mExposureIndex = mExposureCount;
 		mExposureInProgress = FALSE;
 	}
 	catch(TException&e)
