@@ -23,6 +23,7 @@
  */
 #define _POSIX_C_SOURCE 199309L
 #include <stdio.h>
+#include <string.h>
 #include <errno.h>
 #include <time.h>
 #include "ngat_astro.h"
@@ -60,7 +61,7 @@ int main(int argc,char *argv[])
 	{
 		clock_gettime(CLOCK_REALTIME,&time);
 		fprintf(stdout,"Time parsed as:%s.%3d\n",ctime(&(time.tv_sec)),
-			(time.tv_nsec/NGAT_ASTRO_ONE_MILLISECOND_NS));
+			(int)(time.tv_nsec/NGAT_ASTRO_ONE_MILLISECOND_NS));
 	}
 	else
 	{
