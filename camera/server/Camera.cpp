@@ -90,6 +90,10 @@ void Camera::set_config(CameraConfig & config)
  * <li>We set the NGATAStro library log handler function to log to log4cxx (ngatastro_log_to_log4cxx).
  * <li>We retrieve the "andor.config_dir" configuration value and use it to set the Andor config directory in the
  *     CCD library using CCD_Setup_Config_Directory_Set.
+ * <li>We retrieve the shutter open time configuration value from "ccd.shutter.open_time" and configure the CCD library
+ *     using CCD_Setup_Set_Shutter_Open_Time. We retrieve the shutter close time configuration value from 
+ *     "ccd.shutter.close_time" and configure the CCD library using CCD_Setup_Set_Shutter_Open_Time. 
+ *     We do this before CCD_Setup_Startup is called, as this uses the configured values to setup the shutter timings.
  * <li>We connect to and initialise the camera using CCD_Setup_Startup.
  * <li>We configure the initial readout speed to SLOW using set_readout_speed, and pre-amp gain to ONE using set_gain.
  * <li>We retrieve the fits filename instrument code "fits.instrument_code", 
@@ -139,6 +143,8 @@ void Camera::set_config(CameraConfig & config)
  * @see CCD_General_Set_Log_Handler_Function
  * @see CCD_General_Log_Handler_Stdout
  * @see CCD_Setup_Config_Directory_Set
+ * @see CCD_Setup_Set_Shutter_Open_Time
+ * @see CCD_Setup_Set_Shutter_Close_Time
  * @see CCD_Setup_Startup
  * @see CCD_Setup_Dimensions
  * @see CCD_Setup_Set_Flip_X
@@ -157,7 +163,7 @@ void Camera::initialize()
 	char fits_data_dir_telescope[32];
 	char fits_data_dir_instrument[32];
 	char instrument_code[32];
-	int retval,flip_x,flip_y;
+	int retval,flip_x,flip_y,shutter_open_time,shutter_close_time;
 	
 	cout << "Initialising Camera." << endl;
 	LOG4CXX_INFO(logger,"Initialising Camera.");
@@ -167,6 +173,22 @@ void Camera::initialize()
 	/* setup andor config directory */
 	mCameraConfig.get_config_string(CONFIG_CAMERA_SECTION,"andor.config_dir",config_dir,256);
 	retval = CCD_Setup_Config_Directory_Set(config_dir);
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	/* configure the shutter open|close times
+	** Done before CCD_Setup_Startup which uses this configuration */
+	mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,"ccd.shutter.open_time",&shutter_open_time);
+	mCameraConfig.get_config_int(CONFIG_CAMERA_SECTION,"ccd.shutter.close_time",&shutter_close_time);
+	retval = CCD_Setup_Set_Shutter_Open_Time(shutter_open_time);
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	retval = CCD_Setup_Set_Shutter_Close_Time(shutter_close_time);
 	if(retval == FALSE)
 	{
 		ce = create_ccd_library_exception();
