@@ -49,4 +49,4 @@ for readout_speed in readout_speed_list:
             print ("Set binning to :(" + repr(bin) + " , " + repr(bin) + ").")
             c.set_binning(bin,bin)
             print ("Doing " + repr(exposure_count) + " biases with readout speed: " + repr(readout_speed) + ", gain: " + repr(gain) + ", binning: " + repr(bin) + ".")
-            do_multbias(exposure_count)
+            do_biases(exposure_count)

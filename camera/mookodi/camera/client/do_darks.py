@@ -53,4 +53,4 @@ for readout_speed in readout_speed_list:
             c.set_binning(bin,bin)
             for exposure_length in exposure_length_list:
                 print ("Doing " + repr(exposure_count) + " darkss of length " + repr(exposure_length) + " ms with readout speed: " + repr(readout_speed) + ", gain: " + repr(gain) + ", binning: " + repr(bin) + ".")
-                do_multdark(exposure_count,exposure_length)
+                do_darks(exposure_count,exposure_length)
