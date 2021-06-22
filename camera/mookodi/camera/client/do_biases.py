@@ -20,7 +20,7 @@ def do_biases(exposure_count = 1):
             print ("Exposure Index:" + repr(state.exposure_index)+ ".")
         time.sleep(1)
         done = state.exposure_in_progress == False
-        loop_count ++
+        loop_count += 1
     filename_list = c.get_image_filenames()
     filename_count = len(filename_list)
     print ("There are " + repr(filename_count) + " Image Filenames:")

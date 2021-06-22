@@ -22,7 +22,7 @@ def do_darks(exposure_count = 1, exposure_length=1000):
             print ("Remaining Exposure Length:" + repr(state.remaining_exposure_length)+ " ms.")
         time.sleep(1)
         done = state.exposure_in_progress == False
-        loop_count ++
+        loop_count += 1
     filename_list = c.get_image_filenames()
     filename_count = len(filename_list)
     print ("There are " + repr(filename_count) + " Image Filenames:")
