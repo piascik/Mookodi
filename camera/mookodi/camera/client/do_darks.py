@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import sys
 import time
 from mookodi.camera.client.client import Client
 from mookodi.camera.client.camera_interface.ttypes import Gain
