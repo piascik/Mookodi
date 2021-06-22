@@ -59,3 +59,5 @@ for readout_speed in readout_speed_list:
             print ("There are " + repr(filename_count) + " Image Filenames:")
             for s in filename_list:
                 print ("Image Filename:" + s)
+            sys.stdout.flush()
+            
