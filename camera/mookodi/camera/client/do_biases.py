@@ -38,6 +38,7 @@ c= Client()
 print ("Cooling Down the camera.")
 c.cool_down()
 c.clear_fits_headers()
+c.add_fits_header("OBSTYPE",FitsCardType.STRING,"BIAS","Bias frame")
 c.clear_window()
 bin_list = [1, 2, 4]
 readout_speed_list = [ ReadoutSpeed.SLOW, ReadoutSpeed.FAST ]
