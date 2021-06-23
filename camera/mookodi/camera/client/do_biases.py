@@ -6,6 +6,7 @@ from mookodi.camera.client.client import Client
 from mookodi.camera.client.camera_interface.ttypes import Gain
 from mookodi.camera.client.camera_interface.ttypes import ReadoutSpeed
 from mookodi.camera.client.camera_interface.ttypes import ExposureState
+from mookodi.camera.client.camera_interface.ttypes import FitsCardType
 
 def do_biases(exposure_count = 1):
     print ("Doing " + repr(exposure_count) + " biases.")

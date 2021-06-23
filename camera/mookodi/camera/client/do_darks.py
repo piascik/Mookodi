@@ -6,6 +6,7 @@ from mookodi.camera.client.client import Client
 from mookodi.camera.client.camera_interface.ttypes import Gain
 from mookodi.camera.client.camera_interface.ttypes import ReadoutSpeed
 from mookodi.camera.client.camera_interface.ttypes import ExposureState
+from mookodi.camera.client.camera_interface.ttypes import FitsCardType
 
 def do_darks(exposure_count = 1, exposure_length=1000):
     print ("Doing " + repr(exposure_count) + " darks of exposure length " + repr(exposure_length) + "ms.")
