@@ -670,8 +670,12 @@ void Camera::clear_fits_headers()
 }
 
 /**
- * thrift entry point to take an exposure with the camera. 
- * A new thread running an instance of expose_thread is started.
+ * thrift entry point to take an exposure with the camera.
+ * <ul>
+ * <li>We check whether an exposure is already in progress and if so return an exception.
+ * <li>We set mExposureInProgress to true to indicate an exposure is in progress.
+ * <li>A new thread running an instance of expose_thread is started.
+ * </ul>
  * @param exposure_length The exposure length of each frame in milliseconds. Must be at least 1 ms.
  * @param save_image A boolean, if true save the image in a FITS filename, otherwise don't 
  *        (the image data can be retrieved using the get_image_data method).
@@ -689,28 +693,50 @@ void Camera::start_expose(const int32_t exposure_length, const bool save_image)
 		"ms and save_image " << save_image << "." << endl;
 	LOG4CXX_INFO(logger,"Starting expose thread with exposure length " << exposure_length <<
 		     "ms and save_image " << save_image << ".");
+	if(mExposureInProgress == TRUE)
+	{
+		ce.message = "start_expose failed: Exposure already in progress.";
+		throw ce;
+	}
 	mExposureInProgress = TRUE;
 	std::thread thrd(&Camera::expose_thread, this, exposure_length, save_image);
 	thrd.detach();
 }
 
 /**
- * thrift entry point to start taking multiple biases. A new thread running an instance of multbias_thread is started.
+ * thrift entry point to start taking multiple biases. 
+ * <ul>
+ * <li>We check whether an exposure is already in progress and if so return an exception.
+ * <li>We set mExposureInProgress to true to indicate an exposure is in progress.
+ * <li>A new thread running an instance of multbias_thread is started.
+ * </ul>
  * @param exposure_count The number of biases to take. Must be at least one.
  * @see Camera::mExposureInProgress
  * @see Camera::multbias_thread
  */
 void Camera::start_multbias(const int32_t exposure_count)
 {
+	CameraException ce;
+
 	cout << "Starting multbias thread with exposure count " << exposure_count << "." << endl;
 	LOG4CXX_INFO(logger,"Starting multbias thread with exposure count " << exposure_count << ".");
+	if(mExposureInProgress == TRUE)
+	{
+		ce.message = "start_multbias failed: Exposure already in progress.";
+		throw ce;
+	}
 	mExposureInProgress = TRUE;
 	std::thread thrd(&Camera::multbias_thread, this, exposure_count);
 	thrd.detach();
 }
 
 /**
- * thrift entry point to start taking multiple dark frames. A new thread running an instance of multdark_thread is started.
+ * thrift entry point to start taking multiple dark frames. 
+ * <ul>
+ * <li>We check whether an exposure is already in progress and if so return an exception.
+ * <li>We set mExposureInProgress to true to indicate an exposure is in progress.
+ * <li>A new thread running an instance of multdark_thread is started.
+ * </ul>
  * @param exposure_count The number of dark frames to take. Must be at least one.
  * @param exposure_length The exposure length of each dark in milliseconds. Must be at least 1 ms.
  * @see Camera::mExposureInProgress
@@ -720,10 +746,17 @@ void Camera::start_multbias(const int32_t exposure_count)
  */
 void Camera::start_multdark(const int32_t exposure_count,const int32_t exposure_length)
 {
+	CameraException ce;
+
 	cout << "Starting multdark thread with exposure count " << exposure_count <<
 		", exposure length " << exposure_length << "ms." << endl;
 	LOG4CXX_INFO(logger,"Starting multdark thread with exposure count " << exposure_count <<
 		     ", exposure length " << exposure_length << "ms.");
+	if(mExposureInProgress == TRUE)
+	{
+		ce.message = "start_multdark failed: Exposure already in progress.";
+		throw ce;
+	}
 	mExposureInProgress = TRUE;
 	std::thread thrd(&Camera::multdark_thread, this, exposure_count, exposure_length);
 	thrd.detach();
@@ -731,7 +764,11 @@ void Camera::start_multdark(const int32_t exposure_count,const int32_t exposure_
 
 /**
  * thrift entry point to start taking multiple science frames. 
- * A new thread running an instance of multrun_thread is started.
+ * <ul>
+ * <li>We check whether an exposure is already in progress and if so return an exception.
+ * <li>We set mExposureInProgress to true to indicate an exposure is in progress.
+ * <li>A new thread running an instance of multrun_thread is started.
+ * <ul>
  * @param exposure_count The number of frames to take. Must be at least one.
  * @param exposure_length The exposure length of each frame in milliseconds. Must be at least 1 ms.
  * @see Camera::mExposureInProgress
@@ -747,6 +784,11 @@ void Camera::start_multrun(const int32_t exposure_count,const int32_t exposure_l
 		", exposure length " << exposure_length << "ms." << endl;
 	LOG4CXX_INFO(logger,"Starting multrun thread with exposure count " << exposure_count <<
 		     ", exposure length " << exposure_length << "ms.");
+	if(mExposureInProgress == TRUE)
+	{
+		ce.message = "start_multbias failed: Exposure already in progress.";
+		throw ce;
+	}
 	mExposureInProgress = TRUE;
 	std::thread thrd(&Camera::multrun_thread, this, exposure_count, exposure_length);
 	thrd.detach();
