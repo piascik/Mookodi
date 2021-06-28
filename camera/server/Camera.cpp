@@ -508,6 +508,8 @@ void Camera::set_readout_speed(const ReadoutSpeed::type speed)
  * @see Gain
  * @see CCD_Setup_Set_Pre_Amp_Gain
  * @see #mCachedGain
+ * @see logger
+ * @see LOG4CXX_ERROR
  */
 void Camera::set_gain(const Gain::type gain_number)
 {
@@ -536,6 +538,7 @@ void Camera::set_gain(const Gain::type gain_number)
 			break;
 		default:
 			ce.message = "set_gain: gain_number "+ to_string(gain_number) +" is not supported.";
+			LOG4CXX_ERROR(logger,"set_gain: Throwing exception:" + ce.message);
 			throw ce;
 			break;
 	}
@@ -584,6 +587,7 @@ void Camera::set_fits_headers(const std::vector<FitsHeaderCard> & fits_info)
  * @see Camera::create_ccd_library_exception
  * @see logger
  * @see LOG4CXX_INFO
+ * @see LOG4CXX_ERROR
  * @see CCD_Fits_Header_Add_Int
  * @see CCD_Fits_Header_Add_Float
  * @see CCD_Fits_Header_Add_String
@@ -606,6 +610,7 @@ void Camera::add_fits_header(const std::string & keyword, const FitsCardType::ty
 			{
 				ce.message = "add_fits_header: Failed to parse string "+ value +" to an integer ("+
 					std::to_string(retval) +").";
+				LOG4CXX_ERROR(logger,"add_fits_header: Throwing exception:" + ce.message);
 				throw ce;
 			}
 			retval = CCD_Fits_Header_Add_Int(&mFitsHeader,(char*)(keyword.c_str()),ivalue,
@@ -622,6 +627,7 @@ void Camera::add_fits_header(const std::string & keyword, const FitsCardType::ty
 			{
 				ce.message = "add_fits_header: Failed to parse string "+ value +" to a double ("+
 					std::to_string(retval) +").";
+				LOG4CXX_ERROR(logger,"add_fits_header: Throwing exception:" + ce.message);
 				throw ce;
 			}
 			retval = CCD_Fits_Header_Add_Float(&mFitsHeader,(char*)(keyword.c_str()),dvalue,
@@ -684,6 +690,7 @@ void Camera::clear_fits_headers()
  * @see Camera::mExposureInProgress
  * @see logger
  * @see LOG4CXX_INFO
+ * @see LOG4CXX_ERROR
  */
 void Camera::start_expose(const int32_t exposure_length, const bool save_image)
 {
@@ -696,6 +703,7 @@ void Camera::start_expose(const int32_t exposure_length, const bool save_image)
 	if(mExposureInProgress == TRUE)
 	{
 		ce.message = "start_expose failed: Exposure already in progress.";
+		LOG4CXX_ERROR(logger,"start_expose: Throwing exception:" + ce.message);
 		throw ce;
 	}
 	mExposureInProgress = TRUE;
@@ -713,6 +721,9 @@ void Camera::start_expose(const int32_t exposure_length, const bool save_image)
  * @param exposure_count The number of biases to take. Must be at least one.
  * @see Camera::mExposureInProgress
  * @see Camera::multbias_thread
+ * @see logger
+ * @see LOG4CXX_INFO
+ * @see LOG4CXX_ERROR
  */
 void Camera::start_multbias(const int32_t exposure_count)
 {
@@ -723,6 +734,7 @@ void Camera::start_multbias(const int32_t exposure_count)
 	if(mExposureInProgress == TRUE)
 	{
 		ce.message = "start_multbias failed: Exposure already in progress.";
+		LOG4CXX_ERROR(logger,"start_multbias: Throwing exception:" + ce.message);
 		throw ce;
 	}
 	mExposureInProgress = TRUE;
@@ -743,6 +755,7 @@ void Camera::start_multbias(const int32_t exposure_count)
  * @see Camera::multdark_thread
  * @see logger
  * @see LOG4CXX_INFO
+ * @see LOG4CXX_ERROR
  */
 void Camera::start_multdark(const int32_t exposure_count,const int32_t exposure_length)
 {
@@ -755,6 +768,7 @@ void Camera::start_multdark(const int32_t exposure_count,const int32_t exposure_
 	if(mExposureInProgress == TRUE)
 	{
 		ce.message = "start_multdark failed: Exposure already in progress.";
+		LOG4CXX_ERROR(logger,"start_multdark: Throwing exception:" + ce.message);
 		throw ce;
 	}
 	mExposureInProgress = TRUE;
@@ -775,6 +789,7 @@ void Camera::start_multdark(const int32_t exposure_count,const int32_t exposure_
  * @see Camera::multrun_thread
  * @see logger
  * @see LOG4CXX_INFO
+ * @see LOG4CXX_ERROR
  */
 void Camera::start_multrun(const int32_t exposure_count,const int32_t exposure_length)
 {
@@ -786,7 +801,8 @@ void Camera::start_multrun(const int32_t exposure_count,const int32_t exposure_l
 		     ", exposure length " << exposure_length << "ms.");
 	if(mExposureInProgress == TRUE)
 	{
-		ce.message = "start_multbias failed: Exposure already in progress.";
+		ce.message = "start_multrun failed: Exposure already in progress.";
+		LOG4CXX_ERROR(logger,"start_multrun: Throwing exception:" + ce.message);
 		throw ce;
 	}
 	mExposureInProgress = TRUE;
