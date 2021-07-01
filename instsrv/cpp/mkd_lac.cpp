@@ -186,18 +186,18 @@ int lac_set_pos( int lac, int pos, int tmo )
 }
 
 
-/* @brief Simultaneous set two LAC destinations positions and optionally wait to be within tolerance
+/* @brief Simultaneous set two LAC positions and optionally wait to be within tolerance
  * 
- * @param[in] pos0 = LAC0 destination position 
- * @param[in] pos1 = LAC1 destination position 
+ * @param[in] pos0 = LAC0 position 
+ * @param[in] pos1 = LAC1 position 
  * @param[in] tmo  = Timeout. 0 = No wait
  *
  * @return    MKD_OK = Success, MKD_FAIL = Failure
  */
 int lac_set_both( int pos0, int pos1, int tmo )
 {
-    int tick  = TIM_TICK;                     // Timer ticks [ms] 
-    int count = TIM_MICROSECOND * tmo / tick; // Timer count [ms] 
+    int tick  = TIM_TICK;                     // Timer ticks [s] 
+    int count = TIM_MICROSECOND * tmo / tick; // Timer count [s] 
     int now0;  // Current LAC #0 position
     int now1;  // Current LAC #1 position 
 
@@ -221,11 +221,13 @@ int lac_set_both( int pos0, int pos1, int tmo )
             if (( abs( now0 - pos0 ) <= lac_Accuracy )&&  // Position is within tolerance
                 ( abs( now1 - pos1 ) <= lac_Accuracy )  )
                 return mkd_log( MKD_OK, LOG_DBG, FAC, "LAC Position Request: 0=%i 1=%i. Actual: 0=%i 1=%i", pos0, now0, pos1, now1 );
+
+            mkd_log( MKD_OK, LOG_DBG, FAC, "lac_set_both() count=%i 0=%/i%i 1=%i/%i", count, pos0, now0, pos1, now1 );
         } while( count-- );
-        return mkd_log( MKD_FAIL, LOG_ERR, FAC, "lac_set_pos() timeout" );
+        return mkd_log( MKD_FAIL, LOG_ERR, FAC, "lac_set_both(%i, %i, %i) timeout", pos0, pos1, tmo );
     }
 
-    return mkd_log( MKD_OK, LOG_DBG, FAC, "No Wait LAC Position Requests: 0=%i 1=%i", pos0, pos1 );
+    return mkd_log( MKD_OK, LOG_DBG, FAC, "lac_set_both(%i/%i, %i/%i, %i)", pos0, now0, pos1, now1, tmo );
 }
 
 

@@ -123,37 +123,40 @@ DeployState::type WaitDeploy( unsigned char bit, unsigned char ena, unsigned cha
 
 /* @brief Wait for PIO state 
  *
- * @param[inp] out = output control bits to be set
- * @param[inp] ena = input bit mask final state
- * @param[inp] dis = input bit for stowed state
+ * @param[inp] msk = output mask to set mechanism
+ * @param[inp] sta = input bit mask for final desired state
+ * @param[inp] ret = final state ENA or DIS
  * @param[inp] tmo = timeout in ms
  *
  * @return ERR=Fail, ENA=Enabled (deployed)
  */
-DeployState::type WaitPIO( unsigned char bits, unsigned char msk, unsigned char dis, int tmo ) {
-    int tick  = TIM_TICK;                     // Timer ticks [ms]
-    int count = TIM_MICROSECOND * tmo / tick; // Timer count [ms]
+DeployState::type WaitPIO( unsigned char msk, unsigned char sta, DeployState::type ret , int tmo ) {
+    int tick  = TIM_TICK;                     // Timer ticks 
+    int count = TIM_MICROSECOND * tmo / tick; // Timer count
+    char msg[256];
 
     unsigned char out;
     unsigned char inp;
 
-//  Get the PIO output demand bit and input state bits
+//  Get the PIO output demand 
     if ( (MKD_OK != pio_get_output( &out ))||
-         ( out   != bits                  )  )
+         (msk    != out                  )  )
         return DeployState::ERR;
 
 //  Wait for input mask to reach expected state
     do {
-        if ( MKD_OK != pio_get_input( &inp ))                   // Get current state
+        if ( MKD_OK != pio_get_input( &inp )) // Get current state
             return DeployState::ERR;
-        else if (  inp == msk ) //  state reached
-            return DeployState::ENA;
+        else if ( inp == sta )                // State achieved 
+            return ret;
 
-     fprintf( stderr, "count=%i inp=%i out=%i\n", count, inp, out );
-
+        sprintf( msg, "WaitPIO: Count=%i output=0x%2.2x input=0x%2.2x", count, out, inp );
+        LOG4CXX_DEBUG(logger, msg );
     } while( count-- );
 
 //  Time-out
+    sprintf( msg, "WaitPIO: Timeout for input=0x%2.2x to become 0x%2.2x", inp, sta );
+    LOG4CXX_ERROR( logger, msg );
     return DeployState::ERR;
 }
 
@@ -384,17 +387,15 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
     return ret;
   }
 
+
 //Set output state
-  DeployState::type CtrlPIO(const int8_t out, const int8_t set, const int8_t clr,  const int32_t tmo) {
-    DeployState::type ret = DeployState::ERR;
+  DeployState::type CtrlPIO(const int8_t msk, const int8_t sts, DeployState::type ret,  const int32_t tmo) {
 
-    if ( MKD_OK == pio_set_output( out ) ) {
-      ret = WaitPIO( out, set, clr, tmo );  
-    }
-    
-    return ret;
+    if ( MKD_OK == pio_set_output( msk ) )
+      return WaitPIO( msk, sts, ret, tmo );  
+    else
+      return DeployState::ERR;
   }
-
 
 
   FilterState::type CtrlFilter( FilterID::type filter, const FilterState::type state, int tmo ) {
