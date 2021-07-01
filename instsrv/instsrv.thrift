@@ -1,8 +1,17 @@
-// Apache Thrift Hello World service IDL
+// Apache Thrift service IDL
+
+enum PIO {
+    OUT_IMAGING   = 0x00, INP_IMAGING   = 0x15, 
+    OUT_SPECTRUM  = 0x60, INP_SPECTRUM  = 0x1A,
+    OUT_SPEC_ARC  = 0XF0,  INP_SPEC_ARC  = 0x2A,
+//  OUT_SPEC_ARC  = -16,  INP_SPEC_ARC  = 0x2A,
+    OUT_LAMP_FLAT = 0x88, INP_LAMP_FLAT = 0x25,
+    OUT_SKY_FLAT  = 0x00, INP_SKY_FLAT  = 0x15,
+}
 
 enum DeployState {
-    UNK = -5
-    BAD = -4
+    UNK = -5,
+    BAD = -4,
     ERR = -3,
     INV = -2,
     GET = -1,
@@ -11,8 +20,8 @@ enum DeployState {
 }
 
 enum DetectorState {
-    UNK    = -5
-    BAD    = -4
+    UNK    = -5,
+    BAD    = -4,
     ERR    = -3,
     INV    = -2,
     GET    = -1,
@@ -36,6 +45,7 @@ enum FilterState {
     POS2 =  2,
     POS3 =  3,
     POS4 =  4,
+    POS5 =  5,
 }
 
 enum FlatType {
@@ -80,7 +90,7 @@ service InstSrv {
     DeployState  CtrlMirror (1: DeployState state, 2: i32 timeout )
     DeployState  CtrlLamp   (1: DeployState state )
     DeployState  CtrlArc    (1: DeployState state )
-    DeployState  CtrlPIO    (1: i8 out, 2: i8 inp, 3: i8 clr, 4: i32 timeout )
-    FilterState  CtrlFilter (1: FilterID filter,    2: FilterState state, 3: i32 timeout )
+    DeployState  CtrlPIO    (1: i8 out, 2: i8 inp,  3: DeployState state, 4: i32 timeout )
+    FilterState  CtrlFilter (1: FilterID filter,    2:FilterState state,  3: i32 timeout )
     FilterConfig CtrlFilters(1: FilterState state0, 2:FilterState state1, 3: i32 timeout )
 }
