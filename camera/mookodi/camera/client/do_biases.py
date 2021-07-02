@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""
+Command line tool do take a series of biases with the MookodiCameraServer.
+"""
 import argparse
 import sys
 import time
@@ -9,6 +12,12 @@ from mookodi.camera.client.camera_interface.ttypes import ExposureState
 from mookodi.camera.client.camera_interface.ttypes import FitsCardType
 
 def do_biases(exposure_count = 1):
+    """
+    Routine to take a number of bias frames with the current configuration.
+
+    Parameters:
+    exposure_count  The number of biases to take (default 1).
+    """
     print ("Doing " + repr(exposure_count) + " biases.")
     c.start_multbias(exposure_count)
     done = False

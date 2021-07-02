@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""
+Command line tool to add a fits header to the list maintained by the MookodiCameraServer.
+
+See 'add_fits_header3.py -h' for command line arguments.
+"""
 import argparse
 from mookodi.camera.client.client import Client
 from mookodi.camera.client.camera_interface.ttypes import FitsCardType

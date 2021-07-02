@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""
+Command line tool do take a series of dark frames with the MookodiCameraServer.
+"""
 import argparse
 import sys
 import time
@@ -9,6 +12,14 @@ from mookodi.camera.client.camera_interface.ttypes import ExposureState
 from mookodi.camera.client.camera_interface.ttypes import FitsCardType
 
 def do_darks(exposure_count = 1, exposure_length=1000):
+    """
+    Routine to take a number of darks of a certain exposure length with the current configuration. The shutter
+    remains closed.
+
+    Parameters:
+    exposure_count The number of dark frames to take.
+    exposure_length The exposure length of each dark exposure, in milliseconds.
+    """
     print ("Doing " + repr(exposure_count) + " darks of exposure length " + repr(exposure_length) + "ms.")
     c.start_multdark(exposure_count,exposure_length)
     done = False
