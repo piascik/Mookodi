@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+"""
+Command line tool to set the camera gain in MookodiCameraServer.
+
+set_gain3.py <gain>
+
+where <gain> is one of: "ONE", "TWO" or "FOUR".
+"""
 import argparse
 from mookodi.camera.client.client import Client
 from mookodi.camera.client.camera_interface.ttypes import Gain

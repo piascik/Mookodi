@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+"""
+Command line tool to tell MookodiCameraServer to start taking a series of exposures.
+The previously configured readout speed, gain, window and binning are used. The command returns after
+MookodiCameraServer has started to acquire the exposures, use ./get_state3.py to query MookodiCameraServer to see
+when it has finished.
+
+./start_multrun3.py <exposure count> <exposure length>
+
+Parameters:
+<exposure count> specifies the number of exposures to acquire.
+<exposure length> specifies the length of each exposure in milliseconds.
+"""
 import argparse
 from mookodi.camera.client.client import Client
 

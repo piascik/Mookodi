@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""
+Command line tool to get the current state as reported by the MookodiCameraServer, and print it out.
+"""
 from mookodi.camera.client.client import Client
 from mookodi.camera.client.camera_interface.ttypes import ExposureState
 from mookodi.camera.client.camera_interface.ttypes import ReadoutSpeed

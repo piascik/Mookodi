@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+"""
+Command line tool to tell the camera controlled by MookodiCameraServer to read out a sub-image of the full frame.
+
+set_window3.py <x start> <y start> <x end> <y end>
+
+Where <x start> <y start> <x end> <y end> are all inclusive pixel positions between 0 and the size of the sensor (1024).
+"""
 import argparse
 from mookodi.camera.client.client import Client
 

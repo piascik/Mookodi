@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""
+Command line tool to set the camera x and y binning in the MookodiCameraServer.
+
+set_binning3.py <xbin> <ybin>
+"""
 import argparse
 from mookodi.camera.client.client import Client
 

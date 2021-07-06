@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""
+Command line tool to take a series of exposures to test the MookodiCameraServer.
+"""
 import argparse
 import time
 from mookodi.camera.client.client import Client
@@ -7,6 +10,13 @@ from mookodi.camera.client.camera_interface.ttypes import ReadoutSpeed
 from mookodi.camera.client.camera_interface.ttypes import ExposureState
 
 def do_multrun(exposure_count = 1, exposure_length=1000):
+    """
+    Function to perform an exposure.
+
+    Parameters:
+    exposure_count The number of exposures to perform.
+    exposure_length The length of each exposure in milliseconds.
+    """
     print ("Doing a multrun of " + repr(exposure_count) + " of length " + repr(exposure_length) + "ms.")
     c.start_multrun(exposure_count,exposure_length)
     done = False

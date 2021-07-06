@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+"""
+Command line tool to retrieve the last taken image from the MookodiCameraServer's image buffer. Some simple stats
+are done on the buffer and an attempt is made to display it.
+"""
 import argparse
 from PIL import Image
 from mookodi.camera.client.client import Client

@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+"""
+Command line tool to take a single exposure.
+
+./start_expose3.py <exposure length> [--save_image]
+
+Parameters:
+<exposure length> is the exposure length in milliseconds.
+--save_image is an optional parameter, that if specified, causes the resulting image to be saved to disk.
+"""
 import argparse
 from mookodi.camera.client.client import Client
 

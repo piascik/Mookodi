@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+"""
+Command line tool to set the camera readout speed in MookodiCameraServer.
+
+set_readout_speed3.py <speed>
+
+where <speed> is one of "SLOW" or "FAST".
+"""
 import argparse
 from mookodi.camera.client.client import Client
 from mookodi.camera.client.camera_interface.ttypes import ReadoutSpeed
