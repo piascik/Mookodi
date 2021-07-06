@@ -119,10 +119,8 @@ struct CameraWindow
  * <li><b>exposure_length</b> In milliseconds.
  * <li><b>elapsed_exposure_length</b> In milliseconds.
  * <li><b>remaining_exposure_length</b> In milliseconds.
- * <li><b>exposure_in_progress</b> True if an exposure/bias/dar/multrun is starting or in progress.
+ * <li><b>exposure_in_progress</b> True if an exposure/bias/dark/multrun is starting or in progress.
  * <li><b>exposure_state</b>
- * <li><b>exposure_count</b>
- * <li><b>exposure_index</b>
  * <li><b>ccd_temperature</b> In degrees centigrade.
  * <li><b>readout_speed</b> The currently configured readout speed of the camera.
  * <li><b>gain</b> The currently configured gain of the camera.
@@ -143,11 +141,9 @@ struct CameraState
 	7: i32 remaining_exposure_length;
 	8: bool exposure_in_progress;
 	9: ExposureState exposure_state;
-	10: i32 exposure_count;
-	11: i32 exposure_index;
-	12: double ccd_temperature;
-	13: ReadoutSpeed readout_speed;
-	14: Gain gain;
+	10: double ccd_temperature;
+	11: ReadoutSpeed readout_speed;
+	12: Gain gain;
 }
 
 /**
@@ -202,15 +198,14 @@ service CameraService
 	void add_fits_header(1: string keyword, 2: FitsCardType valtype,
 	     3: string value,4: string comment) throws (1: CameraException e);
 	void clear_fits_headers() throws (1: CameraException e);
-	void start_expose(1: i32 exposure_length, 2: bool save_image) throws (1: CameraException e);
-	void start_multbias(1: i32 exposure_count) throws (1: CameraException e);
-	void start_multdark(1: i32 exposure_count, 2: i32 exposure_length) throws (1: CameraException e);
-	void start_multrun(1: i32 exposure_count, 2: i32 exposure_length) throws (1: CameraException e);
+	void set_exposure_length(1: i32 exposure_length) throws (1: CameraException e);
+	void start_expose(1: bool save_image) throws (1: CameraException e);
+	void start_bias() throws (1: CameraException e);
+	void start_dark() throws (1: CameraException e);
 	void abort_exposure() throws (1: CameraException e);
 	CameraState get_state() throws (1: CameraException e);
         ImageData get_image_data() throws (1: CameraException e);
 	string get_last_image_filename() throws (1: CameraException e);
-	list<string> get_image_filenames() throws (1: CameraException e);
 	void cool_down() throws (1: CameraException e);
 	void warm_up() throws (1: CameraException e);
 }
