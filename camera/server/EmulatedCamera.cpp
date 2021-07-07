@@ -84,8 +84,6 @@ void EmulatedCamera::initialize()
 	mState.remaining_exposure_length = 0;
 	mState.exposure_in_progress = FALSE;
 	mState.exposure_state = ExposureState::IDLE;
-	mState.exposure_count = 0;
-	mState.exposure_index = 0;
 	mState.ccd_temperature = 0.0;
 	mState.readout_speed = ReadoutSpeed::SLOW;
 	mState.gain = Gain::ONE;

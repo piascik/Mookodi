@@ -109,9 +109,9 @@ void Camera::set_config(CameraConfig & config)
  * <li>We configure how the read out images are flipped after readout, by retrieving from config the 
  *     "ccd.image.flip.x" / "ccd.image.flip.y" booleans and using CCD_Setup_Set_Flip_X / CCD_Setup_Set_Flip_Y 
  *     to configure the CCD library appropriately.
- * <li>We initialise mExposureCount and mExposureIndex to zero.
+ * <li>We initialise mCachedExposureLength to zero.
  * <li>We initialise mImageBufNCols / mImageBufNRows to zero.
- * <li>We initialise mLastImageFilename and mImageFilenameList to empty strings/vectors.
+ * <li>We initialise mLastImageFilename to an  empty string.
  * </ul>
  * If a CCD library routine fails we call create_ccd_library_exception to create a CameraException that is then thrown.
  * @see #CONFIG_CAMERA_SECTION
@@ -123,13 +123,11 @@ void Camera::set_config(CameraConfig & config)
  * @see Camera::mCachedVBin
  * @see Camera::mCachedWindowFlags
  * @see Camera::mCachedWindow
+ * @see Camera::mCachedExposureLength
  * @see Camera::mExposureInProgress
- * @see Camera::mExposureCount
- * @see Camera::mExposureIndex
  * @see Camera::mImageBufNCols
  * @see Camera::mImageBufNRows
  * @see Camera::mLastImageFilename
- * @see Camera::mImageFilenameList
  * @see Camera::set_readout_speed
  * @see Camera::set_gain
  * @see Camera::create_ccd_library_exception
@@ -268,12 +266,10 @@ void Camera::initialize()
 	}
 	/* initialise camera status variables */
 	mExposureInProgress = FALSE;
-	mExposureCount = 0;
-	mExposureIndex = 0;
+	mCachedExposureLength = 0;
 	mImageBufNCols = 0;
 	mImageBufNRows = 0;
 	mLastImageFilename = "";
-	mImageFilenameList = {};	
 }
 
 /**
