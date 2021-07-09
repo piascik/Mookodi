@@ -60,7 +60,7 @@ class Camera : virtual public CameraServiceIf
     void expose_thread(int32_t exposure_length, bool save_image);
     void bias_thread();
     void dark_thread(int32_t exposure_length);
-    void add_camera_fits_headers(int image_index,int32_t exposure_count,int32_t exposure_length);
+    void add_camera_fits_headers(int32_t exposure_length);
     CameraException create_ccd_library_exception();
     CameraException create_ngatastro_library_exception();
     /**
