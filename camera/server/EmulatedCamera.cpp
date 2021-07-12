@@ -286,13 +286,16 @@ void EmulatedCamera::clear_fits_headers()
  * @param exposure_length The exposure length to use, in milliseconds.
  * @see EmulatedCamera::mState
  */
-void set_exposure_length(const int32_t exposure_length)
+void EmulatedCamera::set_exposure_length(const int32_t exposure_length)
 {
+	CameraException ce;
+
 	cout << "Setting exposure length to " << exposure_length << "ms a." << endl;
 	LOG4CXX_INFO(logger,"Setting exposure length to  " << exposure_length << "ms.");
 	if(exposure_length < 0)
 	{
-		ce.message = "set_exposure_length: exposure length " << exposure_length << " is too small.";
+		ce.message = "set_exposure_length: exposure length " + std::to_string((int)exposure_length) +
+			" is too small.";
 		LOG4CXX_ERROR(logger,ce.message);
 		throw ce;
 	}

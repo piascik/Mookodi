@@ -676,15 +676,15 @@ void Camera::clear_fits_headers()
  * @param exposure_length The exposure length to use, in milliseconds.
  * @see Camera::mCachedExposureLength
  */
-void set_exposure_length(const int32_t exposure_length)
+void Camera::set_exposure_length(const int32_t exposure_length)
 {
 	CameraException ce;
 
 	cout << "Setting exposure length to " << exposure_length << "ms a." << endl;
-	LOG4CXX_INFO(logger,"Setting exposure length to  " << std::to_string(exposure_length) << "ms.");
+	LOG4CXX_INFO(logger,"Setting exposure length to  " << exposure_length << "ms.");
 	if(exposure_length < 0)
 	{
-		ce.message = "set_exposure_length: exposure length " << std::to_string(exposure_length) <<
+		ce.message = "set_exposure_length: exposure length " + std::to_string((int)exposure_length) +
 			" is too small.";
 		LOG4CXX_ERROR(logger,ce.message);
 		throw ce;
@@ -768,7 +768,7 @@ void Camera::start_bias()
  * </ul>
  * @see Camera::mCachedExposureLength
  * @see Camera::mExposureInProgress
- * @see Camera::multdark_thread
+ * @see Camera::dark_thread
  * @see logger
  * @see LOG4CXX_INFO
  * @see LOG4CXX_ERROR
@@ -786,7 +786,7 @@ void Camera::start_dark()
 		throw ce;
 	}
 	mExposureInProgress = TRUE;
-	std::thread thrd(&Camera::multdark_thread, this, mCachedExposureLength);
+	std::thread thrd(&Camera::dark_thread, this, mCachedExposureLength);
 	thrd.detach();
 }
 
@@ -1331,33 +1331,26 @@ void Camera::bias_thread()
 		LOG4CXX_FATAL(logger,"bias_thread: Caught Exception: " << e.what()  << ".");
 	}		
 }
-diddly TODO
+
 /**
- * This method is run as a separate thread to actually create a series of dark frames.
+ * This method is run as a separate thread to take a dark frame.
  * <ul>
  * <li>We set mExposureInProgress to TRUE to show we are doing an exposure. 
- *     start_multdark should already have set this to TRUE.
+ *     start_dark should already have set this to TRUE.
  * <li>We get the length of the image buffer we need by calling CCD_Setup_Get_Buffer_Length, 
  *     and then resize mImageBuf to suit.
  * <li>We also get the number of binned columns and rows in the image by calling 
  *     CCD_Setup_Get_NCols / CCD_Setup_Get_Bin_X / CCD_Setup_Get_NRows / CCD_Setup_Get_Bin_Y.
  * <li>We set the start_time to zero, so the exposure starts immediately.
- * <li>We set mExposureCount to the exposure_count parameter, so the status reflects how many images we are going to take.
- * <li>We clear the mImageFilenameList vector.
- * <li>We loop over the exposure_count:
- *     <ul>
- *     <li>We set mExposureIndex to the current exposure index (for status propagation).
- *     <li>We call CCD_Exposure_Expose with the exposure length parameter to tell the camera to take a
- *         dark exposure of the required length, and read out the image and store it in mImageBuf.
- *     <li>We increment the FITS filename run number by calling CCD_Fits_Filename_Next_Run.
- *     <li>We call CCD_Fits_Filename_Get_Filename to generate a FITS filename.
- *     <li>We call add_camera_fits_headers to add the internally generated camera FITS headers to mFitsHeader.
- *     <li>We call CCD_Exposure_Save to save the read out data in mImageBuf to the generated FITS filename 
- *         with the FITS headers from mFitsHeader.
- *     <li>We update mLastImageFilename with the newly saved FITS filename, 
- *         and add the filename to the mImageFilenameList list.
- *     </ul>
- * <li>We set mExposureInProgress to FALSE, and mExposureIndex to mExposureCount to show we have finished taking darks.
+ * <li>We call CCD_Exposure_Expose with the exposure length parameter to tell the camera to take a
+ *     dark exposure of the required length, and read out the image and store it in mImageBuf.
+ * <li>We increment the FITS filename run number by calling CCD_Fits_Filename_Next_Run.
+ * <li>We call CCD_Fits_Filename_Get_Filename to generate a FITS filename.
+ * <li>We call add_camera_fits_headers to add the internally generated camera FITS headers to mFitsHeader.
+ * <li>We call CCD_Exposure_Save to save the read out data in mImageBuf to the generated FITS filename 
+ *     with the FITS headers from mFitsHeader.
+ * <li>We update mLastImageFilename with the newly saved FITS filename.
+ * <li>We set mExposureInProgress to FALSE, to show we have finished taking darks.
  * </ul>
  * If any of the CCD library calls fail, we use create_ccd_library_exception to create a 
  * CameraException with a suitable error message, and then throw the exception. mExposureInProgress is reset to FALSE.
@@ -1367,10 +1360,7 @@ diddly TODO
  * @see Camera::mImageBufNCols
  * @see Camera::mImageBufNRows
  * @see Camera::mExposureInProgress
- * @see Camera::mExposureCount
- * @see Camera::mExposureIndex
  * @see Camera::mLastImageFilename
- * @see Camera::mImageFilenameList
  * @see Camera::mFitsHeader
  * @see Camera::add_camera_fits_headers
  * @see Camera::create_ccd_library_exception
@@ -1386,7 +1376,7 @@ diddly TODO
  * @see CCD_Setup_Get_NRows
  * @see CCD_Setup_Get_Bin_Y
  */
-void Camera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
+void Camera::dark_thread(int32_t exposure_length)
 {
 	CameraException ce;
 	struct timespec start_time;
@@ -1396,10 +1386,8 @@ void Camera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
 
 	try
 	{
-		cout << "multdark thread with exposure count " << exposure_count << ", exposure length " <<
-			exposure_length << "ms." << endl;
-		LOG4CXX_INFO(logger,"multdark thread with exposure count " << exposure_count <<
-			     ", exposure length " << exposure_length << "ms.");
+		cout << "dark thread with exposure length " << exposure_length << "ms." << endl;
+		LOG4CXX_INFO(logger,"dark thread with exposure length " << exposure_length << "ms.");
 		/* already set to TRUE in start_expose, so this should not be necessary */
 		mExposureInProgress = TRUE;
 		/* setup image buffer */
@@ -1418,63 +1406,44 @@ void Camera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
 		/* start time is now */
 		start_time.tv_sec = 0;
 		start_time.tv_nsec = 0;
-		/* initialise exposure count/index status */
-		mExposureCount = exposure_count;
-		mImageFilenameList.clear();
-		/* loop over number of exposure to take */
-		for(int image_index = 0; image_index < exposure_count; image_index++)
+		/* take the image */
+		retval = CCD_Exposure_Expose(FALSE,start_time,exposure_length,(void*)(mImageBuf.data()),
+					     image_buffer_length);
+		if(retval == FALSE)
 		{
-			/* update exposure index status data */
-			mExposureIndex = image_index;
-			/* take the image */
-			retval = CCD_Exposure_Expose(FALSE,start_time,exposure_length,(void*)(mImageBuf.data()),
-						     image_buffer_length);
-			if(retval == FALSE)
-			{
-				mExposureInProgress = FALSE;
-				mExposureCount = 0;
-				mExposureIndex = 0;
-				ce = create_ccd_library_exception();
-				throw ce;
-			}
-			/* increment the filename run number */
-			retval = CCD_Fits_Filename_Next_Run();
-			if(retval == FALSE)
-			{
-				mExposureInProgress = FALSE;
-				mExposureCount = 0;
-				mExposureIndex = 0;
-				ce = create_ccd_library_exception();
-				throw ce;
-			}
-			/* get the filename to save to */
-			retval = CCD_Fits_Filename_Get_Filename(filename,256);
-			if(retval == FALSE)
-			{
-				mExposureInProgress = FALSE;
-				mExposureCount = 0;
-				mExposureIndex = 0;
-				ce = create_ccd_library_exception();
-				throw ce;
-			}
-			/* Add internally generated FITS headers to mFitsHeader */
-			add_camera_fits_headers(exposure_length);
-			/* save the image */
-			retval = CCD_Exposure_Save(filename,(void*)(mImageBuf.data()),image_buffer_length,
-						   binned_ncols,binned_nrows,mFitsHeader);
-			if(retval == FALSE)
-			{
-				mExposureInProgress = FALSE;
-				mExposureCount = 0;
-				mExposureIndex = 0;
-				ce = create_ccd_library_exception();
-				throw ce;
-			}
-			/* update last image filename and add generated filename to list of FITS images */
-			mLastImageFilename = filename;
-			mImageFilenameList.push_back(std::string(filename));
-		}/* end for on exposure_count */
-		mExposureIndex = mExposureCount;
+			mExposureInProgress = FALSE;
+			ce = create_ccd_library_exception();
+			throw ce;
+		}
+		/* increment the filename run number */
+		retval = CCD_Fits_Filename_Next_Run();
+		if(retval == FALSE)
+		{
+			mExposureInProgress = FALSE;
+			ce = create_ccd_library_exception();
+			throw ce;
+		}
+		/* get the filename to save to */
+		retval = CCD_Fits_Filename_Get_Filename(filename,256);
+		if(retval == FALSE)
+		{
+			mExposureInProgress = FALSE;
+			ce = create_ccd_library_exception();
+			throw ce;
+		}
+		/* Add internally generated FITS headers to mFitsHeader */
+		add_camera_fits_headers(exposure_length);
+		/* save the image */
+		retval = CCD_Exposure_Save(filename,(void*)(mImageBuf.data()),image_buffer_length,
+					   binned_ncols,binned_nrows,mFitsHeader);
+		if(retval == FALSE)
+		{
+			mExposureInProgress = FALSE;
+			ce = create_ccd_library_exception();
+			throw ce;
+		}
+		/* update last image filename */
+		mLastImageFilename = filename;
 		mExposureInProgress = FALSE;
 	}
 	catch(TException&e)
@@ -1488,168 +1457,6 @@ void Camera::multdark_thread(int32_t exposure_count,int32_t exposure_length)
 		mExposureInProgress = FALSE;
 		cerr << "dark_thread: Caught Exception: " << e.what()  << "." << endl;
 		LOG4CXX_FATAL(logger,"dark_thread: Caught Exception: " << e.what()  << ".");
-	}		
-}
-
-/**
- * This method is run as a separate thread to actually create a series of science frames.
- * <ul>
- * <li>We set mExposureInProgress to TRUE to show we are doing an exposure. 
- *     start_multrun should already have set this to TRUE.
- * <li>We get the length of the image buffer we need by calling CCD_Setup_Get_Buffer_Length, 
- *     and then resize mImageBuf to suit.
- * <li>We also get the number of binned columns and rows in the image by calling 
- *     CCD_Setup_Get_NCols / CCD_Setup_Get_Bin_X / CCD_Setup_Get_NRows / CCD_Setup_Get_Bin_Y.
- * <li>We set the start_time to zero, so the exposure starts immediately.
- * <li>We set mExposureCount to the exposure_count parameter, so the status reflects how many images 
- *     we are going to take.
- * <li>We clear the mImageFilenameList vector.
- * <li>We loop over the exposure_count:
- *     <ul>
- *     <li>We set mExposureIndex to the current exposure index (for status propagation).
- *     <li>We call CCD_Exposure_Expose with the exposure length parameter to tell the camera to take an 
- *         exposure of the required length, and read out the image and store it in mImageBuf.
- *     <li>We increment the FITS filename run number by calling CCD_Fits_Filename_Next_Run.
- *     <li>We call CCD_Fits_Filename_Get_Filename to generate a FITS filename.
- *     <li>We call add_camera_fits_headers to add the internally generated camera FITS headers to mFitsHeader.
- *     <li>We call CCD_Exposure_Save to save the read out data in mImageBuf to the generated FITS filename with the 
- *         FITS headers from mFitsHeader.
- *     <li>We update mLastImageFilename with the newly saved FITS filename, 
- *         and add the filename to the mImageFilenameList list.
- *     </ul>
- * <li>We set mExposureInProgress to FALSE, and mExposureIndex to mExposureCount, to show the multrun has finished.
- * </ul>
- * If any of the CCD library calls fail, we use create_ccd_library_exception to create a 
- * CameraException with a suitable error message, and then throw the exception. mExposureInProgress is reset to FALSE.
- * @param exposure_count The number of science exposures to take. Should be at least 1.
- * @param exposure_length The length of one exposure in milliseconds. Should be at least 1.
- * @see Camera::mImageBuf
- * @see Camera::mImageBufNCols
- * @see Camera::mImageBufNRows
- * @see Camera::mExposureInProgress
- * @see Camera::mExposureCount
- * @see Camera::mExposureIndex
- * @see Camera::mLastImageFilename
- * @see Camera::mImageFilenameList
- * @see Camera::mFitsHeader
- * @see Camera::add_camera_fits_headers
- * @see Camera::create_ccd_library_exception
- * @see logger
- * @see LOG4CXX_INFO
- * @see LOG4CXX_ERROR
- * @see LOG4CXX_FATAL
- * @see CCD_Exposure_Expose
- * @see CCD_Exposure_Save
- * @see CCD_Fits_Filename_Next_Run
- * @see CCD_Fits_Filename_Get_Filename
- * @see CCD_Setup_Get_Buffer_Length
- * @see CCD_Setup_Get_NCols
- * @see CCD_Setup_Get_Bin_X
- * @see CCD_Setup_Get_NRows
- * @see CCD_Setup_Get_Bin_Y
- */
-void Camera::multrun_thread(int32_t exposure_count,int32_t exposure_length)
-{
-	CameraException ce;
-	struct timespec start_time;
-	char filename[256];
-	size_t image_buffer_length = 0;
-	int retval,binned_ncols,binned_nrows;
-
-	try
-	{
-		cout << "multrun thread with exposure count " << exposure_count <<
-			", exposure length " << exposure_length << "ms." << endl;
-		LOG4CXX_INFO(logger,"multrun thread with exposure count " << exposure_count <<
-			     ", exposure length " << exposure_length << "ms.");
-		/* already set to TRUE in start_expose, so this should not be necessary */
-		mExposureInProgress = TRUE;
-		/* setup image buffer */
-		retval = CCD_Setup_Get_Buffer_Length(&image_buffer_length);
-		if(retval == FALSE)
-		{
-			mExposureInProgress = FALSE;
-			ce = create_ccd_library_exception();
-			throw ce;
-		}	
-		mImageBuf.resize(image_buffer_length);
-		binned_ncols = CCD_Setup_Get_NCols()/CCD_Setup_Get_Bin_X();
-		binned_nrows = CCD_Setup_Get_NRows()/CCD_Setup_Get_Bin_Y();
-		mImageBufNCols = binned_ncols;
-		mImageBufNRows = binned_nrows;
-		/* start time is now */
-		start_time.tv_sec = 0;
-		start_time.tv_nsec = 0;
-		/* initialise exposure count/index status */
-		mExposureCount = exposure_count;
-		mImageFilenameList.clear();
-		/* loop over number of exposure to take */
-		for(int image_index = 0; image_index < exposure_count; image_index++)
-		{
-			/* update exposure index status data */
-			mExposureIndex = image_index;
-			/* take the image */
-			retval = CCD_Exposure_Expose(TRUE,start_time,exposure_length,(void*)(mImageBuf.data()),
-						     image_buffer_length);
-			if(retval == FALSE)
-			{
-				mExposureInProgress = FALSE;
-				mExposureCount = 0;
-				mExposureIndex = 0;
-				ce = create_ccd_library_exception();
-				throw ce;
-			}
-			/* increment the filename run number */
-			retval = CCD_Fits_Filename_Next_Run();
-			if(retval == FALSE)
-			{
-				mExposureInProgress = FALSE;
-				mExposureCount = 0;
-				mExposureIndex = 0;
-				ce = create_ccd_library_exception();
-				throw ce;
-			}
-			/* get the filename to save to */
-			retval = CCD_Fits_Filename_Get_Filename(filename,256);
-			if(retval == FALSE)
-			{
-				mExposureInProgress = FALSE;
-				mExposureCount = 0;
-				mExposureIndex = 0;
-				ce = create_ccd_library_exception();
-				throw ce;
-			}
-			/* Add internally generated FITS headers to mFitsHeader */
-			add_camera_fits_headers(exposure_length);
-			/* save the image */
-			retval = CCD_Exposure_Save(filename,(void*)(mImageBuf.data()),image_buffer_length,
-						   binned_ncols,binned_nrows,mFitsHeader);
-			if(retval == FALSE)
-			{
-				mExposureInProgress = FALSE;
-				mExposureCount = 0;
-				mExposureIndex = 0;
-				ce = create_ccd_library_exception();
-				throw ce;
-			}
-			/* update last image filename and add generated filename to list of FITS images */
-			mLastImageFilename = filename;
-			mImageFilenameList.push_back(std::string(filename));
-		}/* end for on exposure_count */
-		mExposureIndex = mExposureCount;
-		mExposureInProgress = FALSE;
-	}
-	catch(TException&e)
-	{
-		mExposureInProgress = FALSE;
-		cerr << "multrun_thread: Caught TException: " << e.what() << "." << endl;
-		LOG4CXX_ERROR(logger,"multrun_thread:Caught TException: " << e.what() << ".");
-	}
-	catch(exception& e)
-	{
-		mExposureInProgress = FALSE;
-		cerr << "multrun_thread: Caught Exception: " << e.what()  << "." << endl;
-		LOG4CXX_FATAL(logger,"multrun_thread: Caught Exception: " << e.what()  << ".");
 	}		
 }
 
