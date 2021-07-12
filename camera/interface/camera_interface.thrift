@@ -167,16 +167,14 @@ exception CameraException
  * <li><b>add_fits_header</b> Add an individual FITS header to the CameraService's internal list, which will be
  *                             be added to the next FITS image genreated by a readout.
  * <li><b>clear_fits_headers</b> Remove all the current FITS headers from the CameraService's internal list.
+  * <li><b>set_exposure_length</b> Set the exposure length (in milliseconds) to use for dark and exposure frames.
  * <li><b>start_expose</b> Start a thread to take a single exposure of a specified exposure length (in ms).
- * <li><b>start_multbias</b> Start a thread to take a series of bias frames.
- * <li><b>start_multdark</b> Start a thread to take a series of dark frames of a specified exposure length (in ms).
- * <li><b>start_multrun</b> Start a thread to take a series of exposures of the specified exposure length (in ms).
+ * <li><b>start_bias</b> Start a thread to take a single bias frame.
+ * <li><b>start_dark</b> Start a thread to take a single dark frame of a specified exposure length (in ms).
  * <li><b>abort_exposure</b> Abort (stop) a currently running multbias / multdark / multrun
  * <li><b>get_state</b> Get the current state of the camera / configuration / multbias / multdark / multrun.
  * <li><b>get_image_data</b> Get a copy of the last image read out by the camera. 
  * <li><b>get_last_image_filename</b> Get the filename of the last FITS image written to disk.
- * <li><b>get_image_filenames</b> Get a list of filename of the last set of FITS images written to disk
- *                               as a result of the last multbias / multdark / multrun.
  * <li><b>cool_down</b> Cool down the camera to it's operating temperature.
  * <li><b>warm_up</b> Warm up the camera to ambient temperature.
  * </ul>
