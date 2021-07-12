@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Command line tool to tell MookodiCameraServer to start taking a series of bias frames.
-The previously configured readout speed, gain, window and binning are used. The command returns after
-MookodiCameraServer has started to acquire biases, use ./get_state3.py to query MookodiCameraServer to see
-when it has finished.
+Command line tool to tell MookodiCameraServer to take a series of bias frames.
+The previously configured readout speed, gain, window and binning are used. The command loops over the exposure count,
+calls start_bias() to start the camera taking each bias bias, 
+and then uses get_state() to determine when the bias has been taken,
+and uses get_last_image_filename() to retrieve the FITS image filename generated.
 
 ./start_multbias3.py <exposure count>
 
@@ -19,6 +20,14 @@ parser = argparse.ArgumentParser()
 parser.add_argument("exposure_count", type=int,help="The number of bias frames to take")
 args = parser.parse_args()
 
-# Create client and start multbias
+# Create client and loop over start_bias, waiting for each to complete before starting the next
 c= Client()
-c.start_multbias(args.exposure_count)
+for(i=0; i<args.exposure_count; i++):
+    c.start_bias()
+    done = False
+    while done == False:
+        time.sleep(1)
+        state = c.get_state()
+        done = state.exposure_in_progress == False
+    filename = c.get_last_image_filename()
+    print ("Bias Image "+repr(i)+": "+filename)
