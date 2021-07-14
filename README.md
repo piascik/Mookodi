@@ -7,6 +7,7 @@ This is the source code repository for the Mookodi instrument, a low resolution 
 * **bin** The root of the binary tree where the current build system puts libraries, object files and binaries.
 * **camera** The camera server directory, this is a C++ server with a thrift interface for controlling the CCD camera.
 * **ccd** This is a C library that uses the Andor SDK libraries to provide a library to control the Andor CCD camera. Used by the camera server.
+* **pipelines** Python libraries for data reduction and the iterative astrometric acquisition.
 * **docs** Some documentation / notes.
 * **public_html** The root of the Doxygen generated API documentation.
 
