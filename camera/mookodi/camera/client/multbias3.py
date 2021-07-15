@@ -2,11 +2,12 @@
 """
 Command line tool to tell MookodiCameraServer to take a series of bias frames.
 The previously configured readout speed, gain, window and binning are used. The command loops over the exposure count,
-calls start_bias() to start the camera taking each bias bias, 
+calls start_bias() to start the camera taking each bias frame, 
 and then uses get_state() to determine when the bias has been taken,
 and uses get_last_image_filename() to retrieve the FITS image filename generated.
+The command returns after MookodiCameraServer has finished taking the bias frames.
 
-./start_multbias3.py <exposure count>
+./multbias3.py <exposure count>
 
 Parameters:
 <exposure count> specifies the number of bias frames to acquire.

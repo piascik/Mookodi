@@ -13,7 +13,7 @@ Parameters:
 import argparse
 from mookodi.camera.client.client import Client
 
-# Create client and start multbias
+# Create client and start bias
 c= Client()
 c.start_bias()
 #done = False

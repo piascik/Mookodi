@@ -18,26 +18,20 @@ def do_multrun(exposure_count = 1, exposure_length=1000):
     exposure_length The length of each exposure in milliseconds.
     """
     print ("Doing a multrun of " + repr(exposure_count) + " of length " + repr(exposure_length) + "ms.")
-    c.start_multrun(exposure_count,exposure_length)
-    done = False
-    while done == False:
-        state = c.get_state()
-        print ("Exposure In Progress:" + repr(state.exposure_in_progress)+ ".")
-        print ("Exposure State:" + repr(state.exposure_state)+ ".")
-        print ("Exposure Count:" + repr(state.exposure_count)+ ".")
-        print ("Exposure Index:" + repr(state.exposure_index)+ ".")
-        print ("Elapsed Exposure Length:" + repr(state.elapsed_exposure_length)+ " ms.")
-        print ("Remaining Exposure Length:" + repr(state.remaining_exposure_length)+ " ms.")
-        time.sleep(1)
-        last_exposure = ( state.exposure_index == ( state.exposure_count - 1 ) )
-        finished_exposure = ( state.remaining_exposure_length <= 0 )
-        is_idle = ( state.exposure_state == ExposureState.IDLE )
-        done = state.exposure_in_progress == False
-    filename_list = c.get_image_filenames()
-    filename_count = len(filename_list)
-    print ("There are " + repr(filename_count) + " Image Filenames:")
-    for s in filename_list:
-        print ("Image Filename:" + s)
+    c.set_exposure_length(exposure_length)
+    for(i=0; i<exposure_count; i++):
+        c.start_expose(True)
+        done = False
+        while done == False:
+            state = c.get_state()
+            print ("Exposure In Progress:" + repr(state.exposure_in_progress)+ ".")
+            print ("Exposure State:" + repr(state.exposure_state)+ ".")
+            print ("Elapsed Exposure Length:" + repr(state.elapsed_exposure_length)+ " ms.")
+            print ("Remaining Exposure Length:" + repr(state.remaining_exposure_length)+ " ms.")
+            time.sleep(1)
+            done = state.exposure_in_progress == False
+        filename = c.get_last_image_filename()
+        print ("Image "+repr(i)+": "+filename)
     print ("Multrun finished.")
 
 # parse command line arguments

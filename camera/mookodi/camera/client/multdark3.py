@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """
 Command line tool to tell MookodiCameraServer to start taking a series of dark frames.
-The previously configured readout speed, gain, window and binning are used. The command returns after
-MookodiCameraServer has started to acquire dark frames, use ./get_state3.py to query MookodiCameraServer to see
-when it has finished.
+The previously configured readout speed, gain, window and binning are used. 
+The command sets the exposure length to use, loops over the exposure count,
+calls start_dark() to start the camera taking each dark frame, 
+and then uses get_state() to determine when the dark has been taken,
+and uses get_last_image_filename() to retrieve the FITS image filename generated. 
+The command returns after MookodiCameraServer has finished taking the dark frames.
 
-./start_multdark3.py <exposure count> <exposure length>
+./multdark3.py <exposure count> <exposure length>
 
 Parameters:
 <exposure count> specifies the number of dark frames to acquire.
