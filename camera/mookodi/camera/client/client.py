@@ -81,9 +81,15 @@ if __name__ == '__main__':
     c.set_fits_headers(fi)
     print("Before exposure:")
     print(c.get_state())
-    c.start_multrun(1,10000)
+    c.set_exposure_length(10000)
+    c.start_expose(True)
     print("Started exposure")
-    for i in range(16):
+    done = False
+    while done == False:
+        time.sleep(1)
+        state = c.get_state()
         print("Got state:")
-        print(c.get_state())
-        sleep(0.5)
+        print(state)
+        done = state.exposure_in_progress == False
+    filename = c.get_last_image_filename()
+    print ("Image: "+filename)

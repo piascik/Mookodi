@@ -19,4 +19,5 @@ args = parser.parse_args()
 
 # Create client and start expose
 c= Client()
-c.start_expose(args.exposure_length,args.save_image)
+c.set_exposure_length(args.exposure_length)
+c.start_expose(args.save_image)
