@@ -23,12 +23,14 @@ def do_darks(exposure_count = 1, exposure_length=1000):
     print ("Doing " + repr(exposure_count) + " darks of exposure length " + repr(exposure_length) + "ms.")
     c.set_exposure_length(exposure_length)
     for i in range(exposure_count):
+        print ("Starting Dark "+repr(i)+" with exposure length "+repr(exposure_length))
         c.start_dark()
         done = False
         loop_count = 0
         while done == False:
             state = c.get_state()
             if( (loop_count % 10) == 0):
+                print ("Exposure Index:" + repr(i) + " of " + repr(exposure_count) + ".")
                 print ("Exposure In Progress:" + repr(state.exposure_in_progress)+ ".")
                 print ("Exposure State:" + ExposureState._VALUES_TO_NAMES[state.exposure_state] + ".")
                 print ("Elapsed Exposure Length:" + repr(state.elapsed_exposure_length)+ " ms.")

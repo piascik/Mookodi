@@ -24,6 +24,7 @@ def do_multrun(exposure_count = 1, exposure_length=1000):
         done = False
         while done == False:
             state = c.get_state()
+            print ("Exposure Index:" + repr(i) + " of " + repr(exposure_count) + ".")
             print ("Exposure In Progress:" + repr(state.exposure_in_progress)+ ".")
             print ("Exposure State:" + repr(state.exposure_state)+ ".")
             print ("Elapsed Exposure Length:" + repr(state.elapsed_exposure_length)+ " ms.")
