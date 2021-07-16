@@ -38,6 +38,7 @@ for i in range(args.exposure_count):
         time.sleep(1)
         state = c.get_state()
         if( (loop_count % 10) == 0):
+            print ("Exposure Index:" + repr(i) + " of " + repr(args.exposure_count) + ".")
             print ("Exposure In Progress:" + repr(state.exposure_in_progress)+ ".")
             print ("Exposure State:" + ExposureState._VALUES_TO_NAMES[state.exposure_state] + ".")
             print ("Elapsed Exposure Length:" + repr(state.elapsed_exposure_length)+ " ms.")
