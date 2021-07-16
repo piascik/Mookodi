@@ -55,25 +55,25 @@ There is a series of command line clients that can be used for camera testing. T
 * source /home/dev/src/Mookodi/mookodi_environment.csh
 * cd /home/dev/src/Mookodi/camera/mookodi/camera/client
 * Run the command line test program. Available programs:
-** ***abort_exposure3.py***  - Abort a presiously started bias/dark/exposure.
-** ***add_fits_header3.py*** - Add a FITS header keyword/value to the internally maintained list.
-** ***clear_fits_headers3.py*** - Clear the internally maintained list of FITS headers
-** ***clear_window3.py*** - Clear any sub-image windows defined - make the detector read out full-frame.
-** ***cool_down3.py*** - Start the camera cooling down.
-** ***do_biases.py*** - Do a defined set of bias frames.
-** ***do_darks.py*** - Do a defined set of dark frames.
-** ***get_image_data3.py*** - Exercises the get_image_data API, which returns the read out data in memory.
-** ***get_last_image_filename3.py*** - Get the filename of the last FITS image saved by the server.
-** ***get_state3.py*** - Get and print out the current state of the server/camera/camera temeprature.
-** ***multbias3.py*** - Take a series of bias frames.
-** ***multdark3.py*** - Take a series of dark frames
-** ***multrun3.py*** - Take a series of exposures.
-** ***set_binning3.py*** - Set the detectyor binning.
-** ***set_gain3.py*** - Set the detector gain.
-** ***set_readout_speed3.py*** - Set how quickly the detector is read out.
-** ***set_window3.py*** - Set a sub-image of the full frame to read out.
-** ***soak_test.py*** - Do a series of exposures to test the camera server.
-** ***start_bias3.py*** - Start taking a bias frame. Use get_state3.py to monitor for completion.
-** ***start_dark3.py*** - Start taking a dark frame. Use get_state3.py to monitor for completion.
-** ***start_expose3.py*** - Start taking an exposure.  Use get_state3.py to monitor for completion.
-** ***warm_up3.py*** - Start warming up the detector to ambient.
+  * ***abort_exposure3.py***  - Abort a presiously started bias/dark/exposure.
+  * ***add_fits_header3.py*** - Add a FITS header keyword/value to the internally maintained list.
+  * ***clear_fits_headers3.py*** - Clear the internally maintained list of FITS headers
+  * ***clear_window3.py*** - Clear any sub-image windows defined - make the detector read out full-frame.
+  * ***cool_down3.py*** - Start the camera cooling down.
+  * ***do_biases.py*** - Do a defined set of bias frames.
+  * ***do_darks.py*** - Do a defined set of dark frames.
+  * ***get_image_data3.py*** - Exercises the get_image_data API, which returns the read out data in memory.
+  * ***get_last_image_filename3.py*** - Get the filename of the last FITS image saved by the server.
+  * ***get_state3.py*** - Get and print out the current state of the server/camera/camera temeprature.
+  * ***multbias3.py*** - Take a series of bias frames.
+  * ***multdark3.py*** - Take a series of dark frames
+  * ***multrun3.py*** - Take a series of exposures.
+  * ***set_binning3.py*** - Set the detectyor binning.
+  * ***set_gain3.py*** - Set the detector gain.
+  * ***set_readout_speed3.py*** - Set how quickly the detector is read out.
+  * ***set_window3.py*** - Set a sub-image of the full frame to read out.
+  * ***soak_test.py*** - Do a series of exposures to test the camera server.
+  * ***start_bias3.py*** - Start taking a bias frame. Use get_state3.py to monitor for completion.
+  * ***start_dark3.py*** - Start taking a dark frame. Use get_state3.py to monitor for completion.
+  * ***start_expose3.py*** - Start taking an exposure.  Use get_state3.py to monitor for completion.
+  * ***warm_up3.py*** - Start warming up the detector to ambient.
