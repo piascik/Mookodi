@@ -23,7 +23,7 @@ args = parser.parse_args()
 
 # Create client and loop over start_bias, waiting for each to complete before starting the next
 c= Client()
-for(i=0; i<args.exposure_count; i++):
+for i in range(args.exposure_count):
     c.start_bias()
     done = False
     while done == False:

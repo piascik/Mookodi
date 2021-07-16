@@ -26,7 +26,7 @@ args = parser.parse_args()
 # Create client and start multrun
 c= Client()
 c.set_exposure_length(args.exposure_length)
-for(i=0; i<args.exposure_count; i++):
+for i in range(args.exposure_count):
     c.start_expose(True)
     done = False
     while done == False:

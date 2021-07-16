@@ -19,7 +19,7 @@ def do_multrun(exposure_count = 1, exposure_length=1000):
     """
     print ("Doing a multrun of " + repr(exposure_count) + " of length " + repr(exposure_length) + "ms.")
     c.set_exposure_length(exposure_length)
-    for(i=0; i<exposure_count; i++):
+    for i in range(exposure_count):
         c.start_expose(True)
         done = False
         while done == False:

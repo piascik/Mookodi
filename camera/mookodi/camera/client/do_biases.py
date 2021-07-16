@@ -19,7 +19,7 @@ def do_biases(exposure_count = 1):
     exposure_count  The number of biases to take (default 1).
     """
     print ("Doing " + repr(exposure_count) + " biases.")
-    for(i=0; i<exposure_count; i++):
+    for i in range(exposure_count):
         c.start_bias()
         done = False
         loop_count = 0
