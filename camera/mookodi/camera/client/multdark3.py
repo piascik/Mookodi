@@ -43,5 +43,6 @@ for i in range(args.exposure_count):
             print ("Elapsed Exposure Length:" + repr(state.elapsed_exposure_length)+ " ms.")
             print ("Remaining Exposure Length:" + repr(state.remaining_exposure_length)+ " ms.")
         done = state.exposure_in_progress == False
+        loop_count += 1
     filename = c.get_last_image_filename()
     print ("Dark Image "+repr(i)+": "+filename)
