@@ -13,6 +13,7 @@ Parameters:
 <exposure count> specifies the number of bias frames to acquire.
 """
 import argparse
+import time
 from mookodi.camera.client.client import Client
 
 

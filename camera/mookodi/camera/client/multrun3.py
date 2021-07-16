@@ -15,6 +15,7 @@ Parameters:
 <exposure length> specifies the length of each exposure in milliseconds.
 """
 import argparse
+import time
 from mookodi.camera.client.client import Client
 
 # parse command line arguments
