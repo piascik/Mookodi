@@ -11,9 +11,10 @@ This directory contains the source code for a C++ server with a thrift interface
 
 ## Installing the client code
 
-setup.py has to be invoked to install the client side python libraries. This can be invoked like this:
+setup.py has to be invoked to install the client side python libraries. Assuming the Mookodi repo has been cloned into the /home/dev/src/ directory, this can be invoked like this:
 
-sudo tcsh -c "source /home/dev/src/Mookodi/mookodi_environment.csh; python3 setup.py develop"
+* cd /home/dev/src/Mookodi/camera
+* sudo tcsh -c "source /home/dev/src/Mookodi/mookodi_environment.csh; python3 setup.py develop"
 
 ## Dependancies / Prerequisites
 
@@ -35,7 +36,7 @@ Other software packages that were installed on the mookodi machine to facilitate
 
 ## Running the server
 
-The MookodiCameraServer can be started as follows:
+Assuming the Mookodi repo has been cloned into the /home/dev/src/ directory and built, the MookodiCameraServer can be started as follows:
 
 * tcsh
 * source /home/dev/src/Mookodi/mookodi_environment.csh
@@ -49,7 +50,7 @@ If there is no Andor camera present, the server can be started in emulation mode
 
 ## Running the command-line clients
 
-There is a series of command line clients that can be used for camera testing. They can be run as follows:
+There is a series of command line clients that can be used for camera testing. Assuming the Mookodi repo has been cloned into the /home/dev/src/ directory and setup.py run, they can be run as follows:
 
 * tcsh
 * source /home/dev/src/Mookodi/mookodi_environment.csh

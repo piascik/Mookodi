@@ -26,6 +26,9 @@ if( "${hostname}" == "zen" ) then
 # zen / ltdevx64
 #setenv PYTHONPATH /usr/lib/python2.7/:/usr/lib/python2.7/site-packages
     setenv PYTHONPATH /usr/lib/python3.6/:/usr/lib/python3.6/site-packages
+else if( "${hostname}" == "ltdevx64" ) then
+# ltdevx64
+    setenv PYTHONPATH /usr/lib/python3.6/:/usr/lib/python3.6/site-packages
 else if( "${hostname}" == "mookodi" ) then
 # mookodi
     setenv PYTHONPATH /usr/lib/python3.8/:/usr/lib/python3.8/site-packages/
