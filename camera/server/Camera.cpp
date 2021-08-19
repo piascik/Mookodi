@@ -201,7 +201,7 @@ void Camera::initialize()
 	}
 	/* configure initial readout speed and pre-amp gain */
 	set_readout_speed(ReadoutSpeed::SLOW);
-	set_gain(Gain::ONE);
+	set_gain(Gain::FOUR);
 	/* initialise FITS filename generation code */
 	mCameraConfig.get_config_string(CONFIG_CAMERA_SECTION,"fits.instrument_code",instrument_code,32);
 	mCameraConfig.get_config_string(CONFIG_CAMERA_SECTION,"fits.data_dir.root",fits_data_dir_root,32);
