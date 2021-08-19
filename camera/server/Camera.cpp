@@ -1493,15 +1493,20 @@ void Camera::dark_thread(int32_t exposure_length)
  * <li><b>HSHIFT</b> The horizontal shift speed im MHz, retrieved from the CCD library using CCD_Setup_Get_HS_Speed.
  * <li><b>HSHIFTI</b> The horizontal shift speed index used to configure the horizontal shift speed, 
  *                    retrieved from the CCD library using CCD_Setup_Get_HS_Speed_Index.
+ * <li><b>PREGAIN</b> The pre-amp gain setting (as a string) used to configure the gain, retrieved from mCachedGain.
+ * <li><b>GAIN</b> The Gain in e/ADU of the current setup, retrieved from the config file using the pre-amp gain index 
+ *                 (CCD_Setup_Get_Pre_Amp_Gain_Index) and the horizontal shift speed index.
  * </ul>
  * @param exposure_length The exposure length, in milliseconds, of this image.
  * @see Camera::create_ccd_library_exception
  * @see Camera::create_ngatastro_library_exception
- * @see mFitsHeader
+ * @see Camera::mFitsHeader
  * @see Camera::mCachedNCols
  * @see Camera::mCachedNRows
  * @see Camera::mCachedWindowFlags
  * @see Camera::mCachedWindow
+ * @see Camera::mCameraConfig
+ * @see Camera::mCachedGain
  * @see DEGREES_CENTIGRADE_TO_KELVIN
  * @see CCD_Exposure_Start_Time_Get
  * @see CCD_Fits_Header_Add_String
@@ -1523,6 +1528,7 @@ void Camera::dark_thread(int32_t exposure_length)
  * @see CCD_Setup_Get_VS_Speed_Index
  * @see CCD_Setup_Get_HS_Speed
  * @see CCD_Setup_Get_HS_Speed_Index
+ * @see CCD_Setup_Get_Pre_Amp_Gain_Index
  * @see NGAT_Astro_Timespec_To_MJD
  */
 void Camera::add_camera_fits_headers(int32_t exposure_length)
@@ -1530,12 +1536,14 @@ void Camera::add_camera_fits_headers(int32_t exposure_length)
 	CameraException ce;
 	enum CCD_TEMPERATURE_STATUS temperature_status;
 	struct timespec start_time;
+	std::string gain_string;
 	char camera_head_model_name[128];
 	char img_rect_buff[128];
 	char time_string[32];
-	double temperature,mjd;
-	float vs_speed,hs_speed,pre_amp_gain;
-	int retval,xs,ys,xe,ye,vs_speed_index,hs_speed_index;
+	char gain_keyword_string[32];
+	double temperature,mjd,gain;
+	float vs_speed,hs_speed;
+	int retval,xs,ys,xe,ye,vs_speed_index,hs_speed_index,pre_amp_gain_index;
 	
 	/* EXPTIME  double in secs */
 	retval = CCD_Fits_Header_Add_Float(&mFitsHeader,"EXPTIME",
@@ -1753,9 +1761,27 @@ void Camera::add_camera_fits_headers(int32_t exposure_length)
 		ce = create_ccd_library_exception();
 		throw ce;
 	}
+	/* PREGAIN */
+	gain_string = to_string(mCachedGain);
+	retval = CCD_Fits_Header_Add_String(&mFitsHeader,"PREGAIN",gain_string.c_str(),"pre-amp gain factor");
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
 	/* GAIN */
-	pre_amp_gain = CCD_Setup_Get_Pre_Amp_Gain();
-	retval = CCD_Fits_Header_Add_Float(&mFitsHeader,"GAIN",(double)pre_amp_gain,"pre-amp gain factor");
+	/* we get the camera gain from the config file, where it is indexed by the horizontal readout speed and
+	** the pre-amp gain index: ccd.gain.<horizontal shift speed index>.<pre-amp gain index> = <gain in e/adu> */
+	pre_amp_gain_index = CCD_Setup_Get_Pre_Amp_Gain_Index();
+	sprintf(gain_keyword_string,"ccd.gain.%d.%d",hs_speed_index,pre_amp_gain_index);
+	mCameraConfig.get_config_double(CONFIG_CAMERA_SECTION,gain_keyword_string,&gain);
+	retval = CCD_Fits_Header_Add_Float(&mFitsHeader,"GAIN",(double)gain,"Camera Gain");
+	if(retval == FALSE)
+	{
+		ce = create_ccd_library_exception();
+		throw ce;
+	}
+	retval = CCD_Fits_Header_Add_Units(&mFitsHeader,"GAIN","e/ADU");
 	if(retval == FALSE)
 	{
 		ce = create_ccd_library_exception();
