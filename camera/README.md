@@ -47,6 +47,7 @@ If there is no Andor camera present, the server can be started in emulation mode
 
 * ./MookodiCameraServer --config_file /home/dev/src/Mookodi/config/mkd.cfg --emulate_camera
 
+The server creates a log file at: /mookodi/logs/mookodi_camera_server.log , which is rolled hourly. See /home/dev/src/Mookodi/bin/mookodi/camera/server/log4cxx.properties for details.
 
 ## Running the command-line clients
 
