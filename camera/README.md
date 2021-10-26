@@ -78,3 +78,60 @@ There is a series of command line clients that can be used for camera testing. A
   * ***start_dark3.py*** - Start taking a dark frame. Use get_state3.py to monitor for completion.
   * ***start_expose3.py*** - Start taking an exposure.  Use get_state3.py to monitor for completion.
   * ***warm_up3.py*** - Start warming up the detector to ambient.
+
+## Example usage sequence:
+
+In one terminal (the 'server' terminal), follow the instructions in the 'Running the server' section
+to start the server.
+
+Setup the running environment in a second 'client' terminal:
+
+* tcsh
+* source /home/dev/src/Mookodi/mookodi_environment.csh
+* cd /home/dev/src/Mookodi/camera/mookodi/camera/client
+
+Cool down the camera and configure it:
+
+* ./cool_down3.py
+* ./clear_window3.py (or use ./set_window3.py <x_start> <y_start> <x_end> <y_end>
+* ./set_gain3.py ONE
+* ./set_readout_speed3.py FAST
+* ./set_binning3.py 1 1
+
+Monitor the camera temperature until it is cool:
+
+* ./get_state3.py
+
+Setup any FITS headers as required. The camera software itself provides a basic set of FITS headers, which can be added to:
+
+* ./add_fits_header3.py USER STRING "Chris" "Who is using the camera"
+* ./add_fits_header3.py MYNUM INTEGER 1 "An integer number"
+* ./add_fits_header3.py MYNUM2 DOUBLE 2.0 "An double number"
+
+Start taking an exposure:
+
+* ./start_expose3.py 10000 --save_image
+
+The exposure length is in milliseconds. --save_image will store the resultant data in a FITS image file.
+Alternatively a bias or a dark can be taken instead as follows:
+
+* ./start_bias3.py
+* ./start_dark3.py 10000
+
+Monitor the exposure progress until it is complete:
+
+* ./get_state3.py
+
+Get the last FITS filename generated (assuming you told the server to save the image above):
+
+* ./get_last_image_filename3.py
+
+Once you have finished using the camera, you can warm it up as follows:
+
+* ./warm_up3.py
+
+And again, monitor the temperature with:
+
+* ./get_state3.py
+
+This is just the lowest level of interaction with the camera server, for a more complete interaction with the instrument (moving the mechanisms, proper propogation of TCS FITS headers) higher level software should be used.
