@@ -4,7 +4,7 @@
   *
   * @author asp
   *
-  * @date   2021-05-21
+  * @date   2021-11-15
   *
   * @version $Id$
   */
@@ -24,6 +24,9 @@ static int pio_fd = 0;
  */
 int pio_open( const char *device  )
 {
+    if ( mkd_simulate )
+        return mkd_log(MKD_OK, LOG_DBG, FAC, "Simulated pio_open(%s)", device ); 
+
     if ( (pio_fd = open( device, O_RDWR | O_NOCTTY | O_SYNC )) < 0 )
         return mkd_log(MKD_FAIL, LOG_ERR, FAC, "open(%s)=%i=%s", device, errno, strerror(errno)); 
     else
@@ -41,6 +44,9 @@ int pio_open( const char *device  )
 int pio_set_attrib( int baud, int parity)
 {
     struct termios tty;
+
+    if ( mkd_simulate )
+        return mkd_log(MKD_OK, LOG_DBG, FAC, "Simulated pio_set_attrib(%i, %i)", baud, parity ); 
 
     if (tcgetattr(pio_fd, &tty) != 0)
         return mkd_log(MKD_FAIL, LOG_ERR, FAC, "tcgetattr()=%i=%s", errno, strerror(errno)); 
@@ -81,6 +87,9 @@ int pio_set_blocking(int block)
 {
     struct termios tty;
 
+    if ( mkd_simulate )
+        return mkd_log(MKD_OK, LOG_DBG, FAC, "Simulated pio_set_blocking(%i)", block ); 
+
     memset(&tty, 0, sizeof tty);
     if (tcgetattr(pio_fd, &tty) != 0)
         return mkd_log(MKD_FAIL, LOG_ERR, FAC, "tcgetattr()=%i=%s", errno, strerror(errno)); 
@@ -106,6 +115,11 @@ int pio_set_output( unsigned char out )
     char cmd[MAX_STR+1];
     char chk[MAX_STR+1];
     char buf[MAX_STR+1];
+
+    if ( mkd_simulate )
+    {
+        return mkd_log( pio_sim_out(out), LOG_DBG, FAC, "Simulated pio_set_output(0x%X)", out ); 
+    }
 
 //  Set port 0 to be output 
     sprintf( cmd, "@00D000" );
@@ -137,22 +151,27 @@ int pio_get_output( unsigned char *out )
     char chk[MAX_STR+1];
     char buf[MAX_STR+1];
 
+    if ( mkd_simulate )
+    {
+        *out = mkd_sim_out;
+        return mkd_log( MKD_OK, LOG_DBG, FAC, "Simulated pio_get_output(0x%X)", *out ); 
+    }
+
 //  Set port 0 to be output 
     sprintf( cmd, "@00D000" );
     sprintf( chk, "!00" );
     if ( MKD_FAIL == pio_command( cmd, chk, buf, MAX_STR )) 
         return MKD_FAIL; 
 
-// Create output query command. No check 
-   sprintf( cmd, "@00P0?" );
-   if ( MKD_FAIL == pio_command( cmd, NULL, buf, MAX_STR ) )
-       return MKD_FAIL;
-
-//  Parse returned hex value into out byte. Only 1 parameter should be converted
-    if ( 1 == sscanf( buf, "!00%hhu%c", out, &c ) )
-        return  MKD_OK;  
-    else
+//  Create output query command. No check 
+    sprintf( cmd, "@00P0?" );
+    if ( MKD_FAIL == pio_command( cmd, NULL, buf, MAX_STR ) )
         return MKD_FAIL;
+
+//  Convert returned hex string into decimal byte 
+    *out = strtol( &buf[3], NULL, 16 );
+
+    return  MKD_OK;  
 }
 
 
@@ -172,22 +191,26 @@ int pio_get_input( unsigned char *inp )
 
     int ret;
 
+    if ( mkd_simulate )
+    {
+        *inp = mkd_sim_inp;
+        return mkd_log( MKD_OK,  LOG_DBG, FAC, "Simulated pio_get_input(0x%X)", mkd_sim_inp ); 
+    }
+
 //  Set port 1  to input 
     sprintf( cmd, "@00D1FF" );
     sprintf( chk, "!00" );
     if ( MKD_FAIL == pio_command( cmd, chk, buf, MAX_STR ) )
         return MKD_FAIL;
 
-// Create query command. No check. 
+//  Create query command. No check. 
     sprintf( cmd, "@00P1?" );
     if ( MKD_FAIL == pio_command( cmd, NULL, buf, MAX_STR ) )
         return MKD_FAIL;
 
-//  Parse returned hex string into byte. Only 1 parameter should be converted
-    if ( 1 == sscanf( buf, "!00%hhu%c", inp, &c ) )
-        return MKD_OK;  
-    else
-        return MKD_FAIL; 
+//  Convert returned hex string into decimal byte 
+    *inp = strtol( &buf[3], NULL, 16 );
+    return MKD_OK;  
 }
 
 
@@ -205,6 +228,7 @@ int pio_command( char *cmd, char *chk, char *rep, int max )
     int len;
     char buf[MAX_STR+1]; // Flush buffer
 
+#ifdef PIO_FLUSH 
 //  Sync to prepare flush  
     if ( !fsync(pio_fd) )
         return mkd_log( MKD_FAIL, LOG_SYS, FAC, " fsync()=%i=%s", errno, strerror(errno)); 
@@ -215,6 +239,7 @@ int pio_command( char *cmd, char *chk, char *rep, int max )
         return mkd_log( MKD_FAIL, LOG_SYS, FAC, "  read()=%i=%s", errno, strerror(errno)); 
     else if ( len > 0 )
         mkd_log( len, LOG_WRN, FAC, "  read() flush=%s", buf ); 
+#endif
 
 //  Send command to PIO interface
     len = strlen( cmd );
@@ -225,13 +250,13 @@ int pio_command( char *cmd, char *chk, char *rep, int max )
     mkd_log( len, LOG_DBG, FAC, " write()=%s", cmd); 
 
 //  Serial comms. is slow, so pause for data 
-//    usleep( (len+25) * 100 );
+//  usleep( (len+25) * 100 );
 
 //  Need to check the reply?
     if ( rep )
     {
         len = read( pio_fd, rep, max );
-        if ( len <= 0 )
+        if ( len <= 0 ) 
             return mkd_log( MKD_FAIL, LOG_SYS, FAC, "  read()=%i%s", errno, strerror(errno)); 
         else
         {
@@ -242,6 +267,8 @@ int pio_command( char *cmd, char *chk, char *rep, int max )
                     mkd_log( MKD_FAIL, LOG_ERR, FAC, "strcmp()=%s, expected=%s", rep, chk); 
                 else              
                     return mkd_log( len, LOG_DBG, FAC, "strcmp()=%s", rep); 
+            else 
+                return mkd_log( MKD_OK, LOG_DBG, FAC, "pio_command(no check)"); 
         }
     }
     else
@@ -250,4 +277,41 @@ int pio_command( char *cmd, char *chk, char *rep, int max )
     }
 
     return MKD_FAIL;
+}
+
+
+/* @brief  Simulate correct input state for current output state
+ *
+ * @return MKD_OK 
+ */
+int pio_sim_out( unsigned char out )
+{
+    mkd_sim_out = out;
+    if ( PIO_OUT_GRISM_DEPLOY & mkd_sim_out ) {
+        mkd_sim_inp &= ~PIO_INP_GRISM_STOW; 
+        mkd_sim_inp |=  PIO_INP_GRISM_DEPLOY; 
+    } else {  
+        mkd_sim_inp &= ~PIO_INP_GRISM_DEPLOY; 
+        mkd_sim_inp |=  PIO_INP_GRISM_STOW; 
+    }
+
+    if ( PIO_OUT_SLIT_DEPLOY & mkd_sim_out ) {
+        mkd_sim_inp &= ~PIO_INP_SLIT_STOW; 
+        mkd_sim_inp |=  PIO_INP_SLIT_DEPLOY; 
+    } else {  
+        mkd_sim_inp &= ~PIO_INP_SLIT_DEPLOY; 
+        mkd_sim_inp |=  PIO_INP_SLIT_STOW; 
+    }
+
+    if ( PIO_OUT_MIRROR_DEPLOY & mkd_sim_out ) {
+        mkd_sim_inp &= ~PIO_INP_MIRROR_STOW; 
+        mkd_sim_inp |=  PIO_INP_MIRROR_DEPLOY; 
+    } else {  
+        mkd_sim_inp &= ~PIO_INP_MIRROR_DEPLOY; 
+        mkd_sim_inp |=  PIO_INP_MIRROR_STOW; 
+    }
+
+    mkd_log( MKD_OK, LOG_DBG, FAC, "Simulated pio_sim_out(0x%02X), inp=0x%02X", out, mkd_sim_inp ); 
+
+    return MKD_OK;
 }
