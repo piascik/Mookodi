@@ -93,24 +93,22 @@ enum LOG_VERBOSITY
 #define LOG_SYS  2  //!< Log System errors, operation failed
 #define LOG_ERR  3  //!< Log Programme errors, operation failed 
 #define LOG_WRN  4  //!< Log Warnings, will continue 
-#define LOG_IMG  5  //!< Log Image acquisition   
+#define LOG_IMG  5  //!< Log Image    
 #define LOG_INF  6  //!< Log Informational  
-#define LOG_MSG  7  //!< Log Message events 
+#define LOG_MEC  7  //!< Log mechanisms 
 #define LOG_DBG  8  //!< Debug logging, verbose  
-#define LOG_CMD  9  //!< Log Command process events 
 
 // Facilities (software module)
 #define FAC_NUL  0  //!< Unused 
-#define FAC_MKD  1  //!< Main programme
+#define FAC_MKD  1  //!< Main
 #define FAC_LOG  2  //!< Logging
 #define FAC_UTL  3  //!< Utilties
-#define FAC_INI  4  //!< Initialisation parsing
+#define FAC_INI  4  //!< Initialisation
 #define FAC_CAM  5  //!< Camera operations
 #define FAC_PIO  6  //!< PIO operations
 #define FAC_FTS  7  //!< FITS file handling
-#define FAC_ACT  8  //!< Actuator 
-#define FAC_WHL  9  //!< Filter wheel     
-#define FAC_CMD  10 //!< Commands to service 
+#define FAC_LAC  8  //!< Linear cctuator 
+#define FAC_OPT  9  //!< Command line options     
 
 // ANSI text colour 30=Black, 31=red, 32=green, 33=yellow, 34=blue, 35=magenta, 36=cyan, 37=white  
 #define COL_RED     "\x1b[31m"  
@@ -132,8 +130,8 @@ enum LOG_VERBOSITY
 #define TMO_USB          1000 // USB communication timeout
 
 // PIO BMCM module commands
-#define PIO_DEV_NAME     "/dev/ttyACM0"
-#define PIO_CMD_GET_NAME "$00M\r"
+#define PIO_DEV_NAME        "/dev/ttyACM0"
+#define PIO_CMD_GET_NAME    "$00M\r"
 #define PIO_CMD_SET0_OUTPUT "@00D0FF\r"
 #define PIO_REP_SET0_OUTPUT "@00FF\r"
 #define PIO_CMD_CHK0_OUTPUT "@00D0?\r"
@@ -160,6 +158,8 @@ enum LOG_VERBOSITY
 #define PIO_OUT_GRISM_DEPLOY  0b00100000
 #define PIO_OUT_SLIT_DEPLOY   0b01000000
 #define PIO_OUT_MIRROR_DEPLOY 0b10000000
+
+//#define PIO_FLUSH             TRUE
 
 // Imaging. Nothing deployed
 #define CFG_INP_IMAG_OBJ       (0b00000000)
@@ -188,7 +188,7 @@ enum LOG_VERBOSITY
 #define LAC_COUNT             2 // Number of LACs
 #define LAC_0		      0 // Index into LAC tables 
 #define LAC_1		      1 
-#define LAC_POSITIONS         5 // Number of filter positions
+#define LAC_POSITIONS         6 // Number of filter positions
 
 // LAC registers 
 #define LAC_SET_ACCURACY              0x01
@@ -251,6 +251,9 @@ typedef struct mkd_cfg_s {
 
 // Function prototypes
 
+// Parse input arguments
+int mkd_opts( int argv, char *argc[] );
+
 // Logging
 int mkd_log( int ret, int level, int fac, const char *fmt, ... );
 static void log_to_stdout( char *sub_system, 
@@ -276,6 +279,7 @@ int pio_get_input   ( unsigned char *inp );
 int pio_get_output  ( unsigned char *out );
 int pio_set_output  ( unsigned char  out );
 int pio_command     ( char *cmd, char *chk, char *rep, int max );
+int pio_sim_out     ( unsigned char out);
 
 // Linear actuator functions
 void lac_init ( void  );
