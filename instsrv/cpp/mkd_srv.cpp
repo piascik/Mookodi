@@ -33,7 +33,6 @@ class InstSrvHandler : virtual public InstSrvIf {
  public:
   InstSrvHandler() {
 //  Initialization 
-//  std::cout << "Instsrv running\n";
 
 //  Init. plib system 
     p_libsys_init();
@@ -55,12 +54,63 @@ class InstSrvHandler : virtual public InstSrvIf {
   }
 
 
+/* @brief Is LAC within tolerance of a position
+ *
+ * @param[in] lac   = LAC ID 
+ * @param[in] state = Filter position
+ *
+ * @return  ERR=Failed, BAD=Not in position, POS0-5=Position  
+ */
+FilterState::type WhereIsFilter( int lac )
+{
+    int pos;  // Target position
+    int now;  // Actual position
+    int state; 
+
+    if ( mkd_simulate )
+    {
+//      Use simulated position
+        now = mkd_sim_pos[lac];
+    }
+    else
+    {   
+//      Get actual position
+        if ( MKD_FAIL == ( now = lac_xfer( lac, LAC_GET_FEEDBACK, 0 )))
+            return FilterState::ERR;
+    }
+
+//  If LAC near predefined position then return it
+    state = lac_State[lac];
+    if ( state == -1 ) // State has never been set so try and find it 
+    { 
+        for( state = 0; state < LAC_POSITIONS; state++ )
+        {
+            pos = lac_Actuator[lac].pos[state];   
+            if ( abs( now - pos ) <= lac_Accuracy )
+            {
+                lac_State[lac] = state;
+                return (FilterState::type)state;
+            }
+        }
+    }
+    else // Does requested state match actual position
+    { 
+        pos = lac_Actuator[lac].pos[state];
+        if ( abs( now - pos ) <= lac_Accuracy )
+            return (FilterState::type)state;
+    }
+
+    return FilterState::BAD;
+}
+
+
+
 /* @brief Check if LAC position is within tolerance
  *
  * @param[in] lac   = LAC ID 
  * @param[in] state = Filter position
  *
- * @return  ERR=Failed, BAD=Not in position, POS1-6=Position  
+ * @return  ERR=Failed, BAD=Not in position, POS0-5=Position  
  */
 FilterState::type CheckFilter( int lac, FilterState::type state )
 {
@@ -70,9 +120,16 @@ FilterState::type CheckFilter( int lac, FilterState::type state )
 //  Desired target position
     pos = lac_Actuator[lac].pos[state]; 
 
-//  Get actual position
-    if ( MKD_FAIL == ( now = lac_xfer( lac, LAC_GET_FEEDBACK, 0 )))
-        return FilterState::ERR;
+    if ( mkd_simulate )
+    {
+        return state;
+    }
+    else
+    {   
+//      Get actual position
+        if ( MKD_FAIL == ( now = lac_xfer( lac, LAC_GET_FEEDBACK, 0 )))
+            return FilterState::ERR;
+    }
 
 //  Check if position is within tolerance
     if ( abs( now - pos ) <= lac_Accuracy ) 
@@ -85,8 +142,8 @@ FilterState::type CheckFilter( int lac, FilterState::type state )
 /* @brief Wait for a single mechanism to reach deployment state
  *
  * @param[inp] bit = output bit for controlling state
- * @param[inp] ena = input bit for deployed state
- * @param[inp] dis = input bit for stowed state
+ * @param[inp] ena = input  bit for deployed state
+ * @param[inp] dis = input  bit for stowed state
  * @param[inp] tmo = timeout in ms 
  *
  * @return ERR=Fail, ENA=Enabled (deployed), DIS=Disabled (stowed), UNK=Unknown
@@ -102,6 +159,8 @@ DeployState::type WaitDeploy( unsigned char bit, unsigned char ena, unsigned cha
     if ( MKD_OK != pio_get_output( &out ))
         return DeployState::ERR;
 
+    mkd_log( MKD_OK, LOG_DBG, FAC, "WaitDeploy: bit=0x%02X out=0x%02X ena=0x%02X dis=0x%02X", bit, out, ena, dis );
+
 //  Wait for input state 
     do {
         if ( MKD_OK != pio_get_input( &inp ))                   // Get current state
@@ -110,9 +169,6 @@ DeployState::type WaitDeploy( unsigned char bit, unsigned char ena, unsigned cha
             return DeployState::ENA;        
         else if ( !(out & bit) && (inp & dis) && !(inp & ena) ) // Disable state reached 
             return DeployState::DIS;        
-
-     fprintf( stderr, "count=%i inp=%i out=%i\n", count, inp, out );
-//   std::cerr << "count=" << count << " inp=" << inp << " out=" << out << "\n";
 
     } while( count-- );
 
@@ -161,8 +217,6 @@ DeployState::type WaitPIO( unsigned char msk, unsigned char sta, DeployState::ty
 }
 
 
-
-
 /* @brief Check mechanism deployment state
  *
  * @param[inp] bit = output bit for controlling state
@@ -180,11 +234,13 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
         ( MKD_OK != pio_get_input ( &inp ))  )
         return DeployState::ERR;
 
+    mkd_log( MKD_OK, LOG_DBG, FAC, "CheckDeploy: bit=0x%02X inp=0x%02X out=0x%02X ena=0x%02X dis=0x%02X",bit, inp, out, ena, dis );
+
 //  Check if the mechanism is deployed, stowed or intermediate 
     if      ( (inp & ena) && !(inp & dis) )  // Deploy=set and Stow=clear
-        return out & bit ? DeployState::ENA : DeployState::DIS;
+        return DeployState::ENA;
     else if ( (inp & dis) && !(inp & ena ) ) // Stow=set and Deploy=clear
-        return out & bit ? DeployState::DIS : DeployState::ENA;
+        return DeployState::DIS;
     else if (!(inp & ena) && !(inp & dis ) ) // Stow=clear and Deploy=clear. Moving?
        return DeployState::UNK;
 
@@ -213,7 +269,7 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
     else if (( state  == DeployState::ENA                            )&& 
              ( MKD_OK == pio_set_output( out |=  PIO_OUT_SLIT_DEPLOY))&&   
              ( MKD_OK == pio_get_output(&out                        ))&&
-             ( out & PIO_OUT_SLIT_DEPLOY                              )  ) {   
+             ( out & PIO_OUT_SLIT_DEPLOY                             )  ) {   
        if ( tmo )
            ret = WaitDeploy ( PIO_OUT_SLIT_DEPLOY, PIO_INP_SLIT_DEPLOY, PIO_INP_SLIT_STOW, tmo );  
        else        
@@ -235,7 +291,6 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
     return ret;
   }
 
-
 //Set/get grism deployment output state
   DeployState::type CtrlGrism(const DeployState::type state, const int32_t tmo ) {
     unsigned char     out;
@@ -255,10 +310,12 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
              ( MKD_OK == pio_set_output( out |=  PIO_OUT_GRISM_DEPLOY))&&
              ( MKD_OK == pio_get_output(&out                         ))&&
              ( out & PIO_OUT_GRISM_DEPLOY                             )  ) {   
-       if ( tmo )
+       if ( tmo ) {
            ret = WaitDeploy(  PIO_OUT_GRISM_DEPLOY, PIO_INP_GRISM_DEPLOY, PIO_INP_GRISM_STOW, tmo);  
-       else
+       }
+       else {
            ret = CheckDeploy( PIO_OUT_GRISM_DEPLOY, PIO_INP_GRISM_DEPLOY, PIO_INP_GRISM_STOW);  
+       }
     }
     else if (( state  == DeployState::DIS                             )&&
              ( MKD_OK == pio_set_output( out &= ~PIO_OUT_GRISM_DEPLOY))&&
@@ -391,6 +448,8 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
 //Set output state
   DeployState::type CtrlPIO(const int8_t msk, const int8_t sts, DeployState::type ret,  const int32_t tmo) {
 
+    LOG4CXX_INFO(logger, "CtrlPIO");
+
     if ( MKD_OK == pio_set_output( msk ) )
       return WaitPIO( msk, sts, ret, tmo );  
     else
@@ -400,19 +459,24 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
 
   FilterState::type CtrlFilter( FilterID::type filter, const FilterState::type state, int tmo ) {
 
-//  Check if filter is in  position
+    LOG4CXX_INFO(logger, "CtrlFilter");
+
+//  Check filter position
     if ( state == FilterState::GET )
-      return CheckFilter( filter, state );
+      return WhereIsFilter( filter );
 
 //  Check position is within valid range
-    if ( state < FilterState::POS0 || state > FilterState::POS4 )
+    if ( state < FilterState::POS0 || state > FilterState::POS5 )
       return FilterState::INV;
 
-    LOG4CXX_INFO(logger, "CtrlFilter");
+//  Save target state for use by WhereIsFilter()
+    lac_State[filter] = (int)state;
+
+//  Set position of single filter slide
     if ( MKD_OK == lac_set_pos( filter, lac_Actuator[filter].pos[state], tmo ) )  
-        return CheckFilter( filter, state );
+      return WhereIsFilter( FilterID::FILTER0 );
     else 
-        return FilterState::ERR;
+      return FilterState::ERR;
   }
 
 
@@ -420,30 +484,34 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
 
     LOG4CXX_INFO(logger, "CtrlFilters");
 
-//  If get state, ensure state requests are same before checking filter position is within limits
+//  If GET state, ensure state requests are same before checking filter position
     if ( state0 == FilterState::GET || state1 == FilterState::GET ) {
       if ( state0 != state1 ) {
          _return.Filter0 = _return.Filter1 = FilterState::INV;
          return; 
        }
        else {
-         _return.Filter0 = CheckFilter( FilterID::FILTER0, state0 );
-         _return.Filter1 = CheckFilter( FilterID::FILTER1, state1 );
+         _return.Filter0 = WhereIsFilter( FilterID::FILTER0 );
+         _return.Filter1 = WhereIsFilter( FilterID::FILTER1 );
          return; 
       }
     }
 
 //  Check requested state is within range
-    if ( state0 < FilterState::POS0 || state0 > FilterState::POS4 ||
-         state1 < FilterState::POS0 || state1 > FilterState::POS4   ) {
+    if ( state0 < FilterState::POS0 || state0 > FilterState::POS5 ||
+         state1 < FilterState::POS0 || state1 > FilterState::POS5   ) {
       _return.Filter0 = _return.Filter1 = FilterState::INV;
     }
+
+//  Save target state for use by WhereIsFilter()
+    lac_State[LAC_0] = (int)state0;
+    lac_State[LAC_1] = (int)state1;
 
     if ( MKD_OK == lac_set_both( lac_Actuator[LAC_0].pos[state0], 
                                  lac_Actuator[LAC_1].pos[state1],
                                  timeout_ms )) {
-      _return.Filter0 = state0;
-      _return.Filter1 = state1;
+       _return.Filter0 = WhereIsFilter( FilterID::FILTER0 );
+       _return.Filter1 = WhereIsFilter( FilterID::FILTER1 );
     }
     else {
       _return.Filter0 = _return.Filter1 = FilterState::ERR;
@@ -453,6 +521,9 @@ DeployState::type CheckDeploy( unsigned char bit, unsigned char ena, unsigned ch
 
 
 int main(int argc, char **argv) {
+// Read command line options
+  mkd_opts( argc, argv );
+
   int port = 9090;
   ::std::shared_ptr<InstSrvHandler> handler(new InstSrvHandler());
   ::std::shared_ptr<TProcessor> processor(new InstSrvProcessor(handler));
