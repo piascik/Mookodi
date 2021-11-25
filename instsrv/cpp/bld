@@ -1,0 +1,6 @@
+#!/bin/bash
+
+#Only run once to create templates
+#thrift --gen cpp instsrv.thrift
+#thrift --gen cpp coordsrv.thrift
+gcc -o instsrv mkd_srv.cpp ../gen-cpp/InstSrv.cpp ../gen-cpp/instsrv_constants.cpp ../gen-cpp/instsrv_types.cpp mkd_opt.cpp mkd_ini.cpp mkd_log.cpp mkd_pio.cpp mkd_lac.cpp -lstdc++ -lthrift -lm -lrt -lusb-1.0 -lpthread -lcfitsio -lplibsys -llog4cxx -I/star-2018A/include -I/usr/local/include/plibsys -I../gen-cpp
