@@ -4,12 +4,12 @@
   *
   * @author asp
   *
-  * @date   2021-04-22
+  * @date   2021-11-15
   *
   * @version $Id$
   */
 
-#define FAC FAC_ACT
+#define FAC FAC_LAC
 #include "mkd.h"
 #include "InstSrv.h"
 
@@ -34,7 +34,9 @@ void lac_init( void )
     for ( int i=0; i < LAC_COUNT; i++ )
         lac_hnd[i] = NULL;
 
-    libusb_init( &usb_ctx );
+//  Only init USB if not simulated 
+    if ( !mkd_simulate )
+        libusb_init( &usb_ctx );
 }
 
 
@@ -43,6 +45,9 @@ void lac_init( void )
 void lac_close( void )
 {
     int ret;
+
+    if ( mkd_simulate )
+        return;
 
     for ( int i=0; i < LAC_COUNT; i++ )
     { 
@@ -73,6 +78,9 @@ void lac_debug( int level )
  */
 int lac_conf( void )
 {
+    if ( mkd_simulate )
+        return MKD_OK;
+
     for( int i=0; i < LAC_COUNT; i++ )
     {
 //      Check that each parameter is successfully written to LAC board
@@ -111,6 +119,9 @@ int lac_open( void )
     libusb_error err;  // USB error return
     ssize_t     count; // Number of USB devices found
     int lac = 0;       // Number of LAC devices found
+
+    if ( mkd_simulate )
+        return mkd_log(LAC_COUNT, LOG_DBG, FAC, "Simulating %i LAC devices", LAC_COUNT );
 
     libusb_device **usb_dev;
     libusb_device  *dev = NULL;
@@ -160,11 +171,15 @@ int lac_set_pos( int lac, int pos, int tmo )
 {
     int tick  = TIM_TICK;                     // Timer ticks [ms]
     int count = TIM_MICROSECOND * tmo / tick; // Timer count [ms]
-    int now;  // Current LAC #0 position
+    int now;                                  // Current LAC position
 
-    fprintf( stderr, "lac=%i pos=%i, tmp=%i",lac, pos, tmo );
+    if ( mkd_simulate )
+    {
+        mkd_sim_pos[lac]=pos;
+        return mkd_log( MKD_OK, LOG_DBG, FAC, "Simulated lac_set_pos(%i, %i, %i)", lac, pos, tmo );
+    }
 
-//  Set positions
+//  Set position
     if ( MKD_FAIL == lac_xfer( lac, LAC_SET_POSITION, pos ))
         return mkd_log( MKD_FAIL, LOG_ERR, FAC, "lac_xfer() fail" );
 
@@ -200,6 +215,16 @@ int lac_set_both( int pos0, int pos1, int tmo )
     int count = TIM_MICROSECOND * tmo / tick; // Timer count [s] 
     int now0;  // Current LAC #0 position
     int now1;  // Current LAC #1 position 
+
+    if ( mkd_simulate )
+    {
+	mkd_sim_pos[0]=(int)pos0;
+	mkd_sim_pos[1]=(int)pos1;
+        if ( tmo )
+            return mkd_log( MKD_OK, LOG_DBG, FAC, "Simulated lac_set_both(%i, %i, %i)=%i", pos0, pos1, tmo, sleep(1) );
+        else
+            return mkd_log( MKD_OK, LOG_DBG, FAC, "Simulated lac_set_both(%i, %i, %i)=%i", pos0, pos1, tmo, 0        );
+    }
 
 //  Set positions
     if ( MKD_FAIL == lac_xfer( LAC_0, LAC_SET_POSITION, pos0 ))
