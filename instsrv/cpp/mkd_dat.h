@@ -4,7 +4,7 @@
   * 
   * @author asp 
   * 
-  * @date   2021-05-21 
+  * @date   2021-11-15 
   * 
   * @version $Id$
   */
@@ -27,21 +27,22 @@ const char *log_colour[] =
 };
 
 // Facility names, NUL is unused. Must match FAC order in mdk.h
-const char *fac_lvls[] = {"NUL","MOK","LOG","UTL","INI","CAM","PIO","FTS","ACT","WHL","CMD"};
+const char *fac_lvls[] = {"NUL","MKD","LOG","UTL","INI","CAM","PIO","FTS","LAC","OPT"};
 
 // In decreasing order of severity as used for debug level, Must match LOG order in mdk.h
-const char *log_lvls[] = {"NONE","CRIT","SYS","ERR","WRN","IMG","INF","ACT","DBG","CMD"};
+const char *log_lvls[] = {"NONE","CRIT","SYS","ERR","WRN","IMG","INF","MEC","DBG"};
 
 int   log_lvl = LOG_WRN;      // Default log level
 char  log_pfx[MAX_STR];       // Prefix log lines with this text (debug)
 char *log_fn  = NULL;         // Log file name 
-FILE *log_fp  = NULL;         // Log file handle
+FILE *log_fp  = stdout;       // Log file handle
+bool  log_dbg = FALSE;        // Log mode, to file or screen debugging
 
 const char *pio_device = PIO_DEV_NAME; // Default PIO serial device 
 
-const char *gen_DirWork            = "./";
-const char *gen_FileInit           = GEN_FILE_INIT;
-const char *gen_FileLog            = GEN_FILE_LOG;
+const char *gen_DirWork      = "./";
+const char *gen_FileInit     = GEN_FILE_INIT;
+const char *gen_FileLog      = GEN_FILE_LOG;
 
 int   lac_Speed              = 1023;
 int   lac_Accuracy           =    4;
@@ -59,7 +60,14 @@ int   lac_ProportionalGain   =    1;
 int   lac_DerivativeGain     =   10;
 int   lac_AverageRC          =    4;
 int   lac_AverageADC         =    8;
+
+int        lac_State   [LAC_COUNT] = {-1,-1};
 mkd_lac_t  lac_Actuator[LAC_COUNT];
+
+bool mkd_simulate            = FALSE;
+unsigned char mkd_sim_inp    =     0;
+unsigned char mkd_sim_out    =     0;
+int           mkd_sim_pos[2] =  {0,0};
 
 #else
 
@@ -72,6 +80,7 @@ extern int   log_lvl              ;
 extern char  log_pfx[MAX_STR]     ;
 extern char *log_fn               ;
 extern FILE *log_fp               ;
+extern bool  log_dbg              ;
 
 extern int   gen_DirWork          ; 
 extern const char *gen_FileInit   ; 
@@ -96,5 +105,11 @@ extern int lac_DerivativeGain     ;
 extern int lac_AverageRC          ;
 extern int lac_AverageADC         ;
 
+extern int        lac_State   [LAC_COUNT];
 extern mkd_lac_t  lac_Actuator[LAC_COUNT];
+
+extern bool          mkd_simulate ;
+extern unsigned char mkd_sim_inp  ;
+extern unsigned char mkd_sim_out  ;
+extern          int  mkd_sim_pos[2];
 #endif                            
